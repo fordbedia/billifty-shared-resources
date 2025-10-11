@@ -1,0 +1,29 @@
+{
+  "name": "billifty/shared-resources",
+  "description": "Shared Laravel module with modular support for User, Post, Comments, etc.",
+  "type": "library",
+  "version": "dev-master",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "BilliftySDK\\SharedResources\\": "src/",
+       "BilliftySDK\\SharedResources\\TestCase\\": "TestCase/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "BilliftySDK\\SharedResources\\SharedResourceServiceProvider"
+      ]
+    }
+  },
+  "require": {
+    "php": "^8.1"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^10.0",
+    "orchestra/testbench": "^8.0"
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}

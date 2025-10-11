@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit
+    bootstrap="vendor/autoload.php"
+    testdox="true"
+    colors="true"
+    executionOrder="depends,defects"
+    >
+    <testsuites>
+        <testsuite name="Modular Tests">
+            <directory suffix="Test.php">./src/Modules</directory>
+        </testsuite>
+    </testsuites>
+</phpunit>
