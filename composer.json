@@ -2,7 +2,7 @@
   "name": "billifty/shared-resources",
   "description": "Shared Laravel module with modular support for User, Post, Comments, etc.",
   "type": "library",
-  "version": "dev-master",
+  "version": "1.0.0",
   "license": "MIT",
   "autoload": {
     "psr-4": {
