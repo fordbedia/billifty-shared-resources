@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\File;
 
 class Make extends ModularMakeCommand
 {
-    protected $signature = 'ww:make {what} {className}
+    protected $signature = 'billifty:make {what} {className}
         {--module= : Module Name}
         {--table= : Name of table to derive model or migration from}
         {--create= : Create a migration file for the model}
@@ -22,7 +22,7 @@ class Make extends ModularMakeCommand
     protected function makeInModule(string $command, array $args): int
     {
         // Define the module root directory
-        $modulePath = base_path("vendor/weeworxx/shared-resources/src/Modules/{$this->module}");
+        $modulePath = base_path("vendor/billifty/shared-resources/src/Modules/{$this->module}");
 
         // Define subpaths based on component type
         $paths = [

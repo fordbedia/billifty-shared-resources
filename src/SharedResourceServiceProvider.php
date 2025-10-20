@@ -2,6 +2,8 @@
 
 namespace BilliftySDK\SharedResources;
 
+use BilliftySDK\SharedResources\SDK\Console\Config\Make;
+use BilliftySDK\SharedResources\SDK\Console\Config\ResetTestData;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\File;

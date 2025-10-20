@@ -12,6 +12,6 @@ enum StubsPathEnum: string
 
     public function getFullPath()
     {
-        return '/vendor/weeworxx/shared-resources/src/SDK/Foundation/stubs/' . $this->value;
+        return '/vendor/billifty/shared-resources/src/SDK/Foundation/stubs/' . $this->value;
     }
 }
