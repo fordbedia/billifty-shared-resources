@@ -11,15 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('business_profiles', function (Blueprint $table) {
+        Schema::create('clients', function (Blueprint $table) {
             $table->id();
 						$table->unsignedBigInteger('user_id');
 						$table->string('name');
-						$table->string('legal_name')->nullable();
+            $table->string('company')->nullable();
             $table->string('email')->nullable();
             $table->string('phone')->nullable();
-            $table->string('website')->nullable();
-            $table->string('tax_id')->nullable();   // VAT / EIN, etc.
+
+            $table->string('tax_id')->nullable();
             $table->string('license_no')->nullable();
 
             $table->string('address_line1')->nullable();
@@ -29,8 +29,7 @@ return new class extends Migration
             $table->string('postal_code')->nullable();
             $table->string('country')->nullable();
 
-            $table->string('logo_path')->nullable(); // e.g., s3 path
-            $table->json('branding_json')->nullable(); // optional extra branding
+            $table->json('meta')->nullable();
 						$table->tinyInteger('is_test')->default(0);
             $table->timestamps();
 
@@ -46,6 +45,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('business_profiles');
+        Schema::dropIfExists('clients');
     }
 };

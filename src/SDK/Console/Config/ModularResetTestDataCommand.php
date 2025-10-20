@@ -6,7 +6,7 @@ use http\Exception\RuntimeException;
 
 abstract class ModularResetTestDataCommand extends ModularCommand
 {
-    protected $signature = 'ww:reset 
+    protected $signature = 'billifty:reset 
         {--testonly : Refreshed only the test data and exclude stable data.}';
 
     protected $description = 'Restart all test data.';
@@ -51,7 +51,7 @@ abstract class ModularResetTestDataCommand extends ModularCommand
         if ($this->testonly) {
             $processes = array_diff($processes,
                 [
-                    // Reset seeders
+									//
                 ]
             );
         }
