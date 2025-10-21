@@ -11,11 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
+				Schema::create('color_scheme', function (Blueprint $table): void {
+					$table->id();
+					$table->string('color_scheme_name')->nullable();
+					$table->string('color')->nullable();
+					$table->timestamps();
+				});
+
         Schema::create('invoices', function (Blueprint $table) {
             $table->id();
 						$table->unsignedInteger('user_id');
 						$table->unsignedInteger('business_profile_id');
 						$table->unsignedInteger('client_id');
+						$table->unsignedInteger('invoice_template_id');
+						$table->unsignedInteger('color_scheme_id');
 
 						// Invoice identity
             $table->string('invoice_number'); // e.g., "INV-000123" (unique per user)
@@ -56,6 +65,8 @@ return new class extends Migration
 						$table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
 						$table->foreign('business_profile_id')->references('id')->on('business_profiles')->cascadeOnDelete();
 						$table->foreign('client_id')->references('id')->on('clients')->cascadeOnDelete();
+						$table->foreign('invoice_template_id')->references('id')->on('invoice_templates')->cascadeOnDelete();
+						$table->foreign('color_scheme_id')->references('id')->on('color_scheme')->cascadeOnDelete();
         });
     }
 

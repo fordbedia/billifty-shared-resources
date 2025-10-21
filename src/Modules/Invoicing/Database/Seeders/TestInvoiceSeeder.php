@@ -4,6 +4,10 @@ namespace BilliftySDK\SharedResources\Modules\Invoicing\Database\Seeders;
 
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\BusinessProfiles;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Clients;
+use BilliftySDK\SharedResources\Modules\Invoicing\Models\ColorScheme;
+use BilliftySDK\SharedResources\Modules\Invoicing\Models\InvoiceItems;
+use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
+use BilliftySDK\SharedResources\Modules\Invoicing\Models\InvoiceTemplates;
 use BilliftySDK\SharedResources\Modules\User\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use BilliftySDK\SharedResources\SDK\Database\MakeSeeder;
@@ -84,6 +88,38 @@ class TestInvoiceSeeder extends MakeSeeder
 			foreach($this->clients as $client) {
 				Clients::create(array_merge($client, ['user_id' => $user->id]));
 			}
+			$businessProfile = BusinessProfiles::where('email', 'test_company_llc@gmail.com')->first();
+			$client = Clients::where('name', 'John Doe')->first();
+			$invoiceTemplate = InvoiceTemplates::where('slug', 'moderno')->first();
+			$colorScheme = ColorScheme::create([
+				'color_scheme_name' => 'blue'
+			]);
+			$invoice = Invoices::updateOrCreate([
+				'user_id' => $user->id,
+				'business_profile_id' => $businessProfile->id,
+				'client_id' => $client->id,
+				'invoice_template_id' => $invoiceTemplate->id,
+				'color_scheme_id' => $colorScheme->id,
+				'invoice_number' => 'INV-0001',
+				'currency' => 'USD',
+				'template_slug' => 'test-company-llc',
+				'template_version' => 1
+			]);
+
+			InvoiceItems::updateOrCreate([
+				'invoice_id' => $invoice->id,
+				'position' => '1',
+				'name' => 'Test Product 1',
+				'description' => 'Product Design',
+				'quantity' => 1
+			]);
+			InvoiceItems::updateOrCreate([
+				'invoice_id' => $invoice->id,
+				'position' => '1',
+				'name' => 'Test Product 1',
+				'description' => 'Logo Design',
+				'quantity' => 2
+			]);
 
     }
 

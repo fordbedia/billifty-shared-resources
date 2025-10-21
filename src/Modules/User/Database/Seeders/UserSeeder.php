@@ -13,9 +13,10 @@ class UserSeeder extends MakeSeeder
      */
     public function run(): void
     {
-				User::create([
+				User::updateOrCreate([
+					'email' => 'fordbedia@billifty.com'
+				], [
 					'name' => 'Ed Bedia',
-					'email' => 'fordbedia@billifty.com',
 					'password' => bcrypt('123456'),
 				]);
     }
