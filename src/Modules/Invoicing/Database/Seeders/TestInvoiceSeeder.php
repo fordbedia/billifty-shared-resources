@@ -82,16 +82,16 @@ class TestInvoiceSeeder extends MakeSeeder
     {
 			$user = User::where('email', 'fordbedia@billifty.com')->first();
 			foreach($this->businessProfile as $businessProfile) {
-				BusinessProfiles::create(array_merge($businessProfile, ['user_id' => $user->id]));
+				BusinessProfiles::updateOrCreate(array_merge($businessProfile, ['user_id' => $user->id]));
 			}
 
 			foreach($this->clients as $client) {
-				Clients::create(array_merge($client, ['user_id' => $user->id]));
+				Clients::updateOrCreate(array_merge($client, ['user_id' => $user->id]));
 			}
 			$businessProfile = BusinessProfiles::where('email', 'test_company_llc@gmail.com')->first();
 			$client = Clients::where('name', 'John Doe')->first();
 			$invoiceTemplate = InvoiceTemplates::where('slug', 'moderno')->first();
-			$colorScheme = ColorScheme::create([
+			$colorScheme = ColorScheme::updateOrCreate([
 				'color_scheme_name' => 'blue'
 			]);
 			$invoice = Invoices::updateOrCreate([

@@ -17,7 +17,7 @@ class InvoiceTemplateCategorySeeder extends MakeSeeder
     {
         $now = Carbon::now();
 
-				// Create categories
+				// Create templates
         $cats = [
             ['slug' => 'modern',  'display_name' => 'Modern',  'sort_order' => 1],
             ['slug' => 'classic', 'display_name' => 'Classic', 'sort_order' => 2],
@@ -45,12 +45,61 @@ class InvoiceTemplateCategorySeeder extends MakeSeeder
         // Backfill existing templates by slug heuristic (adjust as needed)
         // e.g., your earlier seeded 'classic' and 'modern'
 
-				$invoiceTemplate = InvoiceTemplates::updateOrCreate([
+				InvoiceTemplates::updateOrCreate([
 					'invoice_template_category_id' => $modernId,
 					'slug' => 'moderno',
 					'display_name' => 'Moderno',
 					'current_version' => 1,
-					'is_active' => 1
+					'is_active' => 1,
+					'view' => 'modern.v1.moderno'
+				]);
+				InvoiceTemplates::updateOrCreate([
+					'invoice_template_category_id' => $modernId,
+					'slug' => 'aurora',
+					'display_name' => 'Aurora',
+					'current_version' => 1,
+					'is_active' => 1,
+					'view' => 'modern.v1.aurora'
+				]);
+				InvoiceTemplates::updateOrCreate([
+					'invoice_template_category_id' => $modernId,
+					'slug' => 'prism',
+					'display_name' => 'Prism',
+					'current_version' => 1,
+					'is_active' => 1,
+					'view' => 'modern.v1.prism'
+				]);
+				InvoiceTemplates::updateOrCreate([
+					'invoice_template_category_id' => $modernId,
+					'slug' => 'glass',
+					'display_name' => 'Glass',
+					'current_version' => 1,
+					'is_active' => 1,
+					'view' => 'modern.v1.glass'
+				]);
+				InvoiceTemplates::updateOrCreate([
+					'invoice_template_category_id' => $modernId,
+					'slug' => 'ledger',
+					'display_name' => 'Ledger',
+					'current_version' => 1,
+					'is_active' => 1,
+					'view' => 'modern.v1.ledger'
+				]);
+				InvoiceTemplates::updateOrCreate([
+					'invoice_template_category_id' => $modernId,
+					'slug' => 'ribbon-edge',
+					'display_name' => 'Ribbon Edge',
+					'current_version' => 1,
+					'is_active' => 1,
+					'view' => 'modern.v1.ribbon-edge'
+				]);
+				InvoiceTemplates::updateOrCreate([
+					'invoice_template_category_id' => $modernId,
+					'slug' => 'neo-columns',
+					'display_name' => 'Neo Columns',
+					'current_version' => 1,
+					'is_active' => 1,
+					'view' => 'modern.v1.neo-columns'
 				]);
 //        DB::table('invoice_templates')->where('slug', 'classic')->update([
 //            'invoice_template_category_id' => $classicId,

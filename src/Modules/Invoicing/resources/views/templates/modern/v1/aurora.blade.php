@@ -1,0 +1,150 @@
+<div class="aurora-root scheme-{{ $scheme }}">
+  <div class="sheet">
+    <div class="rail"></div>
+    <div class="head">
+      <div class="brand">
+        @if(($bp?->logo_path))
+          <img src="{{ $bp->logo_path }}" alt="logo" class="logo" />
+        @endif
+        <div>
+          <div class="eyebrow">Invoice</div>
+          <h1 class="title">{{ $invoice->invoice_number ?? 'INV-XXXXXX' }}</h1>
+          <div class="meta tiny">
+            <span>Issued: {{ $fmtDate($invoice->issued_on ?? null) }}</span>
+            <span class="dot">•</span>
+            <span>Currency: {{ $invoice->currency ?? 'USD' }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="due">
+        <div class="kicker tiny">Due Date</div>
+        <div class="pill">{{ $fmtDate($invoice->due_on ?? null) }}</div>
+        <div class="kicker tiny mt-8">Total</div>
+        <div class="grand">{{ $fmtMoney($invoice->total_cents ?? 0, $invoice->currency ?? 'USD') }}</div>
+      </div>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="label">From</div>
+        <div class="strong">{{ $bp?->name ?? 'Your Business' }}</div>
+        <div class="muted">{{ $bp?->email }}@if($bp?->email && $bp?->phone) • @endif{{ $bp?->phone }}</div>
+        <div class="muted">{{ $bp ? $addr($bp) : '' }}</div>
+        @if($bp?->tax_id)<div class="muted">Tax ID: {{ $bp->tax_id }}</div>@endif
+        @if($bp?->license_no)<div class="muted">License No: {{ $bp->license_no }}</div>@endif
+      </div>
+      <div class="card">
+        <div class="label">Bill To</div>
+        <div class="strong">{{ $cl?->name ?? $cl?->company ?? 'Client' }}</div>
+        <div class="muted">{{ $cl?->email }}@if($cl?->email && $cl?->phone) • @endif{{ $cl?->phone }}</div>
+        <div class="muted">{{ $cl ? $addr($cl) : '' }}</div>
+        @if($cl?->tax_id)<div class="muted">Tax ID: {{ $cl->tax_id }}</div>@endif
+        @if($cl?->license_no)<div class="muted">License No: {{ $cl->license_no }}</div>@endif
+      </div>
+    </div>
+
+    <div class="table-card">
+      <table class="items">
+        <thead>
+          <tr>
+            <th class="desc">Description</th>
+            <th>Qty</th>
+            <th class="right">Rate</th>
+            <th class="right">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+        @if(($items instanceof \Illuminate\Support\Collection ? $items->count() : count($items)) === 0)
+          <tr><td colspan="4" class="muted center">No items.</td></tr>
+        @else
+          @foreach($items as $it)
+            <tr>
+              <td>
+                <div class="strong">{{ $it->name ?? 'Item' }}</div>
+                @if(!empty($it->description))<div class="muted small">{{ $it->description }}</div>@endif
+              </td>
+              <td><span class="chip">{{ rtrim(rtrim((string)($it->quantity ?? 0), '0'), '.') }}{{ $it->unit ? ' '.$it->unit : '' }}</span></td>
+              <td class="right">{{ $fmtMoney($it->unit_price_cents ?? 0, $invoice->currency ?? 'USD') }}</td>
+              <td class="right">{{ $fmtMoney($it->line_total_cents ?? 0, $invoice->currency ?? 'USD') }}</td>
+            </tr>
+          @endforeach
+        @endif
+        </tbody>
+      </table>
+    </div>
+
+    <div class="totals">
+      <div></div>
+      <div class="panel">
+        <div class="row"><span>Subtotal</span><span>{{ $fmtMoney($invoice->subtotal_cents ?? 0, $invoice->currency ?? 'USD') }}</span></div>
+        @if((int)($invoice->discount_cents ?? 0) > 0)
+          <div class="row"><span>Discount</span><span>-{{ $fmtMoney($invoice->discount_cents ?? 0, $invoice->currency ?? 'USD') }}</span></div>
+        @endif
+        @if((int)($invoice->tax_cents ?? 0) > 0)
+          <div class="row"><span>Tax</span><span>{{ $fmtMoney($invoice->tax_cents ?? 0, $invoice->currency ?? 'USD') }}</span></div>
+        @endif
+        @if((int)($invoice->shipping_cents ?? 0) > 0)
+          <div class="row"><span>Shipping</span><span>{{ $fmtMoney($invoice->shipping_cents ?? 0, $invoice->currency ?? 'USD') }}</span></div>
+        @endif
+        <div class="row grand"><span>Total</span><span>{{ $fmtMoney($invoice->total_cents ?? 0, $invoice->currency ?? 'USD') }}</span></div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="box"><h4>Notes</h4><p>{{ $invoice->notes ?? '—' }}</p></div>
+      <div class="box"><h4>Terms</h4><p>{{ $invoice->terms ?? '—' }}</p></div>
+      <div class="badge">Thank you for your business</div>
+    </div>
+  </div>
+
+  <style>
+  .aurora-root{
+    --font: {{ $theme['fontFamily'] ?? "Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif" }};
+    --ink:#0f172a; --muted:#64748b; --bg:#fff; --card:#fff; --rail:#0ea5e9;
+    --border:#e2e8f0; --stripe:#f8fafc; --accent: var(--rail); --accent-ink:#fff;
+  }
+  .scheme-forest.aurora-root{ --rail:#16a34a; }
+  .scheme-royal.aurora-root{ --rail:#6d28d9; }
+  .scheme-crimson.aurora-root{ --rail:#dc2626; }
+  .scheme-sunset.aurora-root{ --rail:#f97316; }
+
+  .sheet{ position:relative; background:var(--bg); border-radius:16px; box-shadow:0 8px 30px rgba(2,6,23,.08); overflow:hidden; padding:28px; font-family:var(--font); color:var(--ink); }
+  .rail{ position:absolute; left:0; top:0; bottom:0; width:10px; background:linear-gradient(180deg, var(--rail), rgba(255,255,255,.7)); }
+  .eyebrow{ color:var(--muted); text-transform:uppercase; letter-spacing:.1em; font-size:12px; }
+  .title{ margin:2px 0 6px; font-size:28px; font-weight:800; letter-spacing:.2px; }
+  .tiny{ font-size:12px; } .small{ font-size:12px; } .strong{ font-weight:650; } .muted{ color:var(--muted); }
+  .head{ display:flex; justify-content:space-between; gap:24px; padding-left:18px; }
+  .brand{ display:flex; gap:16px; align-items:center; }
+  .brand .logo{ width:{{ ($theme['logoSize'] ?? 'md')==='lg'?'64px':(($theme['logoSize'] ?? 'md')==='sm'?'28px':'44px') }}; height:auto; border-radius:10px; object-fit:contain; }
+  .due{ text-align:right; }
+  .pill{ display:inline-block; background:var(--rail); color:#fff; padding:6px 10px; border-radius:999px; font-weight:700; }
+  .grand{ font-size:20px; font-weight:800; letter-spacing:.2px; }
+  .mt-8{ margin-top:8px; } .dot{ margin:0 6px; color:#cbd5e1; }
+
+  .cards{ display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:22px; }
+  .card{ background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px 16px; }
+  .label{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.12em; margin-bottom:4px; }
+
+  .table-card{ margin-top:20px; border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+  table.items{ width:100%; border-collapse:separate; border-spacing:0; }
+  .items thead th{ background:var(--rail); color:#fff; padding:10px 12px; font-size:12px; text-align:left; }
+  .items thead th.desc{ border-left:6px solid rgba(255,255,255,.2); }
+  .items tbody td{ padding:12px; border-top:1px solid var(--border); vertical-align:top; font-size:13px; }
+  .items tbody tr:nth-child(odd) td{ background:var(--stripe); }
+  .right{text-align:right;} .center{text-align:center;}
+  .chip{ border:1px solid var(--border); padding:2px 8px; border-radius:999px; font-size:12px; background:#fff; }
+
+  .totals{ display:grid; grid-template-columns:1fr 300px; gap:18px; margin-top:18px; }
+  .panel{ border:1px solid var(--border); border-radius:14px; padding:12px 14px; background:#fff; }
+  .panel .row{ display:flex; justify-content:space-between; padding:8px 0; border-top:1px dashed var(--border); }
+  .panel .row:first-child{ border-top:0; }
+  .panel .grand{ font-weight:900; font-size:16px; }
+
+  .footer{ display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:20px; align-items:start; }
+  .footer .box{ border:1px dashed var(--border); border-radius:12px; padding:14px; background:#fcfdff; }
+  .footer .box h4{ margin:0 0 8px 0; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; }
+  .footer .box p{ margin:0; white-space:pre-wrap; font-size:13px; }
+  .badge{ justify-self:end; align-self:center; background:#0b1220; color:#e2e8f0; padding:6px 10px; border-radius:10px; font-size:12px; }
+  @media print{ .sheet{ box-shadow:none; padding:18px; border-radius:0; } .rail{ display:none; } }
+  </style>
+</div>

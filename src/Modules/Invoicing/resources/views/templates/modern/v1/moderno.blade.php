@@ -1,61 +1,7 @@
-@php
-  /**
-   * Expected data:
-   * - $invoice: Eloquent model (with relations: businessProfile, client, items)
-   * - $theme: array (fontFamily, logoSize, etc.)
-   * - $schemeName: "Ocean Blue" | "Forest Green" | "Royal Purple" | "Crimson Red" | "Sunset Orange"
-   * - $categoryName: "Modern" | "Classic" | "Minimal"
-   */
-
-  $schemeMap = [
-    'Ocean Blue'    => 'ocean',
-    'Forest Green'  => 'forest',
-    'Royal Purple'  => 'royal',
-    'Crimson Red'   => 'crimson',
-    'Sunset Orange' => 'sunset',
-  ];
-  $categoryMap = [
-    'Modern'  => 'modern',
-    'Classic' => 'classic',
-    'Minimal' => 'minimal',
-  ];
-
-  $scheme   = $schemeMap[$schemeName ?? 'Ocean Blue'] ?? 'ocean';
-  $category = $categoryMap[$categoryName ?? 'Modern'] ?? 'modern';
-
-  // Helpers
-  $fmtMoney = function ($cents, $currency = 'USD') {
-      $val = ($cents ?? 0) / 100;
-      try {
-          $fmt = new \NumberFormatter(\Locale::getDefault() ?: 'en_US', \NumberFormatter::CURRENCY);
-          return $fmt->formatCurrency($val, $currency);
-      } catch (\Throwable $e) {
-          return number_format($val, 2) . ' ' . $currency;
-      }
-  };
-  $fmtDate = fn($d) => $d ? \Carbon\Carbon::parse($d)->toFormattedDateString() : '—';
-  $addr = function ($x) {
-      $g = is_array($x) ? $x : (method_exists($x, 'toArray') ? $x->toArray() : []);
-      $parts = array_filter([
-        $g['address_line1'] ?? null,
-        $g['address_line2'] ?? null,
-        $g['city'] ?? null,
-        $g['state'] ?? null,
-        $g['postal_code'] ?? null,
-        $g['country'] ?? null,
-      ]);
-      return implode(', ', $parts);
-  };
-
-  $bp = $invoice->businessProfile ?? null;
-  $cl = $invoice->client ?? null;
-  $items = $invoice->items ?? collect();
-@endphp
-
 <div class="invoice-root scheme-{{ $scheme }} cat-{{ $category }}">
   <div class="page">
     {{-- HEADER --}}
-    <div class="brand">
+    <div class="brand row">
       @if(($bp?->logo_path))
         <img src="{{ $bp->logo_path }}" alt="logo" class="logo" />
       @endif
@@ -82,6 +28,10 @@
         @if($bp?->tax_id)
           <div class="muted">Tax ID: {{ $bp->tax_id }}</div>
         @endif
+
+				@if($bp?->license_no)
+					<div class="muted">License No: {{ $bp->license_no }}</div>
+				@endif
       </div>
 
       <div class="card">
@@ -94,6 +44,10 @@
         @if($cl?->tax_id)
           <div class="muted">Tax ID: {{ $cl->tax_id }}</div>
         @endif
+
+				@if($cl?->license_no)
+					<div class="muted">License No: {{ $cl->license_no }}</div>
+				@endif
       </div>
     </div>
 

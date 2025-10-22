@@ -29,6 +29,7 @@ return new class extends Migration
             $table->string('preview_url')->nullable();   // CDN image for gallery
             $table->boolean('is_active')->default(true);
             $table->json('metadata')->nullable();        // anything else
+						$table->string('view');
             $table->timestamps();
 
 						$table->foreign('invoice_template_category_id')

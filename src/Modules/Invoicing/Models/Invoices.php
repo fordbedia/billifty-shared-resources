@@ -24,4 +24,14 @@ class Invoices extends Model
 		{
 			return $this->hasMany(InvoiceItems::class, 'invoice_id', 'id');
 		}
+
+		public function colorScheme()
+		{
+			return $this->belongsTo(ColorScheme::class, 'color_scheme_id');
+		}
+
+		public function template()
+		{
+			return $this->belongsTo(InvoiceTemplates::class, 'invoice_template_id');
+		}
 }
