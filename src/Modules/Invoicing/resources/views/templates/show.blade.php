@@ -14,7 +14,18 @@
     'Minimal' => 'minimal',
   ];
 
-  $scheme   = $schemeMap[$schemeName ?? 'Ocean Blue'] ?? 'ocean';
+	$categoryName = $category->slug;
+
+	$schemeMap = [
+		'ocean' => ['main' => '', 'light' => ''],
+		'forest' => ['main' => '', 'light' => ''],
+		'royal' => ['main' => '', 'light' => ''],
+		'crimson' => ['main' => '', 'light' => ''],
+		'sunset' => ['main' => '', 'light' => ''],
+		];
+
+	$scheme = $schemeMap[$schemeName];
+
   $category = $categoryMap[$categoryName ?? 'Modern'] ?? 'modern';
 
   $fmtMoney = function ($cents, $currency = 'USD') {
@@ -55,13 +66,6 @@
 
 @section('content')
 <div class="container py-4">
-  <div class="row">
-    <div class="col-md-6">
-      <div class="card p-3 shadow-sm">
-        {{-- include the visual template; it inherits ALL vars above --}}
-				@include("invoicing::templates.$template")
-      </div>
-    </div>
-  </div>
+	@include("invoicing::templates.$template")
 </div>
 @endsection

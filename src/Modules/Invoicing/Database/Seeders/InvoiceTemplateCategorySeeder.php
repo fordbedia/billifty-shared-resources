@@ -2,6 +2,7 @@
 
 namespace BilliftySDK\SharedResources\Modules\Invoicing\Database\Seeders;
 
+use BilliftySDK\SharedResources\Modules\Invoicing\Models\ColorScheme;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\InvoiceTemplates;
 use Carbon\Carbon;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -116,6 +117,32 @@ class InvoiceTemplateCategorySeeder extends MakeSeeder
         //     'invoice_template_category_id' => $minimalId,
         //     'updated_at' => $now,
         // ]);
+
+			$colorScheme = [
+				[
+					'color_scheme_name' => 'Ocean Blue',
+					'slug' => 'ocean',
+				],
+				[
+					'color_scheme_name' => 'Forest Green',
+					'slug' => 'forest',
+				],
+				[
+					'color_scheme_name' => 'Royal Purple',
+					'slug' => 'royal',
+				],
+				[
+					'color_scheme_name' => 'Crimson Red',
+					'slug' => 'crimson',
+				],
+				[
+					'color_scheme_name' => 'Sunset Orange',
+					'slug' => 'sunset',
+				]
+			];
+			foreach ($colorScheme as $c) {
+				ColorScheme::updateOrCreate($c);
+			}
     }
 
     /**

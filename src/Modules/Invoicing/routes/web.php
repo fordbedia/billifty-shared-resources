@@ -14,10 +14,8 @@ Route::middleware('web')->group(function () {
 
 		return view("invoicing::templates.show", [
 			'invoice' => $invoice,
-			'theme' => $invoice->theme_json ?? [],
-			'schemeName' => $invoice->theme_json['scheme'] ?? 'Ocean Blue',
-			'categoryName' => 'Modern', // or 'Classic' / 'Minimal'
-			'scheme' => $invoice->colorScheme->color_scheme_name ?? '',
+			'category' => $invoice->template->category, // or 'Classic' / 'Minimal'
+			'schemeName' => $invoice->colorScheme->slug ?? '',
 		]);
 	})->name('dev.invoice.preview');
 });

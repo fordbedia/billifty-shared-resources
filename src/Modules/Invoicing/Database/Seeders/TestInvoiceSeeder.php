@@ -91,9 +91,7 @@ class TestInvoiceSeeder extends MakeSeeder
 			$businessProfile = BusinessProfiles::where('email', 'test_company_llc@gmail.com')->first();
 			$client = Clients::where('name', 'John Doe')->first();
 			$invoiceTemplate = InvoiceTemplates::where('slug', 'moderno')->first();
-			$colorScheme = ColorScheme::updateOrCreate([
-				'color_scheme_name' => 'blue'
-			]);
+			$colorScheme = ColorScheme::where('slug', 'ocean')->first();
 			$invoice = Invoices::updateOrCreate([
 				'user_id' => $user->id,
 				'business_profile_id' => $businessProfile->id,

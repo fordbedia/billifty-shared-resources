@@ -14,6 +14,7 @@ return new class extends Migration
 				Schema::create('color_scheme', function (Blueprint $table): void {
 					$table->id();
 					$table->string('color_scheme_name')->nullable();
+					$table->string('slug');
 					$table->string('color')->nullable();
 					$table->timestamps();
 				});
