@@ -19,7 +19,7 @@
 	$schemeMap = [
 		'ocean' => ['main' => '', 'light' => ''],
 		'forest' => ['main' => '', 'light' => ''],
-		'royal' => ['main' => '', 'light' => ''],
+		'royal' => ['main' => '#8B5CF6', 'light' => '#ffffff4a'],
 		'crimson' => ['main' => '', 'light' => ''],
 		'sunset' => ['main' => '', 'light' => ''],
 		];
