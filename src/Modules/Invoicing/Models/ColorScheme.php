@@ -9,4 +9,9 @@ class ColorScheme extends Model
 {
     protected $table = 'color_scheme';
 		protected $guarded = [];
+
+		public function colors()
+		{
+			return $this->hasMany(ColorSchemeColor::class, 'color_scheme_id');
+		}
 }

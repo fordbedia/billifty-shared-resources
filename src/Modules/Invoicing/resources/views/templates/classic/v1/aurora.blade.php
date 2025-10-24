@@ -1,4 +1,4 @@
-<div class="aurora-root scheme-{{ $scheme }}">
+<div class="aurora-root scheme cat-{{ $category }}">
   <div class="sheet">
     <div class="rail"></div>
     <div class="head">

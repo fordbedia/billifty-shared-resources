@@ -34,4 +34,15 @@ class Invoices extends Model
 		{
 			return $this->belongsTo(InvoiceTemplates::class, 'invoice_template_id');
 		}
+
+		public static function relationships(): array
+		{
+			return [
+				'businessProfile',
+				'client',
+				'items',
+				'colorScheme.colors',
+				'template'
+			];
+		}
 }

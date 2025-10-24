@@ -16,15 +16,7 @@
 
 	$categoryName = $category->slug;
 
-	$schemeMap = [
-		'ocean' => ['main' => '', 'light' => ''],
-		'forest' => ['main' => '', 'light' => ''],
-		'royal' => ['main' => '#8B5CF6', 'light' => '#ffffff4a'],
-		'crimson' => ['main' => '', 'light' => ''],
-		'sunset' => ['main' => '', 'light' => ''],
-		];
-
-	$scheme = $schemeMap[$schemeName];
+	$scheme = $colorScheme->colors;
 
   $category = $categoryMap[$categoryName ?? 'Modern'] ?? 'modern';
 

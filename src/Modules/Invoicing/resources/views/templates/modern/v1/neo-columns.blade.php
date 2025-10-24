@@ -1,4 +1,28 @@
-<div class="neo-root scheme-{{ $scheme }} cat-{{ $categoryName }}">
+<div class="neo-root scheme cat-{{ $category }}">
+	 <div class="canvas header">
+		 <div class="container row">
+      <div class="left col-6">
+				<div class="brand">
+					@if(!empty($bp?->logo_path))
+						<img src="{{ $bp->logo_path }}" alt="Business Logo" class="logo"/>
+					@else
+						<div class="logo placeholder"><span>{{ strtoupper(substr($bp?->name ?? 'B',0,1)) }}</span></div>
+					@endif
+					<h1 class="title">{{ $bp?->name ?? 'Your Business' }}</h1>
+				</div>
+       		<div class="muted">{{ $bp ? $addr($bp) : '' }}</div>
+					<div class="muted">{{ $bp?->email }}</div>
+					<div class="muted">@if($bp?->email && $bp?->phone) @endif{{ $bp?->phone }}</div>
+      </div>
+      <div class="right col-6">
+        <div class="due">Due</div>
+        <div class="dueval">{{ $fmtDate($invoice->due_on ?? null) }}</div>
+      </div>
+    </div>
+	 </div>
+</div>
+
+<div class="neo-root scheme cat-{{ $category }}">
   <div class="canvas">
     <div class="header">
       <div class="left">
@@ -105,7 +129,7 @@
   .scheme-sunset.neo-root{ --accent:#f97316; --accent-ink:#111827; }
 
   .canvas{ background:#fff; border-radius:18px; box-shadow:0 12px 34px rgba(2,6,23,.08); padding:22px; font-family:var(--font); color:var(--ink); }
-  .header{ display:flex; justify-content:space-between; align-items:end; border-bottom:1px solid var(--border); padding-bottom:12px; }
+  .header{ background-color: {{$scheme['main']}}; border-bottom:1px solid var(--border); padding-bottom:12px; }
   .eyebrow{ color:var(--muted); text-transform:uppercase; letter-spacing:.12em; font-size:12px; }
   .num{ font-size:28px; margin:2px 0 6px; letter-spacing:.2px; font-weight:800; }
   .right .due{ font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.12em; }
@@ -135,7 +159,9 @@
   .summary .row{ display:flex; justify-content:space-between; padding:8px 0; border-top:1px dashed var(--border); }
   .summary .row:first-child{ border-top:0; }
   .summary .grand{ font-weight:900; font-size:16px; }
-  .brand{ display:flex; justify-content:flex-end; margin-top:12px; }
+  .brand{ display:flex;margin-top:12px; }
+	.logo{width:50px;height:50px;border-radius:10px;background:rgba(255,255,255,.15);object-fit:contain}
+	.logo.placeholder{display:grid;place-items:center;font-weight:800}
   .logo{ width:{{ ($theme['logoSize'] ?? 'md')==='lg'?'72px':(($theme['logoSize'] ?? 'md')==='sm'?'30px':'52px') }}; border-radius:12px; }
   @media print{ .canvas{ box-shadow:none; padding:16px; border-radius:0; } .side{ position:static; } }
   </style>

@@ -1,4 +1,4 @@
-<div class="ledger-root scheme-{{ $scheme }} cat-{{ $categoryName }}">
+<div class="ledger-root scheme cat-{{ $category }}">
   <div class="wrap">
     <div class="header">
       <div class="side">
