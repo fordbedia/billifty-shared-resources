@@ -93,9 +93,10 @@ class TestInvoiceSeeder extends MakeSeeder
 			$invoiceTemplate = InvoiceTemplates::where('slug', 'moderno')->first();
 			$colorScheme = ColorScheme::where('slug', 'ocean')->first();
 			$invoice = Invoices::updateOrCreate([
-				'user_id' => $user->id,
 				'business_profile_id' => $businessProfile->id,
 				'client_id' => $client->id,
+			],[
+				'user_id' => $user->id,
 				'invoice_template_id' => $invoiceTemplate->id,
 				'color_scheme_id' => $colorScheme->id,
 				'invoice_number' => 'INV-0001',
@@ -107,14 +108,21 @@ class TestInvoiceSeeder extends MakeSeeder
 			InvoiceItems::updateOrCreate([
 				'invoice_id' => $invoice->id,
 				'position' => '1',
-				'name' => 'Test Product 1',
-				'description' => 'Product Design',
+				'name' => 'User Login Authentication',
+				'description' => 'Create a functinality for the user where they all be needed for verification before they proceed.',
 				'quantity' => 1
 			]);
 			InvoiceItems::updateOrCreate([
 				'invoice_id' => $invoice->id,
 				'position' => '1',
-				'name' => 'Test Product 1',
+				'name' => 'Landing Page Design',
+				'description' => 'Home Page Design',
+				'quantity' => 2
+			]);
+			InvoiceItems::updateOrCreate([
+				'invoice_id' => $invoice->id,
+				'position' => '1',
+				'name' => 'Logo Design',
 				'description' => 'Logo Design',
 				'quantity' => 2
 			]);

@@ -2,14 +2,16 @@
   <div class="page">
 
     <div class="banner">
-      <div class="banner-inner row justify-content-between mx-5">
-        <div class="brand">
-          @if(!empty($bp?->logo_path))
-            <img src="{{ $bp->logo_path }}" alt="Business Logo" class="logo"/>
-          @else
-            <div class="logo placeholder"><span>{{ strtoupper(substr($bp?->name ?? 'B',0,1)) }}</span></div>
-          @endif
-          <div>
+      <div class="banner-inner row clearfix">
+        <div class="brand col-6">
+					<div class="logo-div left">
+						@if(!empty($bp?->logo_path))
+							<img src="{{ $bp->logo_path }}" alt="Business Logo" class="logo"/>
+						@else
+							<div class="logo placeholder"><span>{{ strtoupper(substr($bp?->name ?? 'B',0,1)) }}</span></div>
+						@endif
+					</div>
+          <div class="info-div left">
             <h1 class="title">{{ $bp?->name ?? 'Your Business' }}</h1>
           	<div class="muted">{{ $bp ? $addr($bp) : '' }}</div>
 						<div class="muted">{{ $bp?->email }}</div>
@@ -17,9 +19,9 @@
           </div>
         </div>
 
-        <div class="due">
-					<h2>INVOICE</h2>
-					<div class="due--bg">
+        <div class="due col-6">
+					<h2 class="text-right">INVOICE</h2>
+					<div class="due--bg right">
 						<div class="muted">Invoice: <strong>{{ $invoice->invoice_number ?? 'INV-XXXXXX' }}</strong></div>
 						@if ($invoice->issued_on)<div class="muted tiny">Date {{ $fmtDate($invoice->issued_on ?? null) }}</div>@endif
 						@if ($invoice->due_on)<div class="duepill">Due {{ $fmtDate($invoice->due_on ?? null) }}</div>@endif
@@ -30,7 +32,7 @@
     </div>
 
 
-    <div class="grid2">
+    <div class="grid2	clearfix">
 
 {{--      <div class="tile">--}}
 {{--        <div class="tile-h">Bill To</div>--}}
@@ -42,9 +44,9 @@
 {{--        </div>--}}
 {{--      </div>--}}
 
-      <div class="tile">
+      <div class="tile col-6">
         <div class="tile-h">
-					<svg class="img-color" width="16" height="28" viewBox="0 0 16 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+					<svg class="img-color left" width="16" height="28" viewBox="0 0 16 28" fill="none" xmlns="http://www.w3.org/2000/svg">
 						<path d="M15.75 28H0V0H15.75V28Z" stroke="#E5E7EB"/>
 						<g clip-path="url(#clip0_146_126)">
 						<path d="M7.875 13.25C6.68153 13.25 5.53693 12.7759 4.69302 11.932C3.84911 11.0881 3.375 9.94347 3.375 8.75C3.375 7.55653 3.84911 6.41193 4.69302 5.56802C5.53693 4.72411 6.68153 4.25 7.875 4.25C9.06847 4.25 10.2131 4.72411 11.057 5.56802C11.9009 6.41193 12.375 7.55653 12.375 8.75C12.375 9.94347 11.9009 11.0881 11.057 11.932C10.2131 12.7759 9.06847 13.25 7.875 13.25ZM7.35117 16.8781L6.69727 15.7883C6.47227 15.4121 6.74297 14.9375 7.17891 14.9375H7.875H8.56758C9.00352 14.9375 9.27422 15.4156 9.04922 15.7883L8.39531 16.8781L9.56953 21.234L10.8352 16.0695C10.9055 15.7848 11.1797 15.5984 11.4645 15.6723C13.9289 16.291 15.75 18.5199 15.75 21.1707C15.75 21.7684 15.2648 22.25 14.6707 22.25H10.0371C9.96328 22.25 9.89648 22.2359 9.8332 22.2113L9.84375 22.25H5.90625L5.9168 22.2113C5.85352 22.2359 5.7832 22.25 5.71289 22.25H1.0793C0.485156 22.25 0 21.7648 0 21.1707C0 18.5164 1.82461 16.2875 4.28555 15.6723C4.57031 15.602 4.84453 15.7883 4.91484 16.0695L6.18047 21.234L7.35469 16.8781H7.35117Z" fill="currentColor"/>
@@ -55,7 +57,7 @@
 						</clipPath>
 						</defs>
 					</svg>
-					Bill To</div>
+					<span class="billto-text">Bill To</span></div>
         <div class="tile-b">
           <div class="strong">{{ $cl?->name ?? $cl?->company ?? 'Client' }}</div>
           <div class="muted">{{ $cl?->email }}@if($cl?->email && $cl?->phone) • @endif{{ $cl?->phone }}</div>
@@ -65,6 +67,7 @@
         </div>
       </div>
     </div>
+		<div class="clearfix"></div>
 
     <div class="tablewrap">
 			<h2>
@@ -111,11 +114,32 @@
       <div></div>
       <div class="box col-12">
 				<h2 class="row">Invoice Summary</h2>
-        <div class="row"><span>Subtotal</span><span>{{ $fmtMoney($invoice->subtotal_cents ?? 0,$invoice->currency ?? 'USD') }}</span></div>
-        @if((int)($invoice->discount_cents ?? 0)>0)<div class="row"><span class="label">Discount</span><span>-{{ $fmtMoney($invoice->discount_cents ?? 0,$invoice->currency ?? 'USD') }}</span></div>@endif
-        @if((int)($invoice->tax_cents ?? 0)>0)<div class="row"><span class="label">Tax</span><span>{{ $fmtMoney($invoice->tax_cents ?? 0,$invoice->currency ?? 'USD') }}</span></div>@endif
-        @if((int)($invoice->shipping_cents ?? 0)>0)<div class="row"><span class="label">Shipping</span><span>{{ $fmtMoney($invoice->shipping_cents ?? 0,$invoice->currency ?? 'USD') }}</span></div>@endif
-        <div class="row grand"><span>Total Amount</span><span class="total">{{ $fmtMoney($invoice->total_cents ?? 0,$invoice->currency ?? 'USD') }}</span></div>
+        <div class="row">
+					<span class="left">Subtotal</span>
+					<span class="right">{{ $fmtMoney($invoice->subtotal_cents ?? 0,$invoice->currency ?? 'USD') }}</span>
+				</div>
+        @if((int)($invoice->discount_cents ?? 0)>0)
+					<div class="row">
+						<span class="label left">Discount</span>
+						<span class="right">-{{ $fmtMoney($invoice->discount_cents ?? 0,$invoice->currency ?? 'USD') }}</span>
+					</div>
+				@endif
+        @if((int)($invoice->tax_cents ?? 0)>0)
+					<div class="row">
+						<span class="label left">Tax</span>
+						<span class="right">{{ $fmtMoney($invoice->tax_cents ?? 0,$invoice->currency ?? 'USD') }}</span>
+					</div>
+				@endif
+        @if((int)($invoice->shipping_cents ?? 0)>0)
+					<div class="row">
+						<span class="label left">Shipping</span>
+						<span class="right">{{ $fmtMoney($invoice->shipping_cents ?? 0,$invoice->currency ?? 'USD') }}</span>
+					</div>
+				@endif
+        <div class="row grand">
+					<span class="left">Total Amount</span>
+					<span class="right total">{{ $fmtMoney($invoice->total_cents ?? 0,$invoice->currency ?? 'USD') }}</span>
+				</div>
       </div>
     </div>
 
@@ -142,31 +166,33 @@
     .scheme-royal{--accent:#6d28d9;--grad1:#a78bfa;--grad2:#6d28d9}
     .scheme-crimson{--accent:#dc2626;--grad1:#fb7185;--grad2:#dc2626}
     .scheme-sunset{--accent:#f97316;--accent-ink:#111827;--grad1:#fb923c;--grad2:#f97316}
+		.logo-div {margin-right: 12px;}
 
-    .page{font-family:var(--font);width:816px;margin:0 auto;background:var(--bg);padding-bottom:24px;border-radius:16px;box-shadow:0 10px 28px rgba(2,6,23,.06)}
-    .banner{position:relative;background-color: {{$scheme['main']['hex_color'] }}; color:var(--accent-ink);border-radius:16px 16px 0 0}
-    .banner-inner{display:flex;justify-content:space-between;align-items:center;padding:18px 22px}
-    .brand{display:flex;gap:12px;align-items:center}
+    .page{font-family:var(--font);width:916px;background:var(--bg);padding-bottom:24px;border-radius:16px;box-shadow:0 10px 28px rgba(2,6,23,.06)}
+    .banner{position:relative;background-color: {{$scheme['main']['hex_color'] }}; color:var(--accent-ink);border-radius:16px 16px 0 0;padding: 20px 20px 20px 20px;}
+    .banner-inner{padding:18px 22px}
+    .brand{padding-left: 20px;}
     .logo{width:50px;height:50px;border-radius:10px;background:rgba(255,255,255,.15);object-fit:contain}
     .logo.placeholder{display:grid;place-items:center;font-weight:800}
     .kicker{opacity:.9;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
     .title{margin:0;font-size:26px;}
-    .due{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
-		.due--bg {background-color: {{$scheme['extra_light']['hex_color']}}; padding: 12px 12px 12px 12px; border-radius: 10px; }
+    .due{padding-right: 20px;}
+		.due--bg {background-color: {{$scheme['extra_light']['hex_color']}}; padding: 12px 12px 12px 12px; border-radius: 10px;}
     .tiny{font-size:12px}
     .muted{opacity:.9}
     .duepill{background:#fff;color:#111827;border-radius:999px;padding:6px 10px;font-weight:700}
     .angle{position:absolute;bottom:-18px;left:0;right:0;height:18px;background:linear-gradient(180deg,rgba(0,0,0,.08),transparent);filter:blur(6px);opacity:.3}
 		.img-color {color: {{$scheme['main']['hex_color']}}; }
+		.billto-text {vertical-align: -webkit-baseline-middle;padding-left: 5px;}
 
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:22px;background-color: #F9FAFB;}
-    .tile{border-radius:12px;background:#fff}
+    .grid2{padding:22px;background-color: #F9FAFB;}
+    .tile{border-radius:12px;background:#fff;}
     .tile-h{padding:10px 14px;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#334155;
 			font-weight: bold;}
     .tile-b{padding:14px}
     .strong{font-weight:600}
 
-    .tablewrap{padding:0 22px}
+    .tablewrap{padding:22px 22px}
 		.tablewrap h2 {font-size: 20px;}
 		.tablewrap h2 svg {color: {{$scheme['main']['hex_color']}} }
     table.items{width:100%;border-collapse:collapse;margin-top:6px;border:1px solid var(--border);border-radius:12px;}
@@ -180,8 +206,13 @@
     .totals{display:grid;grid-template-columns:1fr 400px;gap:22px;padding:18px 22px 0}
 		.totals h2{font-size: 18px;}
 		.totals .label {font-size: 16px;}
+		.totals .box .left {padding: 12px 0 12px 0;}
+		.totals .box .right {padding: 12px 0 12px 0;}
     .box{border:2px solid #F3F4F6;border-radius:14px;background:#fff;padding: 16px 30px;}
-    .row{display:flex;justify-content:space-between;padding:10px 0;border-top:1px dashed #e5e7eb}
+		.totals .box h2 {
+			padding-bottom: 12px;
+		}
+    .row{border-top:1px dashed #e5e7eb}
     .row:first-child{border-top:0}
     .grand{font-weight:800;font-size:24px}
 		.grand .total {color: {{$scheme['main']['hex_color']}};}

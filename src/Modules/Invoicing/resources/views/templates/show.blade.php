@@ -61,3 +61,39 @@
 	@include("invoicing::templates.$template")
 </div>
 @endsection
+
+@section('globalcss')
+<style>
+.col-6 {
+		float: left;
+    width: 45%;
+}
+.left {float: left;}
+.right {float: right;}
+.pb-4, .py-4 {
+    padding-bottom: 1.5rem !important;
+}
+.pt-4, .py-4 {
+    padding-top: 1.5rem !important;
+}
+.row {display: block; clear: both;width: 100%;}
+/*.container, .container-lg, .container-md, .container-sm, .container-xl {*/
+/*	max-width: 1140px;*/
+/*}*/
+.clearfix::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+.row { width: 100%; }
+.row::after { content: ""; display: table; clear: both; }
+h1, h2, h3 {margin: 0;}
+.to-right {float: right;}
+.to-left {float: left;}
+.text-right {
+	text-align: right;
+}
+.text-left {text-align: left;}
+
+</style>
+@endsection
