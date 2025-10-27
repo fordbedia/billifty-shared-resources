@@ -2,13 +2,13 @@
 	 <div class="canvas header">
 		 <div class="row">
       <div class="left col-6">
-				<div class="brand">
+				<div class="brand clearfix">
 					@if(!empty($bp?->logo_path))
-						<img src="{{ asset($bp->logo_path) }}" alt="Business Logo" class="logo"/>
+						<img src="{{ asset($bp->logo_path) }}" alt="Business Logo" class="logo left"/>
 					@else
-						<div class="logo placeholder"><span>{{ strtoupper(substr($bp?->name ?? 'B',0,1)) }}</span></div>
+						<div class="logo left placeholder"><span>{{ strtoupper(substr($bp?->name ?? 'B',0,1)) }}</span></div>
 					@endif
-					<div class="business-profile">
+					<div class="business-profile right">
 						<h1 class="title">{{ $bp?->name ?? 'Your Business' }}</h1>
 						<div class="muted">
 							<svg width="12" height="16" viewBox="0 0 12 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -21,7 +21,7 @@
 								</clipPath>
 								</defs>
 							</svg>
-							{{ $bp ? $addr($bp) : '' }}</div>
+							<span>{{ $bp ? $addr($bp) : '' }}</span></div>
 						<div class="muted">
 							<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
 								<g clip-path="url(#clip0_171_228)">
@@ -33,12 +33,12 @@
 								</clipPath>
 								</defs>
 							</svg>
-							{{ $bp?->email }}</div>
+							<span>{{ $bp?->email }}</span></div>
 						<div class="muted">
 							<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
 								<path d="M5.15312 0.768966C4.9125 0.187716 4.27812 -0.121659 3.67188 0.0439663L0.921875 0.793966C0.378125 0.943966 0 1.43772 0 2.00022C0 9.73147 6.26875 16.0002 14 16.0002C14.5625 16.0002 15.0563 15.6221 15.2063 15.0783L15.9563 12.3283C16.1219 11.7221 15.8125 11.0877 15.2312 10.8471L12.2312 9.59709C11.7219 9.38459 11.1313 9.53147 10.7844 9.95959L9.52188 11.5002C7.32188 10.4596 5.54063 8.67834 4.5 6.47834L6.04063 5.21897C6.46875 4.86897 6.61562 4.28147 6.40312 3.77209L5.15312 0.772091V0.768966Z" fill="currentColor"/>
 							</svg>
-							{{ $bp?->phone }}</div>
+							<span>{{ $bp?->phone }}</span></div>
 					</div>
 				</div>
       </div>
@@ -300,7 +300,7 @@
   .scheme-royal.neo-root{ --accent:#6d28d9; }
   .scheme-crimson.neo-root{ --accent:#dc2626; }
   .scheme-sunset.neo-root{ --accent:#f97316; --accent-ink:#111827; }
-	.business-profile {margin-left: 12px;}
+	.business-profile {margin-left: 12px;width: 300px;}
 	.inner-box{float: right;text-align: right; padding-right: 20px;}
   .canvas{ background:#fff; border-top-left-radius:18px; border-top-right-radius: 18px; box-shadow:0 12px 34px rgba(2,6,23,.08); padding:22px; font-family:var(--font); color:var(--ink); }
   .header{ background-color: {{$scheme['main']['hex_color']}}; background: linear-gradient({{$scheme['gradient_bg_1']['hex_color']}}); border-bottom:1px solid var(--border); padding-bottom:12px; }
@@ -346,16 +346,18 @@
   .summary .row:first-child{ border-top:0; }
   .summary .grand{ font-weight:900; font-size:24px; border-top: 1px solid {{$scheme['table_tbody_color']['hex_color']}}; }
 	.summary .grand .value {color: {{$scheme['main']['hex_color']}}; }
-  .brand{ display:flex;margin-top:12px; }
+  .brand{margin-top:12px;width: 420px; }
 	.brand h1 {color: #FFFFFF; font-family: var(--font)}
 	.brand .muted {padding: 4px 0 7px 0;}
-	.logo{width:50px;height:50px;border-radius:10px;background:rgba(255,255,255,.15);object-fit:contain}
+	.logo{width:100px;height:100px;border-radius:12px;background:rgba(255,255,255,.15);object-fit:contain}
 	.logo.placeholder{display:grid;place-items:center;font-weight:800; background-color: {{$scheme['light']['hex_color']}};}
-  .logo{ width:{{ ($theme['logoSize'] ?? 'md')==='lg'?'72px':(($theme['logoSize'] ?? 'md')==='sm'?'30px':'52px') }}; border-radius:12px; }
 	.box {background-color: {{$scheme['extra_light']['hex_color']}};color: #FFFFFF;border-radius: 12px;margin-top: 10px;}
 	.business-profile .muted,
 	.business-profile .muted svg {
 		color: #FFFFFF;
+		vertical-align: middle;
+		text-indent: -35px;
+    margin-left: 19px;
 	}
 	.section--bill-to {background-color: {{$scheme['light']['hex_color']}};padding: 12px 22px 12px 22px;}
 	.section--bill-to h2 {color: {{$scheme['main']['hex_color']}};font-size: 14px; }

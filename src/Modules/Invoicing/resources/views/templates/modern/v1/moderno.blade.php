@@ -3,7 +3,7 @@
 
     <div class="banner">
       <div class="banner-inner row clearfix">
-        <div class="brand col-6">
+        <div class="brand left">
 					<div class="logo-div left">
 						@if(!empty($bp?->logo_path))
 							<img src="{{ asset($bp->logo_path) }}" alt="Business Logo" class="logo"/>
@@ -19,7 +19,7 @@
           </div>
         </div>
 
-        <div class="due col-6">
+        <div class="due right">
 					<h2 class="text-right">INVOICE</h2>
 					<div class="due--bg right">
 						<div class="muted">Invoice: <strong>{{ $invoice->invoice_number ?? 'INV-XXXXXX' }}</strong></div>
@@ -167,17 +167,18 @@
     .scheme-crimson{--accent:#dc2626;--grad1:#fb7185;--grad2:#dc2626}
     .scheme-sunset{--accent:#f97316;--accent-ink:#111827;--grad1:#fb923c;--grad2:#f97316}
 		.logo-div {margin-right: 12px;}
-
+		.info-div{width: 300px;}
     .page{font-family:{{ $theme['fontFamily'] ?? "Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif" }};;width:916px;background:var(--bg);padding-bottom:24px;border-radius:16px;box-shadow:0 10px 28px rgba(2,6,23,.06)}
     .banner{position:relative;background-color: {{$scheme['main']['hex_color'] }}; color:var(--accent-ink);border-radius:16px 16px 0 0;padding: 20px 20px 20px 20px;}
-    .banner-inner{padding:18px 22px}
+    .banner-inner{padding:18px 0px}
+		.banner .muted{padding: 3px 0;}
     .brand{padding-left: 20px;}
-    .logo{width:50px;height:50px;border-radius:10px;background:rgba(255,255,255,.15);object-fit:contain}
+    .logo{width:100px;height:100px;border-radius:10px;background:rgba(255,255,255,.15);object-fit:contain}
     .logo.placeholder{display:grid;place-items:center;font-weight:800}
     .kicker{opacity:.9;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
     .title{margin:0;font-size:26px;}
-    .due{padding-right: 20px;}
-		.due--bg {background-color: {{$scheme['extra_light']['hex_color']}}; padding: 12px 12px 12px 12px; border-radius: 10px;}
+    .due{padding-right: 20px;width: 300px;}
+		.due--bg {background-color: {{$scheme['extra_light']['hex_color']}}; padding: 12px 12px 12px 12px; border-radius: 10px;margin-top:5px;}
     .tiny{font-size:12px}
     .muted{opacity:.9}
     .duepill{background:#fff;color:#111827;border-radius:999px;padding:6px 10px;font-weight:700}
