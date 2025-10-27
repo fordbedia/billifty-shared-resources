@@ -113,6 +113,7 @@
       </div>
       <div class="clearfix"></div>
     </div>
+		<div class="watermark">Powered by Billifty.com</div>
   </div>
 
   <style>
@@ -162,6 +163,7 @@
     .foot .panel:last-child{ padding-left:9px; }
     .panel h4{ margin:0 0 8px; font-size:12px; color: {{ $muted }}; text-transform:uppercase; letter-spacing:.1em; }
     .panel p{ margin:0; white-space:pre-wrap; font-size:13px; }
+		.watermark{width: 300px;margin: 40px auto 0; font-weight: bold;}
 
     @media print{ .wrap{ box-shadow:none; padding:18px; border-radius:0; } }
   </style>
