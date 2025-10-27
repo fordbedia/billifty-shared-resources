@@ -46,7 +46,9 @@ class InvoiceTemplateCategorySeeder extends MakeSeeder
 
         // Backfill existing templates by slug heuristic (adjust as needed)
         // e.g., your earlier seeded 'classic' and 'modern'
-
+				// ----------------------------------------------------------------------------
+				// Moderno Template
+				// ----------------------------------------------------------------------------
 				InvoiceTemplates::updateOrCreate([
 					'invoice_template_category_id' => $modernId,
 					'slug' => 'moderno',
@@ -62,6 +64,25 @@ class InvoiceTemplateCategorySeeder extends MakeSeeder
 					'current_version' => 1,
 					'is_active' => 1,
 					'view' => 'modern.v1.neo-columns'
+				]);
+				// ----------------------------------------------------------------------------
+				// Classic
+				// ----------------------------------------------------------------------------
+				InvoiceTemplates::updateOrCreate([
+					'invoice_template_category_id' => $classicId,
+					'slug' => 'aurora',
+					'display_name' => 'Aurora',
+					'current_version' => 1,
+					'is_active' => 1,
+					'view' => 'classic.v1.aurora'
+				]);
+				InvoiceTemplates::updateOrCreate([
+					'invoice_template_category_id' => $classicId,
+					'slug' => 'ledger',
+					'display_name' => 'Ledger',
+					'current_version' => 1,
+					'is_active' => 1,
+					'view' => 'classic.v1.ledger'
 				]);
 
 //        DB::table('invoice_templates')->where('slug', 'classic')->update([

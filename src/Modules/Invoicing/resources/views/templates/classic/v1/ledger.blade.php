@@ -1,6 +1,25 @@
+@php
+  $fontFamily = $theme['fontFamily'] ?? "DejaVu Sans, Arial, sans-serif";
+  $ink        = '#0f172a';
+  $muted      = '#64748b';
+  $bg         = '#ffffff';
+  $accent     = match($category ?? 'ocean') {
+    'forest'  => '#16a34a',
+    'royal'   => '#6d28d9',
+    'crimson' => '#dc2626',
+    'sunset'  => '#f97316',
+    default   => '#0ea5e9',
+  };
+  $accentInk  = ($category ?? 'ocean') === 'sunset' ? '#111827' : '#ffffff';
+  $grid       = '#eef2f7';
+  $border     = '#e5e7eb';
+
+  $logoW = ($theme['logoSize'] ?? 'md')==='lg' ? '70' : ( ($theme['logoSize'] ?? 'md')==='sm' ? '28' : '44' );
+@endphp
+
 <div class="ledger-root scheme cat-{{ $category }}">
   <div class="wrap">
-    <div class="header">
+    <div class="header clearfix">
       <div class="side">
         <div class="eyebrow">Invoice</div>
         <h1 class="id">{{ $invoice->invoice_number ?? 'INV-XXXXXX' }}</h1>
@@ -18,7 +37,7 @@
       </div>
     </div>
 
-    <div class="to">
+    <div class="to clearfix">
       <div class="box">
         <div class="label tiny">Bill To</div>
         <div class="strong">{{ $cl?->name ?? $cl?->company ?? 'Client' }}</div>
@@ -33,7 +52,7 @@
     </div>
 
     <div class="gridcard">
-      <table class="gridtbl">
+      <table class="gridtbl" cellspacing="0" cellpadding="0">
         <thead>
           <tr>
             <th class="desc">Description</th>
@@ -62,7 +81,7 @@
       </table>
     </div>
 
-    <div class="totals">
+    <div class="totals clearfix">
       <div class="pad"></div>
       <div class="sum">
         <div class="row"><span>Subtotal</span><span>{{ $fmtMoney($invoice->subtotal_cents ?? 0, $invoice->currency ?? 'USD') }}</span></div>
@@ -79,61 +98,65 @@
       </div>
     </div>
 
-    <div class="foot">
-      <div class="panel">
+    <div class="foot clearfix">
+      <div class="panel col-6">
         <h4>Notes</h4>
         <p>{{ $invoice->notes ?? '—' }}</p>
       </div>
-      <div class="panel">
+      <div class="panel col-6">
         <h4>Terms</h4>
         <p>{{ $invoice->terms ?? '—' }}</p>
       </div>
+      <div class="clearfix"></div>
     </div>
   </div>
 
   <style>
-  .ledger-root{
-    --font: {{ $theme['fontFamily'] ?? "Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif" }};
-    --ink:#0f172a; --muted:#64748b; --bg:#fff; --accent:#0ea5e9; --accent-ink:#fff; --grid:#eef2f7; --border:#e5e7eb;
-  }
-  .scheme-forest.ledger-root{ --accent:#16a34a; }
-  .scheme-royal.ledger-root{ --accent:#6d28d9; }
-  .scheme-crimson.ledger-root{ --accent:#dc2626; }
-  .scheme-sunset.ledger-root{ --accent:#f97316; --accent-ink:#111827; }
+    .wrap{ background:#fff; border-radius:16px; padding:22px; font-family: {{ $fontFamily }}; color: {{ $ink }}; box-shadow: 0 4px 14px rgba(2,6,23,0.07); }
+    .eyebrow{ color: {{ $muted }}; text-transform:uppercase; letter-spacing:.1em; font-size:12px; }
+    .id{ margin:2px 0 6px; font-size:26px; font-weight:800; letter-spacing:.3px; }
 
-  .wrap{ background:#fff; border-radius:16px; box-shadow:0 10px 32px rgba(2,6,23,.07); padding:22px; font-family:var(--font); color:var(--ink); }
-  .eyebrow{ color:var(--muted); text-transform:uppercase; letter-spacing:.1em; font-size:12px; }
-  .id{ margin:2px 0 6px; font-size:26px; font-weight:800; letter-spacing:.3px; }
-  .header{ display:flex; justify-content:space-between; align-items:flex-start; gap:18px; }
-  .chips{ display:flex; gap:8px; flex-wrap:wrap; }
-  .chip{ border:1px solid var(--border); border-radius:999px; padding:4px 10px; font-size:12px; background:#fff; color:#0b1220; }
-  .chip.accent{ border:none; background:var(--accent); color:var(--accent-ink); }
-  .org{ text-align:right; }
-  .strong{ font-weight:700; } .muted{ color:var(--muted); } .tiny{ font-size:12px; } .xsmall{ font-size:11px; }
-  .to{ display:flex; justify-content:space-between; align-items:center; margin-top:16px; }
-  .box .label{ color:var(--muted); text-transform:uppercase; letter-spacing:.12em; }
-  .logo{ width:{{ ($theme['logoSize'] ?? 'md')==='lg'?'70px':(($theme['logoSize'] ?? 'md')==='sm'?'28px':'44px') }}; border-radius:10px; }
+    /* Header (floats instead of flex) */
+    .header.clearfix:after, .to.clearfix:after, .totals.clearfix:after, .foot.clearfix:after, .clearfix:after { content:""; display:table; clear:both; }
+    .header .side{ float:left; width:65%; }
+    .header .org{ float:right; width:33%; text-align:right; }
 
-  .gridcard{ margin-top:18px; border:1px solid var(--border); border-radius:14px; overflow:hidden; }
-  .gridtbl{ width:100%; border-collapse:separate; border-spacing:0; background:
-    linear-gradient(#fff, #fff) padding-box,
-    repeating-linear-gradient(0deg, var(--grid), var(--grid) 1px, transparent 1px, transparent 32px) border-box; }
-  .gridtbl thead th{ background:var(--accent); color:var(--accent-ink); padding:10px 12px; font-size:12px; text-align:left; }
-  .gridtbl tbody td{ padding:12px; border-top:1px solid var(--border); font-size:13px; }
-  .qty{ background:#fff; border:1px dashed var(--border); padding:2px 8px; border-radius:8px; font-size:12px; }
-  .right{text-align:right;} .center{text-align:center;}
-  .desc{ width:48%; }
+    /* Chips (inline-block instead of flex) */
+    .chips{ margin-top:6px; }
+    .chip{ border:1px solid {{ $border }}; border-radius:999px; padding:4px 10px; font-size:12px; background:#fff; color:#0b1220; display:inline-block; margin-right:6px; }
+    .chip.accent{ border:none; background: {{ $accent }}; color: {{ $accentInk }}; }
 
-  .totals{ display:grid; grid-template-columns:1fr 280px; gap:16px; margin-top:14px; }
-  .sum{ border:1px solid var(--border); border-radius:12px; padding:12px 14px; background:#fff; }
-  .sum .row{ display:flex; justify-content:space-between; padding:8px 0; border-top:1px dashed var(--border); }
-  .sum .row:first-child{ border-top:0; }
-  .grand{ font-size:16px; font-weight:900; }
+    /* Bill To row */
+    .to .box{ float:left; width:70%; border:1px solid {{ $border }}; border-radius:12px; padding:12px 14px; box-sizing:border-box; background:#fff; }
+    .to .box .label{ color: {{ $muted }}; text-transform:uppercase; letter-spacing:.12em; }
+    .to .logo{ float:right; width: {{ $logoW }}px; border-radius:10px; }
 
-  .foot{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px; }
-  .panel{ border:1px dashed var(--border); border-radius:12px; padding:12px 14px; background:#fcfdff; }
-  .panel h4{ margin:0 0 8px; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; }
-  .panel p{ margin:0; white-space:pre-wrap; font-size:13px; }
-  @media print{ .wrap{ box-shadow:none; padding:18px; border-radius:0; } }
+    /* Items table */
+    .gridcard{ margin-top:18px; border:1px solid {{ $border }}; border-radius:14px; overflow:hidden; }
+    .gridtbl{ width:100%; border-collapse:collapse; }
+    .gridtbl thead th{ background: {{ $accent }}; color: {{ $accentInk }}; padding:10px 12px; font-size:12px; text-align:left; }
+    .gridtbl tbody td{ padding:12px; border-top:1px solid {{ $border }}; font-size:13px; }
+    .qty{ background:#fff; border:1px dashed {{ $border }}; padding:2px 8px; border-radius:8px; font-size:12px; display:inline-block; }
+    .right{text-align:right;} .center{text-align:center;}
+    .desc{ width:48%; }
+
+    /* Totals (floats instead of grid) */
+    .totals .pad{ float:left; width:60%; }
+    .totals .sum{ float:right; width:38%; border:1px solid {{ $border }}; border-radius:12px; padding:12px 14px; background:#fff; box-sizing:border-box; }
+    .sum .row{ padding:8px 0; border-top:1px dashed {{ $border }}; display:block; }
+    .sum .row:first-child{ border-top:0; }
+    .sum .row span:first-child{ float:left; }
+    .sum .row span:last-child{ float:right; }
+    .grand{ font-size:16px; font-weight:900; }
+
+    /* Foot (two columns via floats) */
+    .col-6{ float:left; width:50%; box-sizing:border-box; }
+    .foot .panel{ border:1px dashed {{ $border }}; border-radius:12px; padding:12px 14px; background:#fcfdff; }
+    .foot .panel:first-child{ padding-right:9px; }
+    .foot .panel:last-child{ padding-left:9px; }
+    .panel h4{ margin:0 0 8px; font-size:12px; color: {{ $muted }}; text-transform:uppercase; letter-spacing:.1em; }
+    .panel p{ margin:0; white-space:pre-wrap; font-size:13px; }
+
+    @media print{ .wrap{ box-shadow:none; padding:18px; border-radius:0; } }
   </style>
 </div>
