@@ -121,12 +121,17 @@ class InvoiceTemplateCategorySeeder extends MakeSeeder
 				[
 					'color_scheme_id' => $royalId,
 					'name' => 'extra_light',
-					'hex_color' => '#ffffff4a',
+					'hex_color' => 'rgba(253, 242, 248, 0.3)',
 				],
 				[
 					'color_scheme_id' => $royalId,
 					'name' => 'gradient_bg_1',
 					'hex_color' => '90deg,rgba(147, 51, 234, 1) 0%, rgba(168, 85, 247, 0.67) 55%, rgba(236, 72, 153, 1) 100%',
+				],
+				[
+					'color_scheme_id' => $royalId,
+					'name' => 'table_tbody_color',
+					'hex_color' => '#FDF2F8',
 				]
 			];
 			$oceanId = ColorScheme::where('slug', 'ocean')->value('id');
@@ -144,12 +149,17 @@ class InvoiceTemplateCategorySeeder extends MakeSeeder
 				[
 					'color_scheme_id' => $oceanId,
 					'name' => 'extra_light',
-					'hex_color' => '#ffffff4a',
+					'hex_color' => 'rgba(255, 255, 255, 0.3)',
 				],
 				[
 					'color_scheme_id' => $oceanId,
 					'name' => 'gradient_bg_1',
 					'hex_color' => '90deg,#020024 0%, #090979 35%, #00D4FF 100%',
+				],
+				[
+					'color_scheme_id' => $oceanId,
+					'name' => 'table_tbody_color',
+					'hex_color' => '',
 				]
 			];
 			$forestColorSchemeId = ColorScheme::where('slug', 'forest')->value('id');
@@ -167,12 +177,17 @@ class InvoiceTemplateCategorySeeder extends MakeSeeder
 				[
 					'color_scheme_id' => $forestColorSchemeId,
 					'name' => 'extra_light',
-					'hex_color' => '#ffffff4a',
+					'hex_color' => 'rgba(255, 255, 255, 0.3)',
 				],
 				[
 					'color_scheme_id' => $forestColorSchemeId,
 					'name' => 'gradient_bg_1',
 					'hex_color' => '90deg,#2A7B9B 0%, #57C785 50%, #EDDD53 100%',
+				],
+				[
+					'color_scheme_id' => $forestColorSchemeId,
+					'name' => 'table_tbody_color',
+					'hex_color' => '',
 				]
 			];
 			$crimsonColorSchemeId = ColorScheme::where('slug', 'crimson')->value('id');
@@ -190,12 +205,17 @@ class InvoiceTemplateCategorySeeder extends MakeSeeder
 				[
 					'color_scheme_id' => $crimsonColorSchemeId,
 					'name' => 'extra_light',
-					'hex_color' => '#ffffff4a',
+					'hex_color' => 'rgba(255, 255, 255, 0.3)',
 				],
 				[
 					'color_scheme_id' => $crimsonColorSchemeId,
 					'name' => 'gradient_bg_1',
-					'hex_color' => 'background: 90deg,rgba(253, 29, 29, 1) 0%, rgba(252, 176, 69, 0.67) 55%, rgba(235, 143, 143, 1) 79%',
+					'hex_color' => '90deg,rgba(253, 29, 29, 1) 0%, rgba(252, 176, 69, 0.67) 55%, rgba(235, 143, 143, 1) 79%',
+				],
+				[
+					'color_scheme_id' => $crimsonColorSchemeId,
+					'name' => 'table_tbody_color',
+					'hex_color' => '',
 				]
 			];
 			$sunsetColorSchemeId = ColorScheme::where('slug', 'sunset')->value('id');
@@ -213,13 +233,18 @@ class InvoiceTemplateCategorySeeder extends MakeSeeder
 				[
 					'color_scheme_id' => $sunsetColorSchemeId,
 					'name' => 'extra_light',
-					'hex_color' => '#ffffff4a',
+					'hex_color' => 'rgba(255, 255, 255, 0.3)',
 				],
 				[
 					'color_scheme_id' => $sunsetColorSchemeId,
 					'name' => 'gradient_bg_1',
-					'hex_color' => 'background: 90deg,FACC15 0%, F9731679%',
+					'hex_color' => '90deg,FACC15 0%, F9731679%',
 				],
+				[
+					'color_scheme_id' => $sunsetColorSchemeId,
+					'name' => 'table_tbody_color',
+					'hex_color' => '',
+				]
 			];
 
 			$newColorScheme = array_merge($royalColorScheme, $oceanColorScheme, $forestColorScheme, $crimsonColorScheme, $sunsetColorScheme);

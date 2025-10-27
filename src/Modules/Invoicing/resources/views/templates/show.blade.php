@@ -57,7 +57,7 @@
 @extends('invoicing::templates.main')
 
 @section('content')
-<div class="container py-4">
+<div class="container">
 	@include("invoicing::templates.$template")
 </div>
 @endsection

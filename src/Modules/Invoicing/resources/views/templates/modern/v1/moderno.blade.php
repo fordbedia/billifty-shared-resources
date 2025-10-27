@@ -6,7 +6,7 @@
         <div class="brand col-6">
 					<div class="logo-div left">
 						@if(!empty($bp?->logo_path))
-							<img src="{{ $bp->logo_path }}" alt="Business Logo" class="logo"/>
+							<img src="{{ asset($bp->logo_path) }}" alt="Business Logo" class="logo"/>
 						@else
 							<div class="logo placeholder"><span>{{ strtoupper(substr($bp?->name ?? 'B',0,1)) }}</span></div>
 						@endif
@@ -168,7 +168,7 @@
     .scheme-sunset{--accent:#f97316;--accent-ink:#111827;--grad1:#fb923c;--grad2:#f97316}
 		.logo-div {margin-right: 12px;}
 
-    .page{font-family:var(--font);width:916px;background:var(--bg);padding-bottom:24px;border-radius:16px;box-shadow:0 10px 28px rgba(2,6,23,.06)}
+    .page{font-family:{{ $theme['fontFamily'] ?? "Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif" }};;width:916px;background:var(--bg);padding-bottom:24px;border-radius:16px;box-shadow:0 10px 28px rgba(2,6,23,.06)}
     .banner{position:relative;background-color: {{$scheme['main']['hex_color'] }}; color:var(--accent-ink);border-radius:16px 16px 0 0;padding: 20px 20px 20px 20px;}
     .banner-inner{padding:18px 22px}
     .brand{padding-left: 20px;}
@@ -191,6 +191,7 @@
 			font-weight: bold;}
     .tile-b{padding:14px}
     .strong{font-weight:600}
+		.tile-b .muted {padding: 3px 0;}
 
     .tablewrap{padding:22px 22px}
 		.tablewrap h2 {font-size: 20px;}
