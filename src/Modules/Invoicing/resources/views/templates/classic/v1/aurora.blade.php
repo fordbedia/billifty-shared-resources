@@ -5,13 +5,7 @@
   $muted      = '#64748b';
   $bg         = '#ffffff';
   $card       = '#ffffff';
-  $railColor  = match($category ?? 'ocean') {
-    'forest'  => '#16a34a',
-    'royal'   => '#6d28d9',
-    'crimson' => '#dc2626',
-    'sunset'  => '#f97316',
-    default   => '#0ea5e9',
-  };
+  $railColor  = $scheme['main']['hex_color'];
   $border     = '#e2e8f0';
   $stripe     = '#f8fafc';
   $accentInk  = '#ffffff';

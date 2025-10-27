@@ -3,13 +3,7 @@
   $ink        = '#0f172a';
   $muted      = '#64748b';
   $bg         = '#ffffff';
-  $accent     = match($category ?? 'ocean') {
-    'forest'  => '#16a34a',
-    'royal'   => '#6d28d9',
-    'crimson' => '#dc2626',
-    'sunset'  => '#f97316',
-    default   => '#0ea5e9',
-  };
+  $accent     = $scheme['main']['hex_color'];
   $accentInk  = ($category ?? 'ocean') === 'sunset' ? '#111827' : '#ffffff';
   $grid       = '#eef2f7';
   $border     = '#e5e7eb';
