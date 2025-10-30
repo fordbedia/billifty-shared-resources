@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
 						$table->unsignedBigInteger('color_scheme_id');
 						$table->string('name');
-						$table->string('hex_color');
+						$table->string('code');
             $table->timestamps();
 						$table->foreign('color_scheme_id')->references('id')->on('color_scheme')->cascadeOnDelete();
         });

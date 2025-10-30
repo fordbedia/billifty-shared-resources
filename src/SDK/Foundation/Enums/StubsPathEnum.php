@@ -9,6 +9,7 @@ enum StubsPathEnum: string
     case MODEL = 'model.';
     case FACTORY = 'factory.';
     case SEEDER = 'seeder.';
+		case RESOURCE = 'resource.';
 
     public function getFullPath()
     {

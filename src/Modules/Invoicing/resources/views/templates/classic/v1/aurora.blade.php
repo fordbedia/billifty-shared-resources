@@ -1,11 +1,11 @@
 @php
   // Pick your colors (fallbacks included)
-  $fontFamily = $theme['fontFamily'] ?? "DejaVu Sans, Arial, sans-serif";
+  $fontFamily = $theme->fontFamily ?? "DejaVu Sans, Arial, sans-serif";
   $ink        = '#0f172a';
   $muted      = '#64748b';
   $bg         = '#ffffff';
   $card       = '#ffffff';
-  $railColor  = $scheme['main']['hex_color'];
+  $railColor  = $scheme->main->code;
   $border     = '#e2e8f0';
   $stripe     = '#f8fafc';
   $accentInk  = '#ffffff';
@@ -13,7 +13,7 @@
   $logoW = 150;
 @endphp
 
-<div class="aurora-root scheme cat-{{ $category }}">
+<div class="aurora-root scheme cat">
   <div class="sheet">
     <div class="rail"></div>
 

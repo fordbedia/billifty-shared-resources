@@ -6,8 +6,10 @@ use BilliftySDK\SharedResources\Modules\Invoicing\Models\BusinessProfiles;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Clients;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\ColorScheme;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\InvoiceItems;
+use BilliftySDK\SharedResources\Modules\Invoicing\Models\InvoicePaymentInformation;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\InvoiceTemplates;
+use BilliftySDK\SharedResources\Modules\Invoicing\Models\PaymentInformation;
 use BilliftySDK\SharedResources\Modules\User\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use BilliftySDK\SharedResources\SDK\Database\MakeSeeder;
@@ -92,10 +94,24 @@ class TestInvoiceSeeder extends MakeSeeder
 			$client = Clients::where('name', 'John Doe')->first();
 			$invoiceTemplate = InvoiceTemplates::where('slug', 'moderno')->first();
 			$colorScheme = ColorScheme::where('slug', 'ocean')->first();
+
+			$paymentInfo = PaymentInformation::updateOrCreate([
+				'account_number' => '123456789',
+				'routing_number' => '12345678914662',
+			],[
+				'user_id' => $user->id,
+				'payment_method' => 'bank_transfer',
+				'bank_name' => 'BoFa',
+				'account_name' => 'John Doe',
+				'notes' => 'Test',
+				'is_test' => 1,
+			]);
+
 			$invoice = Invoices::updateOrCreate([
 				'business_profile_id' => $businessProfile->id,
 				'client_id' => $client->id,
 			],[
+				'payment_information_id' => $paymentInfo->id,
 				'user_id' => $user->id,
 				'invoice_template_id' => $invoiceTemplate->id,
 				'color_scheme_id' => $colorScheme->id,

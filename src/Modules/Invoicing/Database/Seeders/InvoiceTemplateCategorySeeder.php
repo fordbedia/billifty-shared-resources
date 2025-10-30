@@ -84,6 +84,17 @@ class InvoiceTemplateCategorySeeder extends MakeSeeder
 					'is_active' => 1,
 					'view' => 'classic.v1.ledger'
 				]);
+				// ----------------------------------------------------------------------------
+				// Minimal
+				// ----------------------------------------------------------------------------
+				InvoiceTemplates::updateOrCreate([
+					'invoice_template_category_id' => $minimalId,
+					'slug' => 'nexxus',
+					'display_name' => 'Nexxus',
+					'current_version' => 1,
+					'is_active' => 1,
+					'view' => 'minimal.v1.nexxus'
+				]);
 
 //        DB::table('invoice_templates')->where('slug', 'classic')->update([
 //            'invoice_template_category_id' => $classicId,
@@ -132,140 +143,165 @@ class InvoiceTemplateCategorySeeder extends MakeSeeder
 				[
 					'color_scheme_id' => $royalId,
 					'name' => 'main',
-					'hex_color' => '#8B5CF6',
+					'code' => '#8B5CF6',
 				],
 				[
 					'color_scheme_id' => $royalId,
 					'name' => 'light',
-					'hex_color' => '#D8B4FE',
+					'code' => '#D8B4FE',
 				],
 				[
 					'color_scheme_id' => $royalId,
 					'name' => 'extra_light',
-					'hex_color' => 'rgba(253, 242, 248, 0.3)',
+					'code' => 'rgba(253, 242, 248, 0.3)',
 				],
 				[
 					'color_scheme_id' => $royalId,
 					'name' => 'gradient_bg_1',
-					'hex_color' => '90deg,rgba(147, 51, 234, 1) 0%, rgba(168, 85, 247, 0.67) 55%, rgba(236, 72, 153, 1) 100%',
+					'code' => '90deg,rgba(147, 51, 234, 1) 0%, rgba(168, 85, 247, 0.67) 55%, rgba(236, 72, 153, 1) 100%',
 				],
 				[
 					'color_scheme_id' => $royalId,
 					'name' => 'table_tbody_color',
-					'hex_color' => '#FDF2F8',
-				]
+					'code' => '#FDF2F8',
+				],
+				[
+					'color_scheme_id' => $royalId,
+					'name' => 'gradient_bg_1_light',
+					'code' => '142deg, rgba(255, 255, 255, 1) 0%, rgba(238, 242, 255, 1) 100%',
+				],
 			];
 			$oceanId = ColorScheme::where('slug', 'ocean')->value('id');
 			$oceanColorScheme = [
 				[
 					'color_scheme_id' => $oceanId,
 					'name' => 'main',
-					'hex_color' => '#3B82F6',
+					'code' => '#3B82F6',
 				],
 				[
 					'color_scheme_id' => $oceanId,
 					'name' => 'light',
-					'hex_color' => '#93C5FD',
+					'code' => '#93C5FD',
 				],
 				[
 					'color_scheme_id' => $oceanId,
 					'name' => 'extra_light',
-					'hex_color' => 'rgba(255, 255, 255, 0.3)',
+					'code' => 'rgba(255, 255, 255, 0.3)',
 				],
 				[
 					'color_scheme_id' => $oceanId,
 					'name' => 'gradient_bg_1',
-					'hex_color' => '90deg,#020024 0%, #090979 35%, #00D4FF 100%',
+					'code' => '90deg,#020024 0%, #090979 35%, #00D4FF 100%',
 				],
 				[
 					'color_scheme_id' => $oceanId,
 					'name' => 'table_tbody_color',
-					'hex_color' => '',
-				]
+					'code' => '',
+				],
+				[
+					'color_scheme_id' => $oceanId,
+					'name' => 'gradient_bg_1_light',
+					'code' => '142deg, rgba(255, 255, 255, 1) 0%, rgba(238, 242, 255, 1) 100%',
+				],
 			];
 			$forestColorSchemeId = ColorScheme::where('slug', 'forest')->value('id');
 			$forestColorScheme = [
 				[
 					'color_scheme_id' => $forestColorSchemeId,
 					'name' => 'main',
-					'hex_color' => '#22C55E',
+					'code' => '#22C55E',
 				],
 				[
 					'color_scheme_id' => $forestColorSchemeId,
 					'name' => 'light',
-					'hex_color' => '#86EFAC',
+					'code' => '#86EFAC',
 				],
 				[
 					'color_scheme_id' => $forestColorSchemeId,
 					'name' => 'extra_light',
-					'hex_color' => 'rgba(255, 255, 255, 0.3)',
+					'code' => 'rgba(255, 255, 255, 0.3)',
 				],
 				[
 					'color_scheme_id' => $forestColorSchemeId,
 					'name' => 'gradient_bg_1',
-					'hex_color' => '90deg,#2A7B9B 0%, #57C785 50%, #EDDD53 100%',
+					'code' => '90deg,#2A7B9B 0%, #57C785 50%, #EDDD53 100%',
 				],
 				[
 					'color_scheme_id' => $forestColorSchemeId,
 					'name' => 'table_tbody_color',
-					'hex_color' => '',
-				]
+					'code' => '',
+				],
+				[
+					'color_scheme_id' => $forestColorSchemeId,
+					'name' => 'gradient_bg_1_light',
+					'code' => '142deg, rgba(255, 255, 255, 1) 0%, rgba(238, 242, 255, 1) 100%',
+				],
 			];
 			$crimsonColorSchemeId = ColorScheme::where('slug', 'crimson')->value('id');
 			$crimsonColorScheme = [
 				[
 					'color_scheme_id' => $crimsonColorSchemeId,
 					'name' => 'main',
-					'hex_color' => '#EF4444',
+					'code' => '#EF4444',
 				],
 				[
 					'color_scheme_id' => $crimsonColorSchemeId,
 					'name' => 'light',
-					'hex_color' => '#FCA5A5',
+					'code' => '#FCA5A5',
 				],
 				[
 					'color_scheme_id' => $crimsonColorSchemeId,
 					'name' => 'extra_light',
-					'hex_color' => 'rgba(255, 255, 255, 0.3)',
+					'code' => 'rgba(255, 255, 255, 0.3)',
 				],
 				[
 					'color_scheme_id' => $crimsonColorSchemeId,
 					'name' => 'gradient_bg_1',
-					'hex_color' => '90deg,rgba(253, 29, 29, 1) 0%, rgba(252, 176, 69, 0.67) 55%, rgba(235, 143, 143, 1) 79%',
+					'code' => '90deg,rgba(253, 29, 29, 1) 0%, rgba(252, 176, 69, 0.67) 55%, rgba(235, 143, 143, 1) 79%',
 				],
 				[
 					'color_scheme_id' => $crimsonColorSchemeId,
 					'name' => 'table_tbody_color',
-					'hex_color' => '',
-				]
+					'code' => '',
+				],
+				[
+					'color_scheme_id' => $crimsonColorSchemeId,
+					'name' => 'gradient_bg_1_light',
+					'code' => '',
+				],
 			];
 			$sunsetColorSchemeId = ColorScheme::where('slug', 'sunset')->value('id');
 			$sunsetColorScheme = [
 				[
 					'color_scheme_id' => $sunsetColorSchemeId,
 					'name' => 'main',
-					'hex_color' => '#F97316',
+					'code' => '#F97316',
 				],
 				[
 					'color_scheme_id' => $sunsetColorSchemeId,
 					'name' => 'light',
-					'hex_color' => '#FDBA74',
+					'code' => '#FDBA74',
 				],
 				[
 					'color_scheme_id' => $sunsetColorSchemeId,
 					'name' => 'extra_light',
-					'hex_color' => 'rgba(255, 255, 255, 0.3)',
+					'code' => 'rgba(255, 255, 255, 0.3)',
 				],
 				[
 					'color_scheme_id' => $sunsetColorSchemeId,
 					'name' => 'gradient_bg_1',
-					'hex_color' => '90deg,FACC15 0%, F9731679%',
+					'code' => '90deg,rgba(249, 115, 22, 1) 0%, rgba(252, 242, 242, 1) 55%, rgba(255, 237, 213, 1) 79%',
 				],
 				[
 					'color_scheme_id' => $sunsetColorSchemeId,
 					'name' => 'table_tbody_color',
-					'hex_color' => '',
-				]
+					'code' => '',
+				],
+				[
+					'color_scheme_id' => $sunsetColorSchemeId,
+					'name' => 'gradient_bg_1_light',
+					'code' => '142deg, rgba(255, 255, 255, 1) 0%, rgba(238, 242, 255, 1) 100%',
+				],
 			];
 
 			$newColorScheme = array_merge($royalColorScheme, $oceanColorScheme, $forestColorScheme, $crimsonColorScheme, $sunsetColorScheme);

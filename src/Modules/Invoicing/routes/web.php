@@ -1,5 +1,6 @@
 <?php
 
+use BilliftySDK\SharedResources\Modules\Invoicing\Http\Resources\InvoiceResource;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use Illuminate\Support\Facades\Route;
 
@@ -11,10 +12,13 @@ Route::middleware('web')->group(function () {
 		if ($invoice->colorScheme) {
 			$invoice->colorScheme->setRelation('colors', $invoice->colorScheme->colors->keyBy('name'));
 		}
+
+		$payload = (new InvoiceResource($invoice))->response()->getData();
+
 		return view("invoicing::templates.show", [
-			'invoice' => $invoice,
-			'category' => $invoice->template->category, // or 'Classic' / 'Minimal'
-			'colorScheme' => $invoice->colorScheme ?? '',
+			'invoice' => data_get($payload, 'data'),
+			'category' => data_get($payload, 'data.template.category'), // or 'Classic' / 'Minimal'
+			'colorScheme' => data_get($payload, 'data.colorScheme'),
 		]);
 	})->name('dev.invoice.preview');
 });

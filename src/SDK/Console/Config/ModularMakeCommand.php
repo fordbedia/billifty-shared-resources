@@ -101,7 +101,11 @@ abstract class ModularMakeCommand extends ModularCommand
     protected function makeCommand(): int { return 0; }
     protected function makeObserver(): int { return 0; }
     protected function makeRequest(): int { return 0; }
-    protected function makeResource(): int { return 0; }
+    protected function makeResource(): int {
+			return $this->artisanCallOrCustom('make:resource', [
+				'name' => $this->className
+			]);
+		}
 
     protected function makeSeeder(): int
     {
@@ -149,6 +153,10 @@ abstract class ModularMakeCommand extends ModularCommand
             case 'seeder':
                 $this->fileName = $this->className;
                 $this->stubPath = $this->resolveSeederStubPath('stub');
+                break;
+					case 'resource':
+                $this->fileName = $this->className;
+                $this->stubPath = $this->resolveResourceStubPath('stub');
                 break;
         }
     }

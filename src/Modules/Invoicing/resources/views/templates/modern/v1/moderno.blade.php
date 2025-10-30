@@ -1,4 +1,4 @@
-<div class="invoice-root scheme cat-{{ $category }}">
+<div class="invoice-root scheme cat">
   <div class="page">
 
     <div class="banner">
@@ -168,8 +168,8 @@
     .scheme-sunset{--accent:#f97316;--accent-ink:#111827;--grad1:#fb923c;--grad2:#f97316}
 		.logo-div {margin-right: 12px;}
 		.info-div{width: 300px;}
-    .page{font-family:{{ $theme['fontFamily'] ?? "Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif" }};;width:916px;background:var(--bg);padding-bottom:24px;border-radius:16px;box-shadow:0 10px 28px rgba(2,6,23,.06)}
-    .banner{position:relative;background-color: {{$scheme['main']['hex_color'] }}; color:var(--accent-ink);border-radius:16px 16px 0 0;padding: 20px 20px 20px 20px;}
+    .page{font-family:{{ $theme->fontFamily ?? "Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif" }};width:916px;background:var(--bg);padding-bottom:24px;border-radius:16px;box-shadow:0 10px 28px rgba(2,6,23,.06)}
+    .banner{position:relative;background-color: {{$scheme->main->code }}; color:var(--accent-ink);border-radius:16px 16px 0 0;padding: 20px 20px 20px 20px;}
     .banner-inner{padding:18px 0px}
 		.banner .muted{padding: 3px 0;}
     .brand{padding-left: 20px;}
@@ -178,12 +178,12 @@
     .kicker{opacity:.9;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
     .title{margin:0;font-size:26px;}
     .due{padding-right: 20px;width: 300px;}
-		.due--bg {background-color: {{$scheme['extra_light']['hex_color']}}; padding: 12px 12px 12px 12px; border-radius: 10px;margin-top:5px;}
+		.due--bg {background-color: {{$scheme->extra_light->code}}; padding: 12px 12px 12px 12px; border-radius: 10px;margin-top:5px;}
     .tiny{font-size:12px}
     .muted{opacity:.9}
     .duepill{background:#fff;color:#111827;border-radius:999px;padding:6px 10px;font-weight:700}
     .angle{position:absolute;bottom:-18px;left:0;right:0;height:18px;background:linear-gradient(180deg,rgba(0,0,0,.08),transparent);filter:blur(6px);opacity:.3}
-		.img-color {color: {{$scheme['main']['hex_color']}}; }
+		.img-color {color: {{$scheme->main->code}}; }
 		.billto-text {vertical-align: -webkit-baseline-middle;padding-left: 5px;}
 
     .grid2{padding:22px;background-color: #F9FAFB;}
@@ -196,7 +196,7 @@
 
     .tablewrap{padding:22px 22px}
 		.tablewrap h2 {font-size: 20px;}
-		.tablewrap h2 svg {color: {{$scheme['main']['hex_color']}} }
+		.tablewrap h2 svg {color: {{$scheme->main->code}} }
     table.items{width:100%;border-collapse:collapse;margin-top:6px;border:1px solid var(--border);border-radius:12px;}
     .items thead th{background:#F9FAFB;color:#374151;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.06em;text-align:left;padding:10px 12px}
 		table thead th{border-radius: 12px;}
@@ -217,7 +217,7 @@
     .row{border-top:1px dashed #e5e7eb}
     .row:first-child{border-top:0}
     .grand{font-weight:800;font-size:24px}
-		.grand .total {color: {{$scheme['main']['hex_color']}};}
+		.grand .total {color: {{$scheme->main->code}};}
 
     .footer{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:18px 22px}
     .fcard{border:1px solid var(--border);border-radius:12px;padding:14px;background:#fff}

@@ -42,7 +42,13 @@ class Invoices extends Model
 				'client',
 				'items',
 				'colorScheme.colors',
-				'template'
+				'template.category',
+				'paymentInformation'
 			];
+		}
+
+		public function paymentInformation()
+		{
+			return $this->belongsTo(PaymentInformation::class, 'payment_information_id');
 		}
 }

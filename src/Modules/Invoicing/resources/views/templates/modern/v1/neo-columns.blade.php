@@ -1,4 +1,4 @@
-<div class="neo-root scheme cat-{{ $category }}">
+<div class="neo-root scheme cat">
 	 <div class="canvas header">
 		 <div class="row">
       <div class="left col-6">
@@ -193,107 +193,10 @@
 
 
 	</div>
-	<!-- End -->
-
-{{--	<div class="neo-root scheme cat-{{ $category }}">--}}
-{{--		<div class="canvas">--}}
-{{--			<div class="header">--}}
-{{--				<div class="left">--}}
-{{--					<div class="eyebrow">Invoice</div>--}}
-{{--					<h1 class="num">{{ $invoice->invoice_number ?? 'INV-XXXXXX' }}</h1>--}}
-{{--					<div class="tiny muted">Issued {{ $fmtDate($invoice->issued_on ?? null) }}</div>--}}
-{{--				</div>--}}
-{{--				<div class="right">--}}
-{{--					<div class="due">Due</div>--}}
-{{--					<div class="dueval">{{ $fmtDate($invoice->due_on ?? null) }}</div>--}}
-{{--				</div>--}}
-{{--			</div>--}}
-{{--	--}}
-{{--			<div class="columns">--}}
-{{--				<div class="col main">--}}
-{{--					<div class="split">--}}
-{{--						<div class="info">--}}
-{{--							<div class="k tiny">From</div>--}}
-{{--							<div class="strong">{{ $bp?->name ?? 'Your Business' }}</div>--}}
-{{--							<div class="muted tiny">{{ $bp?->email }}@if($bp?->email && $bp?->phone) • @endif{{ $bp?->phone }}</div>--}}
-{{--							<div class="muted tiny">{{ $bp ? $addr($bp) : '' }}</div>--}}
-{{--							@if($bp?->tax_id)<div class="muted tiny">Tax ID: {{ $bp->tax_id }}</div>@endif--}}
-{{--							@if($bp?->license_no)<div class="muted tiny">License No: {{ $bp->license_no }}</div>@endif--}}
-{{--						</div>--}}
-{{--						<div class="info">--}}
-{{--							<div class="k tiny">Bill To</div>--}}
-{{--							<div class="strong">{{ $cl?->name ?? $cl?->company ?? 'Client' }}</div>--}}
-{{--							<div class="muted tiny">{{ $cl?->email }}@if($cl?->email && $cl?->phone) • @endif{{ $cl?->phone }}</div>--}}
-{{--							<div class="muted tiny">{{ $cl ? $addr($cl) : '' }}</div>--}}
-{{--							@if($cl?->tax_id)<div class="muted tiny">Tax ID: {{ $cl->tax_id }}</div>@endif--}}
-{{--							@if($cl?->license_no)<div class="muted tiny">License No: {{ $cl->license_no }}</div>@endif--}}
-{{--						</div>--}}
-{{--					</div>--}}
-{{--	--}}
-{{--					<div class="card table">--}}
-{{--						<table class="grid">--}}
-{{--							<thead>--}}
-{{--								<tr>--}}
-{{--									<th>#</th>--}}
-{{--									<th class="desc">Description</th>--}}
-{{--									<th>Qty</th>--}}
-{{--									<th class="right">Rate</th>--}}
-{{--									<th class="right">Amount</th>--}}
-{{--								</tr>--}}
-{{--							</thead>--}}
-{{--							<tbody>--}}
-{{--								@if(($items instanceof \Illuminate\Support\Collection ? $items->count() : count($items)) === 0)--}}
-{{--									<tr><td colspan="4" class="muted center">No items.</td></tr>--}}
-{{--								@else--}}
-{{--									@foreach($items as $it)--}}
-{{--										<tr>--}}
-{{--											<td>--}}
-{{--												<div class="strong">{{ $it->name ?? 'Item' }}</div>--}}
-{{--												@if(!empty($it->description))<div class="muted small">{{ $it->description }}</div>@endif--}}
-{{--											</td>--}}
-{{--											<td><span class="tag">{{ rtrim(rtrim((string)($it->quantity ?? 0), '0'), '.') }}{{ $it->unit ? ' '.$it->unit : '' }}</span></td>--}}
-{{--											<td class="right">{{ $fmtMoney($it->unit_price_cents ?? 0, $invoice->currency ?? 'USD') }}</td>--}}
-{{--											<td class="right">{{ $fmtMoney($it->line_total_cents ?? 0, $invoice->currency ?? 'USD') }}</td>--}}
-{{--										</tr>--}}
-{{--									@endforeach--}}
-{{--								@endif--}}
-{{--							</tbody>--}}
-{{--						</table>--}}
-{{--					</div>--}}
-{{--	--}}
-{{--					<div class="notes">--}}
-{{--						<div class="panel"><h4>Notes</h4><p>{{ $invoice->notes ?? '—' }}</p></div>--}}
-{{--						<div class="panel"><h4>Terms</h4><p>{{ $invoice->terms ?? '—' }}</p></div>--}}
-{{--					</div>--}}
-{{--				</div>--}}
-{{--	--}}
-{{--				<div class="col side">--}}
-{{--					<div class="summary">--}}
-{{--						<div class="row"><span>Subtotal</span><span>{{ $fmtMoney($invoice->subtotal_cents ?? 0, $invoice->currency ?? 'USD') }}</span></div>--}}
-{{--						@if((int)($invoice->discount_cents ?? 0) > 0)--}}
-{{--							<div class="row"><span>Discount</span><span>-{{ $fmtMoney($invoice->discount_cents ?? 0, $invoice->currency ?? 'USD') }}</span></div>--}}
-{{--						@endif--}}
-{{--						@if((int)($invoice->tax_cents ?? 0) > 0)--}}
-{{--							<div class="row"><span>Tax</span><span>{{ $fmtMoney($invoice->tax_cents ?? 0, $invoice->currency ?? 'USD') }}</span></div>--}}
-{{--						@endif--}}
-{{--						@if((int)($invoice->shipping_cents ?? 0) > 0)--}}
-{{--							<div class="row"><span>Shipping</span><span>{{ $fmtMoney($invoice->shipping_cents ?? 0, $invoice->currency ?? 'USD') }}</span></div>--}}
-{{--						@endif--}}
-{{--						<div class="row grand"><span>Total</span><span>{{ $fmtMoney($invoice->total_cents ?? 0, $invoice->currency ?? 'USD') }}</span></div>--}}
-{{--					</div>--}}
-{{--	--}}
-{{--					@if(($bp?->logo_path))--}}
-{{--						<div class="brand">--}}
-{{--							<img src="{{ $bp->logo_path }}" alt="logo" class="logo"/>--}}
-{{--						</div>--}}
-{{--					@endif--}}
-{{--				</div>--}}
-{{--			</div>--}}
-{{--		</div>--}}
 
   <style>
 	body {
-		font-family: {{ $theme['fontFamily'] ?? "Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif" }};
+		font-family: {{ $theme->fontFamily ?? "Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif" }};
 	}
 	.container {width: 916px;margin-bottom: 12px; border-radius: 12px; box-shadow: 0 0 12px rgba(51, 51,51,0.2);}
   .scheme-forest.neo-root{ --accent:#16a34a; }
@@ -303,7 +206,7 @@
 	.business-profile {margin-left: 12px;width: 300px;}
 	.inner-box{float: right;text-align: right; padding-right: 20px;}
   .canvas{ background:#fff; border-top-left-radius:18px; border-top-right-radius: 18px; box-shadow:0 12px 34px rgba(2,6,23,.08); padding:22px; font-family:var(--font); color:var(--ink); }
-  .header{ background-color: {{$scheme['main']['hex_color']}}; background: linear-gradient({{$scheme['gradient_bg_1']['hex_color']}}); border-bottom:1px solid var(--border); padding-bottom:12px; }
+  .header{ background-color: {{$scheme->main->code}}; background: linear-gradient({{$scheme->gradient_bg_1->code}}); border-bottom:1px solid var(--border); padding-bottom:12px; }
   .eyebrow{ color:var(--muted); text-transform:uppercase; letter-spacing:.12em; font-size:12px; }
   .num{ font-size:28px; margin:2px 0 6px; letter-spacing:.2px; font-weight:800; }
   .right .due{ font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.12em; }
@@ -316,9 +219,9 @@
 
   .card.table{ border:1px solid var(--border); border-radius:14px; overflow:hidden; margin-top:16px; }
   table.grid{ width:100%; border-collapse:separate; border-spacing:0; }
-	table.grid thead {background: linear-gradient({{$scheme['gradient_bg_1']['hex_color']}});color: #FFFFFF;}
+	table.grid thead {background: linear-gradient({{$scheme->gradient_bg_1->code}});color: #FFFFFF;}
   table.grid thead th{position:sticky; top:0; text-align:left; font-size:12px; padding:12px; border-bottom:1px solid var(--border); }
-	table.grid tbody {background-color: @if(isset($scheme['table_tbody_color']) && $scheme['table_tbody_color']['hex_color']) {{$scheme['table_tbody_color']['hex_color']}}; @endif}
+	table.grid tbody {background-color: @if(isset($scheme->table_tbody_color) && $scheme->table_tbody_color->code) {{$scheme->table_tbody_color->code}}; @endif}
   table.grid tbody td{ padding:12px; border-top:1px solid var(--border); font-size:13px; }
   table.grid tbody tr:nth-child(odd) td{ background:var(--stripe); }
 	table.grid tbody tr td .small {font-size: 14px; font-weight: lighter;padding-top: 7px;}
@@ -344,14 +247,14 @@
   .summary{ border:1px solid var(--border); border-radius:14px; padding:12px 14px; background:#fff; }
   .summary .row{padding:12px 0; border-top:1px dashed var(--border); }
   .summary .row:first-child{ border-top:0; }
-  .summary .grand{ font-weight:900; font-size:24px; border-top: 1px solid {{$scheme['table_tbody_color']['hex_color']}}; }
-	.summary .grand .value {color: {{$scheme['main']['hex_color']}}; }
+  .summary .grand{ font-weight:900; font-size:24px; border-top: 1px solid {{$scheme->table_tbody_color->code}}; }
+	.summary .grand .value {color: {{$scheme->main->code}}; }
   .brand{margin-top:12px;width: 420px; }
 	.brand h1 {color: #FFFFFF; font-family: var(--font)}
 	.brand .muted {padding: 4px 0 7px 0;}
 	.logo{width:100px;height:100px;border-radius:12px;background:rgba(255,255,255,.15);object-fit:contain}
-	.logo.placeholder{display:grid;place-items:center;font-weight:800; background-color: {{$scheme['light']['hex_color']}};}
-	.box {background-color: {{$scheme['extra_light']['hex_color']}};color: #FFFFFF;border-radius: 12px;margin-top: 10px;}
+	.logo.placeholder{display:grid;place-items:center;font-weight:800; background-color: {{$scheme->light->code}};}
+	.box {background-color: {{$scheme->extra_light->code}};color: #FFFFFF;border-radius: 12px;margin-top: 10px;}
 	.business-profile .muted,
 	.business-profile .muted svg {
 		color: #FFFFFF;
@@ -359,8 +262,8 @@
 		text-indent: -35px;
     margin-left: 19px;
 	}
-	.section--bill-to {background-color: {{$scheme['light']['hex_color']}};padding: 12px 22px 12px 22px;}
-	.section--bill-to h2 {color: {{$scheme['main']['hex_color']}};font-size: 14px; }
+	.section--bill-to {background-color: {{$scheme->light->code}};padding: 12px 22px 12px 22px;}
+	.section--bill-to h2 {color: {{$scheme->main->code}};font-size: 14px; }
 	.section--bill-to .box {
 		background-color: #fff;
 		padding: 20px 22px;
@@ -387,7 +290,7 @@
     padding: 6px 0 6px 0;
 	}
 	.section--bill-to .box ul li svg{
-		color: {{$scheme['main']['hex_color']}};
+		color: {{$scheme->main->code}};
 		padding-right: 7px;
 	}
 	.section--table {padding: 12px 22px 12px 22px;background-color: #fff;}

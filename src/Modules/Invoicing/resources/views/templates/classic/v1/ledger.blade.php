@@ -1,9 +1,9 @@
 @php
-  $fontFamily = $theme['fontFamily'] ?? "DejaVu Sans, Arial, sans-serif";
+  $fontFamily = $theme->fontFamily ?? "DejaVu Sans, Arial, sans-serif";
   $ink        = '#0f172a';
   $muted      = '#64748b';
   $bg         = '#ffffff';
-  $accent     = $scheme['main']['hex_color'];
+  $accent     = $scheme->main->code;
   $accentInk  = ($category ?? 'ocean') === 'sunset' ? '#111827' : '#ffffff';
   $grid       = '#eef2f7';
   $border     = '#e5e7eb';
@@ -11,7 +11,7 @@
   $logoW = 150;
 @endphp
 
-<div class="ledger-root scheme cat-{{ $category }}">
+<div class="ledger-root scheme cat">
   <div class="wrap">
     <div class="header clearfix">
       <div class="side">

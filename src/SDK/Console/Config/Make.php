@@ -30,7 +30,8 @@ class Make extends ModularMakeCommand
             'make:controller' => 'Http/Controllers',
             'make:migration'  => 'Database/Migrations',
             'make:seeder'     => 'Database/Seeders',
-            'make:factory'    => 'Database/Factories'
+            'make:factory'    => 'Database/Factories',
+						'make:resource'   => 'Http/Resources',
         ];
 
         $subPath = $paths[$command] ?? 'Misc';
@@ -102,6 +103,8 @@ class Make extends ModularMakeCommand
                 return 'BilliftySDK\\SharedResources\\Modules\\' . $this->module . '\\Database\\Factories';
             case 'seeder':
                  return 'BilliftySDK\\SharedResources\\Modules\\' . $this->module . '\\Database\\Seeders';
+						case 'resource':
+							return 'BilliftySDK\\SharedResources\\Modules\\' . $this->module . '\\Http\\Resources';
             default:
                 return '';
         }

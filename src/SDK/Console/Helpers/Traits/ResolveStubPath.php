@@ -49,4 +49,9 @@ trait ResolveStubPath
     {
         return base_path(StubsPathEnum::SEEDER->getFullPath() . $stub);
     }
+
+		public function resolveResourceStubPath(string $stub): string
+		{
+			return base_path(StubsPathEnum::RESOURCE->getFullPath() . $stub);
+		}
 }
