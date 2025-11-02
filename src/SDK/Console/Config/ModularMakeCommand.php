@@ -48,6 +48,7 @@ abstract class ModularMakeCommand extends ModularCommand
             'resource'   => $this->makeResource(),
             'seeder'     => $this->makeSeeder(),
             'factory'    => $this->makeFactory(),
+						'provider'    => $this->makeProvider(),
             default      => $this->error('Invalid make option: ' . $this->what),
         };
     }
@@ -114,6 +115,13 @@ abstract class ModularMakeCommand extends ModularCommand
         ]);
     }
 
+		protected function makeProvider(): int
+    {
+        return $this->artisanCallOrCustom('make:provider', [
+            'name' => $this->className
+        ]);
+    }
+
     /**
      * @param $what
      */
@@ -158,6 +166,9 @@ abstract class ModularMakeCommand extends ModularCommand
                 $this->fileName = $this->className;
                 $this->stubPath = $this->resolveResourceStubPath('stub');
                 break;
+					case 'provider':
+						$this->fileName = $this->className;
+						$this->stubPath = $this->resolveProviderStubPath('stub');
         }
     }
 }

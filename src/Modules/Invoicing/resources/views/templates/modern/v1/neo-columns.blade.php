@@ -47,7 +47,7 @@
 				<h2 class="text-right">INVOICE</h2>
        	<div class="box px-4 py-4 clearfix">
 					<div class="inner-box">
-						<div class="label">Invoice Number</div>
+						<div class="label">BusinessProfile Number</div>
 						<div class="value">{{ $invoice->invoice_number ?? 'INV-XXXXXX' }}</div>
 
 						<div class="label">Issue Date</div>

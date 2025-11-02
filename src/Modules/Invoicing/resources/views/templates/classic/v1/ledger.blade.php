@@ -15,7 +15,7 @@
   <div class="wrap">
     <div class="header clearfix">
       <div class="side">
-        <div class="eyebrow">Invoice</div>
+        <div class="eyebrow">BusinessProfile</div>
         <h1 class="id">{{ $invoice->invoice_number ?? 'INV-XXXXXX' }}</h1>
         <div class="chips">
           <span class="chip">Issued {{ $fmtDate($invoice->issued_on ?? null) }}</span>

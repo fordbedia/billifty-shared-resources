@@ -54,4 +54,9 @@ trait ResolveStubPath
 		{
 			return base_path(StubsPathEnum::RESOURCE->getFullPath() . $stub);
 		}
+
+		public function resolveProviderStubPath(string $stub): string
+		{
+			return base_path(StubsPathEnum::PROVIDER->getFullPath() . $stub);
+		}
 }

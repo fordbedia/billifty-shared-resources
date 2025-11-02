@@ -60,7 +60,7 @@
         <img src="{{ $bp->logo_path }}" alt="logo" class="logo" />
       @endif
       <div>
-        <div class="kicker">Invoice</div>
+        <div class="kicker">BusinessProfile</div>
         <h1 class="title">{{ $invoice->invoice_number ?? 'INV-XXXXXX' }}</h1>
       </div>
       <div class="spacer"></div>

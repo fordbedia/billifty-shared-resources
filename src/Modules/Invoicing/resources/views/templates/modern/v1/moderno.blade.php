@@ -22,7 +22,7 @@
         <div class="due right">
 					<h2 class="text-right">INVOICE</h2>
 					<div class="due--bg right">
-						<div class="muted">Invoice: <strong>{{ $invoice->invoice_number ?? 'INV-XXXXXX' }}</strong></div>
+						<div class="muted">BusinessProfile: <strong>{{ $invoice->invoice_number ?? 'INV-XXXXXX' }}</strong></div>
 						@if ($invoice->issued_on)<div class="muted tiny">Date {{ $fmtDate($invoice->issued_on ?? null) }}</div>@endif
 						@if ($invoice->due_on)<div class="duepill">Due {{ $fmtDate($invoice->due_on ?? null) }}</div>@endif
 					</div>
@@ -82,7 +82,7 @@
 					</defs>
 				</svg>
 
-				Invoice Items</h2>
+				BusinessProfile Items</h2>
       <table class="items">
         <thead>
           <tr>
@@ -113,7 +113,7 @@
     <div class="totals">
       <div></div>
       <div class="box col-12">
-				<h2 class="row">Invoice Summary</h2>
+				<h2 class="row">BusinessProfile Summary</h2>
         <div class="row">
 					<span class="left">Subtotal</span>
 					<span class="right">{{ $fmtMoney($invoice->subtotal_cents ?? 0,$invoice->currency ?? 'USD') }}</span>

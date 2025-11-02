@@ -2,6 +2,7 @@
 
 namespace BilliftySDK\SharedResources;
 
+use BilliftySDK\SharedResources\Modules\Invoicing\InvoicingProvider;
 use BilliftySDK\SharedResources\SDK\Console\Config\Make;
 use BilliftySDK\SharedResources\SDK\Console\Config\ResetTestData;
 use Illuminate\Support\Facades\Route;
@@ -11,7 +12,7 @@ use Illuminate\Support\Facades\File;
 class SharedResourceServiceProvider extends ServiceProvider
 {
     protected array $providers = [
-       //
+			InvoicingProvider::class,
     ];
 
     public function boot()
@@ -83,7 +84,7 @@ class SharedResourceServiceProvider extends ServiceProvider
              * ==============================================================
              * CONFIG / TRANSLATIONS (optional)
              * ==============================================================
-             * If modules contain config or lang folders, you can load them here too.
+             * If models contain config or lang folders, you can load them here too.
              */
             $configPath = $moduleDir . '/config';
             if (is_dir($configPath)) {

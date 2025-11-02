@@ -10,6 +10,7 @@ enum StubsPathEnum: string
     case FACTORY = 'factory.';
     case SEEDER = 'seeder.';
 		case RESOURCE = 'resource.';
+		case PROVIDER = 'provider.';
 
     public function getFullPath()
     {

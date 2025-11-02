@@ -28,7 +28,7 @@ return new class extends Migration
 						$table->unsignedInteger('color_scheme_id');
 						$table->unsignedInteger('payment_information_id')->nullable();
 
-						// Invoice identity
+						// BusinessProfile identity
             $table->string('invoice_number'); // e.g., "INV-000123" (unique per user)
             $table->string('reference')->nullable(); // PO number or custom ref
             $table->string('currency', 3)->default('USD');

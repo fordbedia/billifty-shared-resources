@@ -52,7 +52,7 @@
 
 			<div class="invoice-info clearfix">
 				<div class="left">
-					<h2>Invoice</h2>
+					<h2>BusinessProfile</h2>
 				</div>
 
 				<div class="right">
@@ -69,7 +69,7 @@
 
 					<div class="right">
 						<div class="section">
-							<div class="label">Invoice Number</div>
+							<div class="label">BusinessProfile Number</div>
 							<div class="value">{{ $invoice->invoice_number ?? 'INV-XXXXXX' }}</div>
 						</div>
 					</div>

@@ -14,7 +14,7 @@ class Make extends ModularMakeCommand
         {--resource : Turn controller into a formatted API HTTP request}
         {--factory : Factory of the model}';
 
-    protected $description = 'Create Laravel components in modules or the default app paths';
+    protected $description = 'Create Laravel components in models or the default app paths';
 
     /**
      * @throws \Exception
@@ -32,6 +32,7 @@ class Make extends ModularMakeCommand
             'make:seeder'     => 'Database/Seeders',
             'make:factory'    => 'Database/Factories',
 						'make:resource'   => 'Http/Resources',
+						'make:provider'  => 'Providers',
         ];
 
         $subPath = $paths[$command] ?? 'Misc';
@@ -105,6 +106,8 @@ class Make extends ModularMakeCommand
                  return 'BilliftySDK\\SharedResources\\Modules\\' . $this->module . '\\Database\\Seeders';
 						case 'resource':
 							return 'BilliftySDK\\SharedResources\\Modules\\' . $this->module . '\\Http\\Resources';
+						case 'provider':
+							return 'BilliftySDK\\SharedResources\\Modules\\' . $this->module . '\\Providers';
             default:
                 return '';
         }

@@ -4,6 +4,7 @@ namespace BilliftySDK\SharedResources\SDK\Database;
 
 use http\Exception\RuntimeException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 
 abstract class RepositoryLayer
 {
@@ -61,4 +62,9 @@ abstract class RepositoryLayer
     {
         return $this->model->where($field, $value)->exists();
     }
+
+		public function getByUser(): Builder
+		{
+			return $this->model->where('user_id', auth()->id());
+		}
 }
