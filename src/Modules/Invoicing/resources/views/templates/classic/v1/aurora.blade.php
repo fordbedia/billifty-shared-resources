@@ -13,7 +13,7 @@
   $logoW = 150;
 @endphp
 
-<div class="aurora-root scheme cat">
+<div class="aurora--theme aurora-root scheme cat">
   <div class="sheet">
     <div class="rail"></div>
 
@@ -45,7 +45,8 @@
       <div class="card left">
         <div class="label">From</div>
         <div class="strong">{{ $bp?->name ?? 'Your Business' }}</div>
-        <div class="muted">{{ $bp?->email }}@if($bp?->email && $bp?->phone) • @endif{{ $bp?->phone }}</div>
+        <div class="muted">{{ $bp?->email }}</div>
+				@if (($bp?->phone ?? 0)>0) <div class="muted">{{$bp?->phone}}</div>@endif
         <div class="muted">{{ $bp ? $addr($bp) : '' }}</div>
         @if($bp?->tax_id)<div class="muted">Tax ID: {{ $bp->tax_id }}</div>@endif
         @if($bp?->license_no)<div class="muted">License No: {{ $bp->license_no }}</div>@endif
@@ -54,7 +55,8 @@
       <div class="card right">
         <div class="label">Bill To</div>
         <div class="strong">{{ $cl?->name ?? $cl?->company ?? 'Client' }}</div>
-        <div class="muted">{{ $cl?->email }}@if($cl?->email && $cl?->phone) • @endif{{ $cl?->phone }}</div>
+        <div class="muted">{{ $cl?->email }}</div>
+				@if(($cl?->phone ?? 0)>0)<div class="muted">{{$cl?->phone}}</div>@endif
         <div class="muted">{{ $cl ? $addr($cl) : '' }}</div>
         @if($cl?->tax_id)<div class="muted">Tax ID: {{ $cl->tax_id }}</div>@endif
         @if($cl?->license_no)<div class="muted">License No: {{ $cl->license_no }}</div>@endif
@@ -142,7 +144,7 @@
 		.head {margin-bottom: 12px;}
     /* Rail (simple gradient supported) */
     .rail{ position:absolute; left:0; top:0; bottom:0; width:10px; background: linear-gradient(180deg, {{ $railColor }}, rgba(255,255,255,0.7)); }
-
+		.card .muted {line-height: 22px;}
     .eyebrow{ color: {{ $muted }}; text-transform:uppercase; letter-spacing:.1em; font-size:12px; }
     .title{ margin:2px 0 6px; font-size:28px; font-weight:800; letter-spacing:.2px; }
     .tiny{ font-size:12px; } .small{ font-size:12px; } .strong{ font-weight:650; } .muted{ color: {{ $muted }}; }

@@ -1,4 +1,4 @@
-<div class="invoice-root scheme cat">
+<div class="moderno--theme invoice-root scheme cat">
   <div class="page">
 
     <div class="banner">
@@ -87,9 +87,9 @@
         <thead>
           <tr>
             <th>Description</th>
-						<th class="right">Qty</th>
-						<th class="right">Rate</th>
-						<th class="right">Amount</th>
+						<th>Qty</th>
+						<th>Rate</th>
+						<th>Amount</th>
           </tr>
         </thead>
         <tbody>
@@ -99,9 +99,9 @@
                 <div class="strong">{{ $it->name ?? 'Item' }}</div>
                 @if(!empty($it->description))<div class="muted small">{{ $it->description }}</div>@endif
               </td>
-              <td class="right">{{ rtrim(rtrim((string)($it->quantity ?? 0),'0'),'.') }}{{ $it->unit ? ' '.$it->unit : '' }}</td>
-              <td class="right">{{ $fmtMoney($it->unit_price_cents ?? 0, $invoice->currency ?? 'USD') }}</td>
-              <td class="right">{{ $fmtMoney($it->line_total_cents ?? 0, $invoice->currency ?? 'USD') }}</td>
+              <td>{{ rtrim(rtrim((string)($it->quantity ?? 0),'0'),'.') }}{{ $it->unit ? ' '.$it->unit : '' }}</td>
+              <td>{{ $fmtMoney($it->unit_price_cents ?? 0, $invoice->currency ?? 'USD') }}</td>
+              <td>{{ $fmtMoney($it->line_total_cents ?? 0, $invoice->currency ?? 'USD') }}</td>
             </tr>
           @empty
             <tr><td colspan="4" class="muted">No items.</td></tr>
@@ -203,7 +203,7 @@
     .items tbody td{padding:12px;border-top:1px solid var(--border)}
     .items tbody tr:nth-child(odd){background:#fafafa}
     .right{text-align:right}
-    .small{font-size:12px;color:#64748b}
+    .small{font-size:12px;color:#64748b;line-height: 22px;}
 
     .totals{display:grid;grid-template-columns:1fr 400px;gap:22px;padding:18px 22px 0}
 		.totals h2{font-size: 18px;}

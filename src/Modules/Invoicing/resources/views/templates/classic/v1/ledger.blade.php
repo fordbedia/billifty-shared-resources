@@ -11,7 +11,7 @@
   $logoW = 150;
 @endphp
 
-<div class="ledger-root scheme cat">
+<div class="ledger--theme ledger-root scheme cat">
   <div class="wrap">
     <div class="header clearfix">
       <div class="side">
@@ -120,6 +120,7 @@
     .header.clearfix:after, .to.clearfix:after, .totals.clearfix:after, .foot.clearfix:after, .clearfix:after { content:""; display:table; clear:both; }
     .header .side{ float:left; width:65%; }
     .header .org{ float:right; width:33%; text-align:right; }
+		.header .org .muted {line-height: 22px;}
 		.totals {margin: 20px 0;}
 
     /* Chips (inline-block instead of flex) */
@@ -131,12 +132,15 @@
     .to .box{ float:left; width:50%; border:1px solid {{ $border }}; border-radius:12px; padding:12px 14px; box-sizing:border-box; background:#fff; }
     .to .box .label{ color: {{ $muted }}; text-transform:uppercase; letter-spacing:.12em; }
     .logo{ float:right; width: {{ $logoW }}px; border-radius:10px; }
+		.to .box .muted {line-height: 22px;}
 
     /* Items table */
     .gridcard{ margin-top:18px; border:1px solid {{ $border }}; border-radius:14px; overflow:hidden; }
     .gridtbl{ width:100%; border-collapse:collapse; }
     .gridtbl thead th{ background: {{ $accent }}; color: {{ $accentInk }}; padding:10px 12px; font-size:12px; text-align:left; }
     .gridtbl tbody td{ padding:12px; border-top:1px solid {{ $border }}; font-size:13px; }
+		.gridtbl tbody td .strong {font-weight: bold;}
+		.gridtbl tbody td .muted {line-height: 17px;}
     .qty{ background:#fff; border:1px dashed {{ $border }}; padding:2px 8px; border-radius:8px; font-size:12px; display:inline-block; }
     .right{text-align:right;} .center{text-align:center;}
     .desc{ width:48%; }

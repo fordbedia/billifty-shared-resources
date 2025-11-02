@@ -15,7 +15,7 @@
 
 @endphp
 
-<div class="invoice-root scheme">
+<div class="nexxus--theme invoice-root scheme">
   <div class="page">
     <div class="wall"></div>
 
@@ -26,8 +26,6 @@
 					<div class="logo-div left">
 						@if(!empty($bp?->logo_path))
 							<img src="{{ asset($bp->logo_path) }}" alt="Business Logo" class="logo"/>
-						@else
-							<div class="logo placeholder"><span>{{ strtoupper(substr($bp?->name ?? 'B',0,1)) }}</span></div>
 						@endif
 					</div>
 					<div class="info-div left">
@@ -42,7 +40,7 @@
 					<div class="box">
 						<div class="tile-b text-right">
 							<div class="strong">{{ $cl?->name ?? $cl?->company ?? 'Client' }}</div>
-							<div class="muted">{{ $cl?->email }}}</div>
+							<div class="muted">{{ $cl?->email }}</div>
 							@if ($cl?->phone) <div class="muted">{{$cl?->phone}}</div> @endif
 							@if($cl?->tax_id)<div class="muted">Tax ID: {{ $cl->tax_id }}</div>@endif
 							@if($cl?->license_no)<div class="muted">License No: {{ $cl->license_no }}</div>@endif
@@ -202,9 +200,9 @@
 	.logo{width:100px;height:100px;border-radius:10px;background:rgba(255,255,255,.15);object-fit:contain}
 	.logo.placeholder{display:grid;place-items:center;font-weight:800}
 	.box {border: 1px solid #E0E7FF; border-radius: 12px;background-color: #fff;padding: 14px 16px;}
-	.header .right h2 {font-size: 14px; padding-bottom: 5px;}
+	.header .right h2 {font-size: 14px;padding-bottom: 10px;padding-right: 7px;}
 	.header .right .strong{font-weight: bold;font-size: 16px;}
-	.header .right .muted {font-size: 14px;}
+	.header .right .muted {font-size: 14px;line-height: 22px;}
 	.invoice-info {padding: 30px 0;}
 	.invoice-info .section {padding-left: 30px;padding-top: 30px;}
 	.invoice-info .section .label {font-size: 14px; color:#6B7280;}

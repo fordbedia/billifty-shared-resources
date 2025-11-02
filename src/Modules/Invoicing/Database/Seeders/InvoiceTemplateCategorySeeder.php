@@ -290,7 +290,7 @@ class InvoiceTemplateCategorySeeder extends MakeSeeder
 				[
 					'color_scheme_id' => $sunsetColorSchemeId,
 					'name' => 'gradient_bg_1',
-					'code' => '90deg,rgba(249, 115, 22, 1) 0%, rgba(252, 242, 242, 1) 55%, rgba(255, 237, 213, 1) 79%',
+					'code' => '142deg,rgba(249, 115, 22, 1) 1%, rgba(253, 186, 116, 1) 100%',
 				],
 				[
 					'color_scheme_id' => $sunsetColorSchemeId,
