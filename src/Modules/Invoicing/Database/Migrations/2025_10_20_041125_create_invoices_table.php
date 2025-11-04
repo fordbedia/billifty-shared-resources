@@ -40,6 +40,7 @@ return new class extends Migration
             $table->string('invoice_number'); // e.g., "INV-000123" (unique per user)
             $table->string('reference')->nullable(); // PO number or custom ref
             $table->string('currency', 3)->default('USD');
+			$table->text('shipping_address')->nullable();
 
             // Dates & status
             $table->date('issued_on')->nullable();
@@ -59,6 +60,8 @@ return new class extends Migration
             $table->decimal('discount_rate', 8, 4)->default(0); // % if you support it
             $table->bigInteger('tax_cents')->default(0);
             $table->bigInteger('shipping_cents')->default(0);
+			$table->decimal('shipping_tax_rate')->default(0);
+			$table->bigInteger('shipping_tax_cents')->default(0);
             $table->bigInteger('total_cents')->default(0);
             $table->bigInteger('amount_due_cents')->default(0);
 			$table->timestamp('deleted_at')->nullable();
