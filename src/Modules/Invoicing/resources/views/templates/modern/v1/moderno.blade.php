@@ -88,7 +88,8 @@
           <tr>
             <th>Description</th>
 						<th>Qty</th>
-						<th>Rate</th>
+						<th>Unit Price</th>
+			  			<th>Tax</th>
 						<th>Amount</th>
           </tr>
         </thead>
@@ -101,6 +102,7 @@
               </td>
               <td>{{ rtrim(rtrim((string)($it->quantity ?? 0),'0'),'.') }}{{ $it->unit ? ' '.$it->unit : '' }}</td>
               <td>{{ $fmtMoney($it->unit_price_cents ?? 0, $invoice->currency ?? 'USD') }}</td>
+				<td>{{ $fmtMoney($it->tax_cents ?? 0, $invoice->currency ?? 'USD') }}</td>
               <td>{{ $fmtMoney($it->line_total_cents ?? 0, $invoice->currency ?? 'USD') }}</td>
             </tr>
           @empty
@@ -113,7 +115,7 @@
     <div class="totals">
       <div></div>
       <div class="box col-12">
-				<h2 class="row">BusinessProfile Summary</h2>
+				<h2 class="row">Summary</h2>
         <div class="row">
 					<span class="left">Subtotal</span>
 					<span class="right">{{ $fmtMoney($invoice->subtotal_cents ?? 0,$invoice->currency ?? 'USD') }}</span>

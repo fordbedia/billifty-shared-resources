@@ -4,6 +4,7 @@ namespace BilliftySDK\SharedResources\Modules\Invoicing\Database\Seeders;
 
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\ColorScheme;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\ColorSchemeColor;
+use BilliftySDK\SharedResources\Modules\Invoicing\Models\InvoiceStatus;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\InvoiceTemplates;
 use Carbon\Carbon;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -308,6 +309,31 @@ class InvoiceTemplateCategorySeeder extends MakeSeeder
 			foreach($newColorScheme as $colorScheme) {
 				ColorSchemeColor::updateOrCreate($colorScheme);
 			}
+
+		// ----------------------------------------------------------------------------
+		// Invoice Status
+		// ----------------------------------------------------------------------------
+		$statuses = [
+			[
+				'id' => 1,
+				'name' => 'In Progress',
+				'slug' => 'in-progress',
+			],
+			[
+				'id' => 2,
+				'name' => 'Draft',
+				'slug' => 'draft',
+			],
+			[
+				'id' => 3,
+				'name' => 'Published',
+				'slug' => 'published',
+			]
+		];
+		foreach($statuses as $status) {
+			InvoiceStatus::updateOrCreate($status);
+		}
+
     }
 
     /**

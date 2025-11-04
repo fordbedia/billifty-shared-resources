@@ -70,7 +70,8 @@
           <tr>
             <th class="desc">Description</th>
             <th>Qty</th>
-            <th>Rate</th>
+            <th>Unit Price</th>
+			<th>Tax</th>
             <th>Amount</th>
           </tr>
         </thead>
@@ -86,6 +87,7 @@
               </td>
               <td><span class="chip">{{ rtrim(rtrim((string)($it->quantity ?? 0), '0'), '.') }}{{ $it->unit ? ' '.$it->unit : '' }}</span></td>
               <td>{{ $fmtMoney($it->unit_price_cents ?? 0, $invoice->currency ?? 'USD') }}</td>
+			  <td>{{ $fmtMoney($it->tax_cents ?? 0, $invoice->currency ?? 'USD') }}</td>
               <td>{{ $fmtMoney($it->line_total_cents ?? 0, $invoice->currency ?? 'USD') }}</td>
             </tr>
           @endforeach

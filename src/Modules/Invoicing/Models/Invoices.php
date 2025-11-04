@@ -4,51 +4,60 @@ namespace BilliftySDK\SharedResources\Modules\Invoicing\Models;
 
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Invoices extends Model
 {
+	use SoftDeletes;
+
     protected $table = 'invoices';
-		protected $guarded = [];
+	protected $guarded = [];
 
-		public function businessProfile()
-		{
-			return $this->belongsTo(BusinessProfiles::class, 'business_profile_id');
-		}
+	public function businessProfile()
+	{
+		return $this->belongsTo(BusinessProfiles::class, 'business_profile_id');
+	}
 
-		public function client()
-		{
-			return $this->belongsTo(Clients::class, 'client_id');
-		}
+	public function client()
+	{
+		return $this->belongsTo(Clients::class, 'client_id');
+	}
 
-		public function items()
-		{
-			return $this->hasMany(InvoiceItems::class, 'invoice_id', 'id');
-		}
+	public function items()
+	{
+		return $this->hasMany(InvoiceItems::class, 'invoice_id', 'id');
+	}
 
-		public function colorScheme()
-		{
-			return $this->belongsTo(ColorScheme::class, 'color_scheme_id');
-		}
+	public function colorScheme()
+	{
+		return $this->belongsTo(ColorScheme::class, 'color_scheme_id');
+	}
 
-		public function template()
-		{
-			return $this->belongsTo(InvoiceTemplates::class, 'invoice_template_id');
-		}
+	public function template()
+	{
+		return $this->belongsTo(InvoiceTemplates::class, 'invoice_template_id');
+	}
 
-		public static function relationships(): array
-		{
-			return [
-				'businessProfile',
-				'client',
-				'items',
-				'colorScheme.colors',
-				'template.category',
-				'paymentInformation'
-			];
-		}
+	public static function relationships(): array
+	{
+		return [
+			'businessProfile',
+			'client',
+			'items',
+			'colorScheme.colors',
+			'template.category',
+			'paymentInformation',
+			'status'
+		];
+	}
 
-		public function paymentInformation()
-		{
-			return $this->belongsTo(PaymentInformation::class, 'payment_information_id');
-		}
+	public function paymentInformation()
+	{
+		return $this->belongsTo(PaymentInformation::class, 'payment_information_id');
+	}
+
+	public function status(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+	{
+		return $this->belongsTo(InvoiceStatus::class, 'invoice_status_id');
+	}
 }
