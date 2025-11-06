@@ -56,11 +56,13 @@ return new class extends Migration
 
             // Totals (store in cents to avoid float errors)
             $table->bigInteger('subtotal_cents')->default(0);
+			$table->enum('discount_mode', ['none','amount','percent','per-line'])
+                  ->default('none');
             $table->bigInteger('discount_cents')->default(0); // absolute discount
-            $table->decimal('discount_rate', 8, 4)->default(0); // % if you support it
+            $table->decimal('discount_rate', 8, 2)->default(0); // % if you support it
             $table->bigInteger('tax_cents')->default(0);
             $table->bigInteger('shipping_cents')->default(0);
-			$table->decimal('shipping_tax_rate')->default(0);
+			$table->decimal('shipping_tax_rate', 6, 3)->default(0);
 			$table->bigInteger('shipping_tax_cents')->default(0);
             $table->bigInteger('total_cents')->default(0);
             $table->bigInteger('amount_due_cents')->default(0);
@@ -83,7 +85,7 @@ return new class extends Migration
 			$table->foreign('color_scheme_id')->references('id')->on('color_scheme')->cascadeOnDelete();
 			$table->foreign('payment_information_id')->references('id')->on('payment_information')->cascadeOnDelete();
 			$table->foreign('invoice_status_id')->references('id')->on('invoice_status')->cascadeOnDelete();
-			$table->index(['invoice_number']);
+			$table->index(['user_id', 'invoice_number'], 'invoices_user_invoice_unique');
         });
     }
 

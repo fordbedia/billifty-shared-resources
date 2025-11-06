@@ -48,7 +48,7 @@ abstract class ModularMakeCommand extends ModularCommand
             'resource'   => $this->makeResource(),
             'seeder'     => $this->makeSeeder(),
             'factory'    => $this->makeFactory(),
-						'provider'    => $this->makeProvider(),
+			'provider'    => $this->makeProvider(),
             default      => $this->error('Invalid make option: ' . $this->what),
         };
     }
@@ -101,12 +101,17 @@ abstract class ModularMakeCommand extends ModularCommand
     protected function makeAction(): int { return 0; }
     protected function makeCommand(): int { return 0; }
     protected function makeObserver(): int { return 0; }
-    protected function makeRequest(): int { return 0; }
+    protected function makeRequest(): int
+	{
+		return $this->artisanCallOrCustom('make:request', [
+			'name' => $this->className
+		]);
+	}
     protected function makeResource(): int {
-			return $this->artisanCallOrCustom('make:resource', [
-				'name' => $this->className
-			]);
-		}
+		return $this->artisanCallOrCustom('make:resource', [
+			'name' => $this->className
+		]);
+	}
 
     protected function makeSeeder(): int
     {
@@ -166,9 +171,12 @@ abstract class ModularMakeCommand extends ModularCommand
                 $this->fileName = $this->className;
                 $this->stubPath = $this->resolveResourceStubPath('stub');
                 break;
-					case 'provider':
-						$this->fileName = $this->className;
-						$this->stubPath = $this->resolveProviderStubPath('stub');
+			case 'provider':
+				$this->fileName = $this->className;
+				$this->stubPath = $this->resolveProviderStubPath('stub');
+			case 'request':
+				$this->fileName = $this->className;
+				$this->stubPath = $this->resolveRequestStubPath('stub');
         }
     }
 }

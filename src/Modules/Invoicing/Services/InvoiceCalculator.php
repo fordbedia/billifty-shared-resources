@@ -1,12 +1,4 @@
 <?php
-/**
- * @Author: Ed Bedia
- *
- * Usage:
- * $invoice->load('items');
- * app(InvoiceCalculator::class)->compute($invoice);
- * $invoice->push(); // saves invoice + items
- */
 
 namespace BilliftySDK\SharedResources\Modules\Invoicing\Services;
 
@@ -16,83 +8,107 @@ final class InvoiceCalculator
 {
     public function compute(Invoices $invoice): Invoices
     {
-        // Helpers
-        $toInt   = static fn($v) => (int) (is_numeric($v) ? $v : 0);
-        $toFloat = static fn($v) => (float) (is_numeric($v) ? $v : 0.0);
+        // Helpers – mirror JS helpers
+        $toInt   = static fn($v) => (int)(is_numeric($v) ? $v : 0);
+        $toFloat = static fn($v) => (float)(is_numeric($v) ? $v : 0.0);
 
-        $subtotalBase = 0;   // sum of line bases (qty * unit) AFTER line discounts, BEFORE any tax
-        $taxSum       = 0;   // sum of per-item taxes (in cents)
+        // Modes: 'none' | 'per-line' | 'amount' | 'percent'
+        $mode       = $invoice->discount_mode ?? 'none';
+        $usePerLine = ($mode === 'per-line');
 
-        // Guard if items relation isn’t loaded
+        $subtotalBase = 0;   // AFTER per-line discounts (if enabled), BEFORE tax
+        $taxSum       = 0;   // sum of item taxes in cents
+
+        // Ensure items are available (you usually call ->load('items') before this)
         $items = $invoice->items ?? collect();
 
-        foreach ($items as $idx => $it) {
-            $qty      = $toFloat($it->quantity ?? 0);          // can be decimal
-            $unit     = $toInt($it->unit_price_cents ?? 0);    // cents
-            $taxRate  = $toFloat($it->tax_rate ?? 0);          // percent, e.g. 8.25
-            $ldCents  = $it->line_discount_cents ?? null;      // optional cents
-            $ldRate   = $it->line_discount_rate ?? null;       // optional rate (0.10 = 10%)
+        foreach ($items as $idx => $item) {
+            $qty     = $toFloat($item['quantity'] ?? 0);
+            $unit    = $toInt($item['unit_price_cents'] ?? 0);
+            $taxRate = $toFloat($item['tax_rate'] ?? 0); // percent, e.g. 8.25
 
-            // Base (pre-tax, post-discount) at cent precision
+            // Base line before tax
             $base = (int) round($qty * $unit);
 
-            // Apply per-line discount (prefer explicit cents over rate if both present)
-            if ($ldCents !== null && is_numeric($ldCents)) {
-                $base -= $toInt($ldCents);
-            } elseif ($ldRate !== null && is_numeric($ldRate)) {
-                $base -= (int) round($base * $toFloat($ldRate));
+            // ✅ Only apply per-line discounts when mode === 'per-line'
+            if ($usePerLine) {
+                $ldCentsRaw = $item['line_discount_cents'] ?? null;
+                $ldRateRaw  = $item['line_discount_rate'] ?? null;
+
+                $hasCents = is_numeric($ldCentsRaw) && $toInt($ldCentsRaw) > 0;
+                $hasRate  = is_numeric($ldRateRaw)  && $toFloat($ldRateRaw) > 0.0;
+
+//                if ($hasCents) {
+//                    $base -= $toInt($ldCentsRaw);
+//                } elseif ($hasRate) {
+//                    // Percent like JS: user enters 10 => 10%
+//                    $base -= (int) round($base * ($toFloat($ldRateRaw) / 100.0));
+//                }
+				if ($hasRate) {
+					$pct  = max(0.0, min(100.0, $toFloat($ldRateRaw)));
+					$base -= (int) round($base * ($pct / 100.0));
+				}
             }
 
             $base = max(0, $base);
 
-            // Per-item tax (Pattern A + item tax)
-            $lineTax = (int) round($base * ($taxRate / 100.0));
-            $lineWithTax = $base + $lineTax;
+            // Per-item tax (percent)
+            $lineTax  = (int) round($base * ($taxRate / 100.0));
+            $lineWith = $base + $lineTax;
 
             // Accumulate
             $subtotalBase += $base;
             $taxSum       += max(0, $lineTax);
 
-            // Persist back into the item (keep for PDF/UI/debug)
-            $it->position          = $it->position ?? ($idx + 1);
-            $it->tax_cents         = max(0, $lineTax);
-            $it->line_total_cents  = max(0, $lineWithTax);
+            // Write back onto the model (handy for PDFs/UI)
+            $item['position']         = $item['position'] ?? ($idx + 1);
+            $item['tax_cents']        = max(0, $lineTax);
+            $item['line_total_cents'] = max(0, $lineWith);
         }
 
-        // Invoice-level fields
-        $discount = $toInt($invoice->discount_cents ?? 0);
-        $shipping = $toInt($invoice->shipping_cents ?? 0);
+        // ✅ Invoice-level discount (mutually exclusive with per-line)
+        $invoiceLevelDiscount = 0;
+        if ($mode === 'amount') {
+            $invoiceLevelDiscount = $toInt($invoice->discount_cents ?? 0);
+        } elseif ($mode === 'percent') {
+            $rate = $toFloat($invoice->discount_rate ?? 0); // 10 => 10%
+            $invoiceLevelDiscount = (int) round($subtotalBase * ($rate / 100.0));
+        }
+        $invoiceLevelDiscount = max(0, $invoiceLevelDiscount);
 
-        // Shipping tax
-        $shippingTaxRate = $toFloat($invoice->shipping_tax_rate ?? 0); // percent
-        $shippingTax     = (int) round($shipping * ($shippingTaxRate / 100.0));
+        // Shipping + shipping tax
+        $shipping         = $toInt($invoice->shipping_cents ?? 0);
+        $shippingTaxRate  = $toFloat($invoice->shipping_tax_rate ?? 0); // percent
+        $shippingTaxCents = (int) round($shipping * ($shippingTaxRate / 100.0));
 
-        // If you ALSO support an invoice-level tax override (e.g., tax_rate_bps),
-        // you can switch from per-item tax to invoice-level tax here:
-        //
-        // Example (uncomment to enable override):
-        // $invoiceLevelTax = null;
-        // if (isset($invoice->tax_rate_bps) && is_numeric($invoice->tax_rate_bps)) {
-        //     // basis points: 100 bps = 1%
-        //     $bps = $toInt($invoice->tax_rate_bps);
-        //     $invoiceLevelTax = (int) round($subtotalBase * ($bps / 10000.0));
-        // }
-        //
-        // $taxTotal = ($invoiceLevelTax !== null) ? max(0, $invoiceLevelTax) : max(0, $taxSum);
-
-        // For now, trust per-item tax
+        // Trust per-item tax (like JS)
         $taxTotal = max(0, $taxSum);
 
-        // Grand total
-        $total = max(0, $subtotalBase - $discount + $taxTotal + $shipping + max(0, $shippingTax));
+        // Grand total mirrors JS
+        $total = max(
+            0,
+            $subtotalBase - $invoiceLevelDiscount + $taxTotal + $shipping + $shippingTaxCents
+        );
 
         // Write back to invoice
-        $invoice->subtotal_cents      = $subtotalBase;              // pre-tax, after line discounts
-        $invoice->tax_cents           = $taxTotal;                  // items tax total
-        $invoice->shipping_tax_cents  = max(0, $shippingTax);       // computed shipping tax
-        $invoice->total_cents         = $total;
+        $invoice->subtotal_cents     = $subtotalBase;                // pre-tax, after per-line discounts
+        $invoice->tax_cents          = $taxTotal;                    // items’ tax sum
+        $invoice->discount_cents     = $invoiceLevelDiscount;        // normalized invoice-level discount
+        $invoice->shipping_tax_cents = max(0, $shippingTaxCents);
+        $invoice->total_cents        = $total;
+
         if (is_numeric($invoice->amount_due_cents ?? null)) {
-            $invoice->amount_due_cents = $total; // or total - payments_total_cents
+            $invoice->amount_due_cents = $total; // or subtract payments if you track them
+        }
+
+        // ✅ Display-only row for UI (negative amount)
+        if (($mode === 'amount' || $mode === 'percent') && $invoiceLevelDiscount > 0) {
+            $invoice->setAttribute('display_discount_row', [
+                'label'        => 'Discount',
+                'amount_cents' => -$invoiceLevelDiscount,
+            ]);
+        } else {
+            $invoice->setAttribute('display_discount_row', null);
         }
 
         return $invoice;

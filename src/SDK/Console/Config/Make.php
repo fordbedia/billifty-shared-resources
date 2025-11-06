@@ -26,13 +26,14 @@ class Make extends ModularMakeCommand
 
         // Define subpaths based on component type
         $paths = [
-            'make:model'      => 'Models',
-            'make:controller' => 'Http/Controllers',
-            'make:migration'  => 'Database/Migrations',
-            'make:seeder'     => 'Database/Seeders',
-            'make:factory'    => 'Database/Factories',
-						'make:resource'   => 'Http/Resources',
-						'make:provider'  => 'Providers',
+            'make:model'      	=> 'Models',
+            'make:controller'	=> 'Http/Controllers',
+            'make:migration'  	=> 'Database/Migrations',
+            'make:seeder'     	=> 'Database/Seeders',
+            'make:factory'    	=> 'Database/Factories',
+			'make:resource'   	=> 'Http/Resources',
+			'make:provider'  	=> 'Providers',
+			'make:request'    	=> 'Http/Requests',
         ];
 
         $subPath = $paths[$command] ?? 'Misc';
@@ -104,10 +105,12 @@ class Make extends ModularMakeCommand
                 return 'BilliftySDK\\SharedResources\\Modules\\' . $this->module . '\\Database\\Factories';
             case 'seeder':
                  return 'BilliftySDK\\SharedResources\\Modules\\' . $this->module . '\\Database\\Seeders';
-						case 'resource':
-							return 'BilliftySDK\\SharedResources\\Modules\\' . $this->module . '\\Http\\Resources';
-						case 'provider':
-							return 'BilliftySDK\\SharedResources\\Modules\\' . $this->module . '\\Providers';
+			case 'resource':
+				return 'BilliftySDK\\SharedResources\\Modules\\' . $this->module . '\\Http\\Resources';
+			case 'provider':
+				return 'BilliftySDK\\SharedResources\\Modules\\' . $this->module . '\\Providers';
+			case 'request':
+				return 'BilliftySDK\\SharedResources\\Modules\\' . $this->module . '\\Http\\Requests';
             default:
                 return '';
         }
