@@ -37,13 +37,7 @@ final class InvoiceCalculator
 
                 $hasCents = is_numeric($ldCentsRaw) && $toInt($ldCentsRaw) > 0;
                 $hasRate  = is_numeric($ldRateRaw)  && $toFloat($ldRateRaw) > 0.0;
-
-//                if ($hasCents) {
-//                    $base -= $toInt($ldCentsRaw);
-//                } elseif ($hasRate) {
-//                    // Percent like JS: user enters 10 => 10%
-//                    $base -= (int) round($base * ($toFloat($ldRateRaw) / 100.0));
-//                }
+				
 				if ($hasRate) {
 					$pct  = max(0.0, min(100.0, $toFloat($ldRateRaw)));
 					$base -= (int) round($base * ($pct / 100.0));
