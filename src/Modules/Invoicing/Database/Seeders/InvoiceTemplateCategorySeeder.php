@@ -310,30 +310,6 @@ class InvoiceTemplateCategorySeeder extends MakeSeeder
 				ColorSchemeColor::updateOrCreate($colorScheme);
 			}
 
-		// ----------------------------------------------------------------------------
-		// Invoice Status
-		// ----------------------------------------------------------------------------
-		$statuses = [
-			[
-				'id' => 1,
-				'name' => 'In Progress',
-				'slug' => 'in-progress',
-			],
-			[
-				'id' => 2,
-				'name' => 'Draft',
-				'slug' => 'draft',
-			],
-			[
-				'id' => 3,
-				'name' => 'Published',
-				'slug' => 'published',
-			]
-		];
-		foreach($statuses as $status) {
-			InvoiceStatus::updateOrCreate($status);
-		}
-
     }
 
     /**

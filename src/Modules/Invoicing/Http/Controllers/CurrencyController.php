@@ -3,23 +3,17 @@
 namespace BilliftySDK\SharedResources\Modules\Invoicing\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use BilliftySDK\SharedResources\Modules\Invoicing\Http\Requests\StoreInvoiceRequest;
-use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\InvoiceContracts;
-use BilliftySDK\SharedResources\Modules\Invoicing\Services\InvoiceService;
+use BilliftySDK\SharedResources\Modules\Invoicing\Models\Currency;
 use Illuminate\Http\Request;
 
-class InvoiceController extends Controller
+class CurrencyController extends Controller
 {
-	public function generateInvoiceNumber(InvoiceContracts $invoice)
-	{
-		return $invoice->autoInvoiceNumber();
-	}
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        //
+        return Currency::all();
     }
 
     /**
@@ -53,15 +47,4 @@ class InvoiceController extends Controller
     {
         //
     }
-
-	public function saveDraft(
-		Request $request,
-		StoreInvoiceRequest $storeInvoiceRequest,
-		InvoiceService $invoiceService
-	) {
-		$data = $storeInvoiceRequest->validated();
-		$invoiceService->create($data);
-
-		return response()->json($data, 201);
-	}
 }

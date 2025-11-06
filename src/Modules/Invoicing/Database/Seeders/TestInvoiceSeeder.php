@@ -116,7 +116,7 @@ class TestInvoiceSeeder extends MakeSeeder
 				'invoice_template_id' => $invoiceTemplate->id,
 				'color_scheme_id' => $colorScheme->id,
 				'invoice_number' => 'INV-0001',
-				'currency' => 'USD',
+				'currency_id' => 1,
 				'template_slug' => 'test-company-llc',
 				'template_version' => 1
 			]);

@@ -14,4 +14,5 @@ Route::group(['prefix' => 'v1'], function(){
 	});
 	Route::resource('business-profile', BusinessProfileController::class);
 	Route::resource('client', ClientsController::class);
+	Route::resource('currency', CurrencyController::class);
 });

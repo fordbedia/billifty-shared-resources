@@ -35,11 +35,11 @@ return new class extends Migration
 			$table->unsignedInteger('color_scheme_id');
 			$table->unsignedInteger('payment_information_id')->nullable();
 			$table->unsignedInteger('invoice_status_id')->default(1);
+			$table->unsignedInteger('currency_id');
 
 						// BusinessProfile identity
             $table->string('invoice_number'); // e.g., "INV-000123" (unique per user)
             $table->string('reference')->nullable(); // PO number or custom ref
-            $table->string('currency', 3)->default('USD');
 			$table->text('shipping_address')->nullable();
 
             // Dates & status
@@ -85,6 +85,7 @@ return new class extends Migration
 			$table->foreign('color_scheme_id')->references('id')->on('color_scheme')->cascadeOnDelete();
 			$table->foreign('payment_information_id')->references('id')->on('payment_information')->cascadeOnDelete();
 			$table->foreign('invoice_status_id')->references('id')->on('invoice_status')->cascadeOnDelete();
+			$table->foreign('currency_id')->references('id')->on('currency')->cascadeOnDelete();
 			$table->index(['user_id', 'invoice_number'], 'invoices_user_invoice_unique');
         });
     }
