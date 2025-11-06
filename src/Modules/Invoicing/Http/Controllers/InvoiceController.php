@@ -55,7 +55,6 @@ class InvoiceController extends Controller
     }
 
 	public function saveDraft(
-		Request $request,
 		StoreInvoiceRequest $storeInvoiceRequest,
 		InvoiceService $invoiceService
 	) {
