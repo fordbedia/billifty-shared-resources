@@ -30,7 +30,7 @@ final class InvoiceCalculator
             // Base line before tax
             $base = (int) round($qty * $unit);
 
-            // ✅ Only apply per-line discounts when mode === 'per-line'
+            // Only apply per-line discounts when mode === 'per-line'
             if ($usePerLine) {
                 $ldCentsRaw = $item['line_discount_cents'] ?? null;
                 $ldRateRaw  = $item['line_discount_rate'] ?? null;
@@ -66,7 +66,7 @@ final class InvoiceCalculator
             $item['line_total_cents'] = max(0, $lineWith);
         }
 
-        // ✅ Invoice-level discount (mutually exclusive with per-line)
+        // Invoice-level discount (mutually exclusive with per-line)
         $invoiceLevelDiscount = 0;
         if ($mode === 'amount') {
             $invoiceLevelDiscount = $toInt($invoice->discount_cents ?? 0);
@@ -101,7 +101,7 @@ final class InvoiceCalculator
             $invoice->amount_due_cents = $total; // or subtract payments if you track them
         }
 
-        // ✅ Display-only row for UI (negative amount)
+        // Display-only row for UI (negative amount)
         if (($mode === 'amount' || $mode === 'percent') && $invoiceLevelDiscount > 0) {
             $invoice->setAttribute('display_discount_row', [
                 'label'        => 'Discount',
