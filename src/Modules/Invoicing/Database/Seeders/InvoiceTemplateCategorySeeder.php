@@ -19,18 +19,18 @@ class InvoiceTemplateCategorySeeder extends MakeSeeder
     public function run(): void
     {
         $now = Carbon::now();
-
-				// Create templates
+		// Create templates
         $cats = [
-            ['slug' => 'modern',  'display_name' => 'Modern',  'sort_order' => 1],
-            ['slug' => 'classic', 'display_name' => 'Classic', 'sort_order' => 2],
-            ['slug' => 'minimal', 'display_name' => 'Minimal', 'sort_order' => 3],
+            ['slug' => 'modern',  'display_name' => 'Modern',  'sort_order' => 1, 'preview_url' => '/images/invoice-selection/modern.png'],
+            ['slug' => 'classic', 'display_name' => 'Classic', 'sort_order' => 2, 'preview_url' => '/images/invoice-selection/classic.png'],
+            ['slug' => 'minimal', 'display_name' => 'Minimal', 'sort_order' => 3, 'preview_url' => '/images/invoice-selection/minimal.png'],
         ];
 
         foreach ($cats as $c) {
             $invTemCat = DB::table('invoice_template_categories')->updateOrInsert(
                 ['slug' => $c['slug']],
                 [
+					'preview_url' => $c['preview_url'],
                     'display_name' => $c['display_name'],
                     'sort_order'   => $c['sort_order'],
                     'is_active'    => true,

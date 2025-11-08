@@ -2,7 +2,10 @@
 
 use BilliftySDK\SharedResources\Modules\Invoicing\Http\Controllers\BusinessProfileController;
 use BilliftySDK\SharedResources\Modules\Invoicing\Http\Controllers\ClientsController;
+use BilliftySDK\SharedResources\Modules\Invoicing\Http\Controllers\CurrencyController;
 use BilliftySDK\SharedResources\Modules\Invoicing\Http\Controllers\InvoiceController;
+use BilliftySDK\SharedResources\Modules\Invoicing\Http\Controllers\TemplateCategoryController;
+use BilliftySDK\SharedResources\Modules\Invoicing\Http\Controllers\TemplateController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -15,4 +18,6 @@ Route::group(['prefix' => 'v1'], function(){
 	Route::resource('business-profile', BusinessProfileController::class);
 	Route::resource('client', ClientsController::class);
 	Route::resource('currency', CurrencyController::class);
+	Route::resource('template-category', TemplateCategoryController::class);
+	Route::resource('template', TemplateController::class);
 });
