@@ -23,6 +23,7 @@ return new class extends Migration
 			$table->string('color_scheme_name')->nullable();
 			$table->string('slug');
 			$table->string('color')->nullable();
+			$table->string('preview_url')->nullable();
 			$table->timestamps();
 		});
 

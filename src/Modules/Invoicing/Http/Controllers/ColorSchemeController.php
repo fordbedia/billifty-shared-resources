@@ -3,17 +3,17 @@
 namespace BilliftySDK\SharedResources\Modules\Invoicing\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use BilliftySDK\SharedResources\Modules\Invoicing\Models\InvoiceTemplates;
+use BilliftySDK\SharedResources\Modules\Invoicing\Models\ColorScheme;
 use Illuminate\Http\Request;
 
-class TemplateController extends Controller
+class ColorSchemeController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        //
+        return ColorScheme::get();
     }
 
     /**
@@ -27,9 +27,9 @@ class TemplateController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(int $id)
+    public function show(string $id)
     {
-        return InvoiceTemplates::find($id);
+        //
     }
 
     /**
@@ -47,9 +47,4 @@ class TemplateController extends Controller
     {
         //
     }
-
-	public function getTemplate(int $id)
-	{
-		return InvoiceTemplates::where('invoice_template_category_id', $id)->get();
-	}
 }

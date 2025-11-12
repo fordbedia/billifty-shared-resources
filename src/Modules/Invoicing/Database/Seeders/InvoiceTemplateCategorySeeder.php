@@ -47,55 +47,60 @@ class InvoiceTemplateCategorySeeder extends MakeSeeder
 
         // Backfill existing templates by slug heuristic (adjust as needed)
         // e.g., your earlier seeded 'classic' and 'modern'
-				// ----------------------------------------------------------------------------
-				// Moderno Template
-				// ----------------------------------------------------------------------------
-				InvoiceTemplates::updateOrCreate([
-					'invoice_template_category_id' => $modernId,
-					'slug' => 'moderno',
-					'display_name' => 'Moderno',
-					'current_version' => 1,
-					'is_active' => 1,
-					'view' => 'modern.v1.moderno'
-				]);
-				InvoiceTemplates::updateOrCreate([
-					'invoice_template_category_id' => $modernId,
-					'slug' => 'neo',
-					'display_name' => 'Neo',
-					'current_version' => 1,
-					'is_active' => 1,
-					'view' => 'modern.v1.neo-columns'
-				]);
-				// ----------------------------------------------------------------------------
-				// Classic
-				// ----------------------------------------------------------------------------
-				InvoiceTemplates::updateOrCreate([
-					'invoice_template_category_id' => $classicId,
-					'slug' => 'aurora',
-					'display_name' => 'Aurora',
-					'current_version' => 1,
-					'is_active' => 1,
-					'view' => 'classic.v1.aurora'
-				]);
-				InvoiceTemplates::updateOrCreate([
-					'invoice_template_category_id' => $classicId,
-					'slug' => 'ledger',
-					'display_name' => 'Ledger',
-					'current_version' => 1,
-					'is_active' => 1,
-					'view' => 'classic.v1.ledger'
-				]);
-				// ----------------------------------------------------------------------------
-				// Minimal
-				// ----------------------------------------------------------------------------
-				InvoiceTemplates::updateOrCreate([
-					'invoice_template_category_id' => $minimalId,
-					'slug' => 'nexxus',
-					'display_name' => 'Nexxus',
-					'current_version' => 1,
-					'is_active' => 1,
-					'view' => 'minimal.v1.nexxus'
-				]);
+		// ----------------------------------------------------------------------------
+		// Moderno Template
+		// ----------------------------------------------------------------------------
+		InvoiceTemplates::updateOrCreate(['slug' => 'moderno'],[
+			'invoice_template_category_id' => $modernId,
+			'slug' => 'moderno',
+			'display_name' => 'Moderno',
+			'current_version' => 1,
+			'is_active' => 1,
+			'view' => 'modern.v1.moderno',
+			'preview_url' => '/images/templates/moderno.jpg',
+		]);
+		InvoiceTemplates::updateOrCreate(['slug' => 'neo'],[
+			'invoice_template_category_id' => $modernId,
+			'slug' => 'neo',
+			'display_name' => 'Neo',
+			'current_version' => 1,
+			'is_active' => 1,
+			'view' => 'modern.v1.neo-columns',
+			'preview_url' => '/images/templates/neo.jpg',
+		]);
+		// ----------------------------------------------------------------------------
+		// Classic
+		// ----------------------------------------------------------------------------
+		InvoiceTemplates::updateOrCreate(['slug' => 'aurora'], [
+			'invoice_template_category_id' => $classicId,
+			'slug' => 'aurora',
+			'display_name' => 'Aurora',
+			'current_version' => 1,
+			'is_active' => 1,
+			'view' => 'classic.v1.aurora',
+			'preview_url' => '/images/templates/aurora.jpg',
+		]);
+		InvoiceTemplates::updateOrCreate(['slug' => 'ledger'], [
+			'invoice_template_category_id' => $classicId,
+			'slug' => 'ledger',
+			'display_name' => 'Ledger',
+			'current_version' => 1,
+			'is_active' => 1,
+			'view' => 'classic.v1.ledger',
+			'preview_url' => '/images/templates/ledger.jpg',
+		]);
+		// ----------------------------------------------------------------------------
+		// Minimal
+		// ----------------------------------------------------------------------------
+		InvoiceTemplates::updateOrCreate(['slug' => 'nexxus'], [
+			'invoice_template_category_id' => $minimalId,
+			'slug' => 'nexxus',
+			'display_name' => 'Nexxus',
+			'current_version' => 1,
+			'is_active' => 1,
+			'view' => 'minimal.v1.nexxus',
+			'preview_url' => '/images/templates/nexxus.jpg',
+		]);
 
 //        DB::table('invoice_templates')->where('slug', 'classic')->update([
 //            'invoice_template_category_id' => $classicId,
@@ -118,22 +123,27 @@ class InvoiceTemplateCategorySeeder extends MakeSeeder
 				[
 					'color_scheme_name' => 'Ocean Blue',
 					'slug' => 'ocean',
+					'preview_url' => '/images/invoice-selection/ocean-blue.png',
 				],
 				[
 					'color_scheme_name' => 'Forest Green',
 					'slug' => 'forest',
+					'preview_url' => '/images/invoice-selection/forest-green.png',
 				],
 				[
 					'color_scheme_name' => 'Royal Purple',
 					'slug' => 'royal',
+					'preview_url' => '/images/invoice-selection/royal-purple.png',
 				],
 				[
 					'color_scheme_name' => 'Crimson Red',
 					'slug' => 'crimson',
+					'preview_url' => '/images/invoice-selection/crimson-red.png',
 				],
 				[
 					'color_scheme_name' => 'Sunset Orange',
 					'slug' => 'sunset',
+					'preview_url' => '/images/invoice-selection/sunset-orange.png',
 				]
 			];
 			foreach ($colorScheme as $c) {

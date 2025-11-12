@@ -118,7 +118,19 @@ class TestInvoiceSeeder extends MakeSeeder
 				'invoice_number' => 'INV-0001',
 				'currency_id' => 1,
 				'template_slug' => 'test-company-llc',
-				'template_version' => 1
+				'template_version' => 1,
+				'subtotal_cents' => 60100,
+				'discount_mode' => 'none',
+				'discount_cents' => 0,
+				'discount_rate' => 0,
+				'tax_cents' => 0,
+				'shipping_cents' => 0,
+				'shipping_tax_rate' => 0,
+				'shipping_tax_cents' => 0,
+				'total_cents' => 60100,
+				'amount_due_cents' => 0,
+				'notes' => '',
+				'terms' => '',
 			]);
 
 			InvoiceItems::updateOrCreate([
@@ -126,21 +138,42 @@ class TestInvoiceSeeder extends MakeSeeder
 				'position' => '1',
 				'name' => 'User Login Authentication',
 				'description' => 'Create a functinality for the user where they all be needed for verification before they proceed.',
-				'quantity' => 1
+				'quantity' => 1,
+				'unit' => '',
+				'unit_price_cents' => 20000,
+				'line_discount_cents' => 0,
+				'line_discount_rate' => 0,
+				'tax_rate' => 0,
+				'tax_cents' => 0,
+				'line_total_cents' => 20000,
 			]);
 			InvoiceItems::updateOrCreate([
 				'invoice_id' => $invoice->id,
 				'position' => '1',
 				'name' => 'Landing Page Design',
 				'description' => 'Home Page Design',
-				'quantity' => 2
+				'quantity' => 2,
+				'unit' => '',
+				'unit_price_cents' => 15050,
+				'line_discount_cents' => 0,
+				'line_discount_rate' => 0,
+				'tax_rate' => 0,
+				'tax_cents' => 0,
+				'line_total_cents' => 30100,
 			]);
 			InvoiceItems::updateOrCreate([
 				'invoice_id' => $invoice->id,
 				'position' => '1',
 				'name' => 'Logo Design',
 				'description' => 'Logo Design',
-				'quantity' => 2
+				'quantity' => 2,
+				'unit' => '',
+				'unit_price_cents' => 5000,
+				'line_discount_cents' => 0,
+				'line_discount_rate' => 0,
+				'tax_rate' => 0,
+				'tax_cents' => 0,
+				'line_total_cents' => 10000,
 			]);
 
     }

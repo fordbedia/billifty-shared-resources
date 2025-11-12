@@ -24,8 +24,8 @@ class StoreInvoiceRequest extends FormRequest
         return [
             'business_profile_id' => ['required','integer','exists:business_profiles,id'],
             'client_id'           => ['required','integer','exists:clients,id'],
-//			'invoice_template_id' => ['required','integer','exists:invoice_templates,id'],
-//			'color_scheme_id'      => ['required','integer','exists:color_schemes,id'],
+			'invoice_template_id' => ['required','integer','exists:invoice_templates,id'],
+			'color_scheme_id'      => ['required','integer','exists:color_scheme,id'],
 			'payment_information_id' => ['nullable', 'integer','exists:payment_informations,id'],
 			'invoice_number'		=> ['required','string','max:100'],
 			'reference'				=> ['nullable','string','max:100'],
