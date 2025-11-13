@@ -11,16 +11,17 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Auth::loginUsingId(1);
-Route::group(['prefix' => 'v1'], function(){
-	Route::prefix('invoice')->group(function(){
+Route::group(['prefix' => 'v1'], function () {
+	Route::prefix('invoice')->group(function () {
 		Route::get('/generated-invoice-number', [InvoiceController::class, 'generateInvoiceNumber']);
 		Route::post('/save-draft', [InvoiceController::class, 'saveDraft']);
 	});
+	Route::apiResource('invoice', InvoiceController::class);
 	Route::get('template/category/{id}', [TemplateController::class, 'getTemplate']);
-	Route::resource('business-profile', BusinessProfileController::class);
-	Route::resource('client', ClientsController::class);
-	Route::resource('currency', CurrencyController::class);
-	Route::resource('template-category', TemplateCategoryController::class);
-	Route::resource('template', TemplateController::class);
-	Route::resource('color-scheme', ColorSchemeController::class);
+	Route::apiResource('business-profile', BusinessProfileController::class);
+	Route::apiResource('client', ClientsController::class);
+	Route::apiResource('currency', CurrencyController::class);
+	Route::apiResource('template-category', TemplateCategoryController::class);
+	Route::apiResource('template', TemplateController::class);
+	Route::apiResource('color-scheme', ColorSchemeController::class);
 });
