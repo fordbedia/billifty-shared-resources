@@ -4,7 +4,6 @@ namespace BilliftySDK\SharedResources\Modules\Invoicing\Database\Seeders;
 
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\ColorScheme;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\ColorSchemeColor;
-use BilliftySDK\SharedResources\Modules\Invoicing\Models\InvoiceStatus;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\InvoiceTemplates;
 use Carbon\Carbon;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;

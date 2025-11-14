@@ -47,17 +47,11 @@ class Invoices extends Model
 			'colorScheme.colors',
 			'template.category',
 			'paymentInformation',
-			'status'
 		];
 	}
 
 	public function paymentInformation()
 	{
 		return $this->belongsTo(PaymentInformation::class, 'payment_information_id');
-	}
-
-	public function status(): \Illuminate\Database\Eloquent\Relations\BelongsTo
-	{
-		return $this->belongsTo(InvoiceStatus::class, 'invoice_status_id');
 	}
 }
