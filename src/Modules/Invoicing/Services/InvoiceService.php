@@ -9,6 +9,7 @@ use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\InvoiceContracts;
 use DomainException;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class InvoiceService
@@ -45,11 +46,15 @@ class InvoiceService
 			'subtotal_cents','tax_cents','shipping_tax_cents','total_cents','amount_due_cents',
 			'invoice_items','action',
 		])->toArray();
+
 		$invoice->fill($payload);
+
+		if (!$invoice->exists && Auth::user()) {
+			$invoice->user_id = Auth::id();
+		}
 
 		// Attach items transiently for compute
 		$invoice->setRelation('items', $data['invoice_items'] ?? []);
-
 
 		$this->calculator->compute($invoice);
 
@@ -87,6 +92,7 @@ class InvoiceService
 
 		// remove non-persistent attribute so Eloquent won't include it in UPDATE
 		unset($invoice->display_discount_row);
+		unset($invoice->action);
 
 		$invoice->save();
 

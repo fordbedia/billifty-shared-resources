@@ -11,6 +11,8 @@ final class InvoiceStateMachine
 		'invoice_number',
 		'client_id',
 		'currency_id',
+		'issued_on',
+		'due_on'
 	];
 
 	public static function canTransition(InvoiceStatus $from, InvoiceAction $action): bool

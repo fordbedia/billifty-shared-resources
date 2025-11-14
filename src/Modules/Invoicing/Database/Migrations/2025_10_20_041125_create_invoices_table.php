@@ -44,7 +44,7 @@ return new class extends Migration
                   ->default('draft');
 
             // Template snapshot (immutable for this invoice)
-            $table->string('template_slug');
+            $table->string('template_slug')->nullable();
             $table->unsignedInteger('template_version')->default(1);
             $table->json('theme_json')->nullable(); // color scheme / toggles used
 
