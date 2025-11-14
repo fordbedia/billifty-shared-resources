@@ -37,6 +37,5 @@ final class InvoiceStateMachine
 	{
 		$invoice->status = InvoiceStatus::ISSUED->value;
 		$invoice->issued_at = now();
-		$invoice->locked_fields = json_encode(self::IMMUTABLE_AFTER_ISSUE);
 	}
 }

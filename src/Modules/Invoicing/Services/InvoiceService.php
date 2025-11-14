@@ -33,6 +33,7 @@ class InvoiceService
 
 		$fromStatus = InvoiceStatus::from($invoice->status ?? InvoiceStatus::DRAFT->value);
 		if (!InvoiceStateMachine::canTransition($fromStatus, $action)) {
+			DB::rollback();
 			throw new DomainException("Cannot perform '{$action->value}' from status '{$fromStatus->value}'.");
 		}
 
@@ -52,6 +53,9 @@ class InvoiceService
 
 		$this->calculator->compute($invoice);
 
+		// keep a copy if you want to return it in the response
+		$displayDiscountRow = $invoice->getAttribute('display_discount_row');
+
 		// ----------------------------------------------------------------------------
 		// Verify: cross-check frontend-sent totals for desync detection
 		// ----------------------------------------------------------------------------
@@ -70,6 +74,7 @@ class InvoiceService
 
 			if (!$withinTolerance($frontendSubtotal, $backendSubtotal)
 				|| !$withinTolerance($frontendTotal, $backendTotal)) {
+				DB::rollback();
 				throw new \RuntimeException(sprintf(
 					'Invoice total mismatch: frontend subtotal=%d, backend subtotal=%d; frontend total=%d, backend total=%d',
 					$frontendSubtotal,
@@ -80,6 +85,9 @@ class InvoiceService
 			}
 		}
 
+		// remove non-persistent attribute so Eloquent won't include it in UPDATE
+		unset($invoice->display_discount_row);
+
 		$invoice->save();
 
 		$this->repo->syncItems($invoice, $invoice->items);
@@ -89,23 +97,11 @@ class InvoiceService
 			$invoice->save();
 		}
 
+		if ($displayDiscountRow !== null) {
+			$invoice->setAttribute('display_discount_row', $displayDiscountRow);
+		}
+
+		DB::commit();
 		return $invoice->refresh();
-	}
-
-	public function create(array $data = [])
-	{
-		DB::beginTransaction();
-
-		$newInvoice = new Invoices(Collection::make($data)->filter(fn ($inv, $key) =>
-			!in_array($key, ['invoice_items', 'business_profile', 'template'])
-		)->toArray());
-
-		$newInvoice->setRelation('items', $data['invoice_items']);
-
-		dump($newInvoice);
-
-		$calculate = $this->calculator->compute($newInvoice);
-
-		dd($calculate);
 	}
 }

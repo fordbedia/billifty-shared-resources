@@ -3,7 +3,6 @@
 namespace BilliftySDK\SharedResources\SDK\Console\Config;
 
 use BilliftySDK\SharedResources\Modules\Invoicing\Database\Seeders\CurrencySeeder;
-use BilliftySDK\SharedResources\Modules\Invoicing\Database\Seeders\InvoiceStatusSeeder;
 use BilliftySDK\SharedResources\Modules\Invoicing\Database\Seeders\InvoiceTemplateCategorySeeder;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -27,7 +26,6 @@ class ResetTestData extends ModularResetTestDataCommand
 			UserSeeder::class,
 			InvoiceTemplateCategorySeeder::class,
 			CurrencySeeder::class,
-			InvoiceStatusSeeder::class,
 			TestInvoiceSeeder::class,
         ];
     }

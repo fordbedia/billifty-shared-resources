@@ -41,25 +41,28 @@ class InvoiceRepository extends BaseRepository implements InvoiceContracts
 		$existing = InvoiceItems::query()
 			->where('invoice_id', $invoiceId)
 			->get()
-			->keyBy(fn ($r) => $r->position);
+			->keyBy(fn ($r) => $r->id);
 
-		$seenPositions = [];
+		$existingIds = [];
 
 		foreach($incoming as $row) {
 			$position = (int) ($row->position ?? 0);
-			$seenPositions[$position] = true;
+			if (isset($row['id'])) {
+				$existingIds[] = $row['id'];
+			}
 
 			$payload = [...$row, 'position' => $position];
 
-			if ($existing->has($position)) {
-				$existing[$position]->fill($payload)->save();
+			if (isset($row['id'])) {
+				$existing[$row['id']]->fill($payload)->save();
 			} else {
-				InvoiceItems::create($payload);
+				$invoice->items()->create($payload);
 			}
 		}
-		$toDelete = $existing->filter(fn ($r) => !isset($seenPositions[$r->position]))->pluck('id');
+
+		$toDelete = $existing->filter(fn ($r) => !in_array($r->id, $existingIds))->pluck('id');
 		if ($toDelete->isNotEmpty()) {
-			InvoiceItems::query()->whereIn('id', $toDelete)->delete();
+			InvoiceItems::query()->whereIn('id', $toDelete->toArray())->delete();
 		}
 
 	}

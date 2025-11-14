@@ -11,13 +11,6 @@ return new class extends Migration
      */
     public function up(): void
     {
-		Schema::create('invoice_status', function (Blueprint $table) {
-			$table->id();
-			$table->string('name');
-			$table->string('slug');
-			$table->timestamps();
-		});
-
 		Schema::create('color_scheme', function (Blueprint $table): void {
 			$table->id();
 			$table->string('color_scheme_name')->nullable();
@@ -35,7 +28,6 @@ return new class extends Migration
 			$table->unsignedInteger('invoice_template_id');
 			$table->unsignedInteger('color_scheme_id');
 			$table->unsignedInteger('payment_information_id')->nullable();
-			$table->unsignedInteger('invoice_status_id')->default(1);
 			$table->unsignedInteger('currency_id');
 
 						// BusinessProfile identity
@@ -45,9 +37,10 @@ return new class extends Migration
 
             // Dates & status
             $table->date('issued_on')->nullable();
+			$table->date('issued_at')->nullable();
             $table->date('due_on')->nullable();
             $table->timestamp('paid_at')->nullable();
-            $table->enum('status', ['draft','sent','viewed','partial','paid','void'])
+            $table->enum('status', ['draft','issued','sent','partially','paid','void'])
                   ->default('draft');
 
             // Template snapshot (immutable for this invoice)
@@ -85,7 +78,6 @@ return new class extends Migration
 			$table->foreign('invoice_template_id')->references('id')->on('invoice_templates')->cascadeOnDelete();
 			$table->foreign('color_scheme_id')->references('id')->on('color_scheme')->cascadeOnDelete();
 			$table->foreign('payment_information_id')->references('id')->on('payment_information')->cascadeOnDelete();
-			$table->foreign('invoice_status_id')->references('id')->on('invoice_status')->cascadeOnDelete();
 			$table->foreign('currency_id')->references('id')->on('currency')->cascadeOnDelete();
 			$table->index(['user_id', 'invoice_number'], 'invoices_user_invoice_unique');
         });

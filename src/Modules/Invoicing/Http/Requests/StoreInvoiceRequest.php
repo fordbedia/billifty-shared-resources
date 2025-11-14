@@ -26,7 +26,7 @@ class StoreInvoiceRequest extends FormRequest
             'client_id'           => ['required','integer','exists:clients,id'],
 			'invoice_template_id' => ['required','integer','exists:invoice_templates,id'],
 			'color_scheme_id'      => ['required','integer','exists:color_scheme,id'],
-			'payment_information_id' => ['nullable', 'integer','exists:payment_informations,id'],
+			'payment_information_id' => ['nullable', 'integer','exists:payment_information,id'],
 			'invoice_number'		=> ['required','string','max:100'],
 			'reference'				=> ['nullable','string','max:100'],
 			'currency_id'			=> ['required','integer','max:100'],
@@ -51,7 +51,10 @@ class StoreInvoiceRequest extends FormRequest
             'shipping_cents'      => ['nullable','integer','min:0'],
             'shipping_tax_rate'   => ['nullable','numeric','min:0'],
             'invoice_items'       => ['required','array','min:1'],
+			'invoice_items.*.id' => 'nullable|integer|exists:invoice_items,id',
 			'invoice_items.*.name' => 'nullable|string',
+			'invoice_items.*.description' => 'required|string',
+			'invoice_items.*.invoice_id' => 'nullable|integer|exists:invoices,id',
 			'invoice_items.*.unit' => 'nullable|string',
 			'invoice_items.*.line_discount_rate' => 'nullable|numeric|min:0|max:100',
             'invoice_items.*.quantity'          => ['required','numeric','min:0'],
@@ -61,6 +64,7 @@ class StoreInvoiceRequest extends FormRequest
 			'invoice_items.*.tax_cents'          => ['nullable','integer','min:0'],
 			'invoice_items.*.line_total_cents'   => ['nullable','numeric','min:0'],
 			'invoice_items.*.meta'        		=> 'nullable|json',
+			'action' => 'required|string'
         ];
     }
 }
