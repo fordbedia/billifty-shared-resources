@@ -67,4 +67,23 @@ class StoreInvoiceRequest extends FormRequest
 			'action' => 'required|string'
         ];
     }
+
+	public function attributes(): array
+	{
+		return [
+			'business_profile_id' => 'Business Profile',
+            'client_id'           => 'Client',
+			'invoice_template_id' => 'Invoice Template',
+			'color_scheme_id'      => 'Color Scheme',
+			// 'payment_information_id' => ['nullable', 'integer','exists:payment_information,id'],
+			'invoice_number'		=> 'Invoice Number',
+			// 'reference'				=> ['nullable','string','max:100'],
+			'currency_id'			=> 'Currency',
+			'shipping_address'		=> 'Shipping Address',
+			'issued_on'				=> 'Issue Date',
+			'due_on'				=> 'Due Date',
+			// 'paid_at'				=> ['nullable','date'],
+			// 'template_slug'			=> ['nullable','string','max:100'],
+		];
+	}
 }
