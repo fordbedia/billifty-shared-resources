@@ -3,8 +3,10 @@
 namespace BilliftySDK\SharedResources\Modules\User\Models;
 
 
+use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -46,4 +48,9 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+	public function invoices(): HasMany
+	{
+		return $this->hasMany(Invoices::class, 'user_id', 'id');
+	}
 }

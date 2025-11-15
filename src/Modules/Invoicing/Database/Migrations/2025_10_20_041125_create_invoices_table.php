@@ -70,6 +70,7 @@ return new class extends Migration
 
             $table->json('meta')->nullable();
 						$table->tinyInteger('is_test')->default(0);
+			$table->timestamp('archived_at')->nullable();
             $table->timestamps();
 
 			$table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();

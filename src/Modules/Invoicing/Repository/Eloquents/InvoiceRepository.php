@@ -13,7 +13,7 @@ class InvoiceRepository extends BaseRepository implements InvoiceContracts
 {
 	public function autoInvoiceNumber(): string
 	{
-		$lastInvoice = $this->getByUser()->pluck('invoice_number')->first();
+		$lastInvoice = $this->getByUser()->latest()->pluck('invoice_number')->first();
 		return InvoiceHelpers::incrementInvoiceNumber($lastInvoice);
 	}
 
@@ -70,5 +70,12 @@ class InvoiceRepository extends BaseRepository implements InvoiceContracts
 	public function makeModel(): string
 	{
 		return Invoices::class;
+	}
+
+	public function hasDuplicateInvoice($invoiceNumber): bool
+	{
+		return $this->getByUser()
+			->where('invoice_number', $invoiceNumber)
+			->exists();
 	}
 }

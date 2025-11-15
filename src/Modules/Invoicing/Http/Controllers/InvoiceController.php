@@ -7,6 +7,7 @@ use BilliftySDK\SharedResources\Modules\Invoicing\Domain\InvoiceAction;
 use BilliftySDK\SharedResources\Modules\Invoicing\Http\Requests\StoreInvoiceRequest;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\InvoiceContracts;
 use BilliftySDK\SharedResources\Modules\Invoicing\Services\InvoiceService;
+use BilliftySDK\SharedResources\SDK\Exception\ApiException;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
@@ -39,12 +40,17 @@ class InvoiceController extends Controller
 		return response()->json($invoice, Response::HTTP_CREATED);
     }
 
-    /**
-     * Display the specified resource.
-     */
+	/**
+	 * Display the specified resource.
+	 * @throws ApiException
+	 */
     public function show(string $id, InvoiceContracts $repo)
     {
-        return $repo->findForUpdate($id);
+		try {
+			return $repo->findForUpdate($id);
+		} catch (\Throwable $exception) {
+			throw new ApiException($exception->getMessage(), 404);
+		}
     }
 
     /**

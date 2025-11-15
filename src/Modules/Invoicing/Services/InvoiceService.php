@@ -38,6 +38,12 @@ class InvoiceService
 			throw new DomainException("Cannot perform '{$action->value}' from status '{$fromStatus->value}'.");
 		}
 
+		// Check for ny duplicate invoice_number
+		if ($this->repo->hasDuplicateInvoice($data['invoice_number'])) {
+			DB::rollback();
+			throw new DomainException("Invoice Number has duplicate. Please provide a unique invoice number.");
+		}
+
 		if ($invoice->exists) {
 			InvoiceStateMachine::assertMutableFields($invoice, $data);
 		}
