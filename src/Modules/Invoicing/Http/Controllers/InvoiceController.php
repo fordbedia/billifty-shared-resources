@@ -25,19 +25,24 @@ class InvoiceController extends Controller
 
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
+	/**
+	 * Store a newly created resource in storage.
+	 * @throws ApiException
+	 */
     public function store(
 		StoreInvoiceRequest $request,
 		InvoiceService $invoiceService
-	)
-    {
+	) {
         $data = $request->validated();
 
-		$action = InvoiceAction::from($data['action']); // save_draft typical here
-		$invoice = $invoiceService->upsert($data, $action, id: null);
-		return response()->json($invoice, Response::HTTP_CREATED);
+		try {
+			$action = InvoiceAction::from($data['action']); // save_draft typical here
+			$invoice = $invoiceService->upsert($data, $action, id: null);
+			return response()->json($invoice, Response::HTTP_CREATED);
+		} catch (\Throwable $e) {
+			$errors = ['errors' => [$e->getCode() => $e->getMessage()]];
+			return response()->json($errors, Response::HTTP_INTERNAL_SERVER_ERROR);
+		}
     }
 
 	/**
@@ -62,9 +67,15 @@ class InvoiceController extends Controller
 		string $id
 	) {
 		$data = $request->validated();
-		$action = InvoiceAction::from($data['action']); // save_changes or issue
-		$invoice = $svc->upsert($data, $action, (int) $id);
-		return response()->json($invoice, Response::HTTP_OK);
+
+		try {
+			$action = InvoiceAction::from($data['action']); // save_changes or issue
+			$invoice = $svc->upsert($data, $action, (int)$id);
+			return response()->json($invoice, Response::HTTP_OK);
+		} catch (\Throwable $e) {
+			$errors = ['errors' => [$e->getCode() => $e->getMessage()]];
+			return response()->json($errors, Response::HTTP_INTERNAL_SERVER_ERROR);
+		}
 	}
 
     /**

@@ -73,8 +73,6 @@ class StoreInvoiceRequest extends FormRequest
 		return [
 			'business_profile_id' => 'Business Profile',
             'client_id'           => 'Client',
-			'invoice_template_id' => 'Invoice Template',
-			'color_scheme_id'      => 'Color Scheme',
 			// 'payment_information_id' => ['nullable', 'integer','exists:payment_information,id'],
 			'invoice_number'		=> 'Invoice Number',
 			// 'reference'				=> ['nullable','string','max:100'],
@@ -84,6 +82,14 @@ class StoreInvoiceRequest extends FormRequest
 			'due_on'				=> 'Due Date',
 			// 'paid_at'				=> ['nullable','date'],
 			// 'template_slug'			=> ['nullable','string','max:100'],
+		];
+	}
+
+	public function messages(): array
+	{
+		return [
+			'invoice_template_id' => 'The Invoice Template is required.',
+			'color_scheme_id' => 'The Color Scheme is required.',
 		];
 	}
 }

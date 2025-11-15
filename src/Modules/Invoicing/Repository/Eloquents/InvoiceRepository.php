@@ -7,6 +7,7 @@ use BilliftySDK\SharedResources\Modules\Invoicing\Models\InvoiceItems;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\BaseRepository;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\InvoiceContracts;
+use Illuminate\Database\Eloquent\Model;
 use RuntimeException;
 
 class InvoiceRepository extends BaseRepository implements InvoiceContracts
@@ -72,10 +73,10 @@ class InvoiceRepository extends BaseRepository implements InvoiceContracts
 		return Invoices::class;
 	}
 
-	public function hasDuplicateInvoice($invoiceNumber): bool
+	public function duplicateInvoice($invoiceNumber): Model
 	{
 		return $this->getByUser()
 			->where('invoice_number', $invoiceNumber)
-			->exists();
+			->first();
 	}
 }

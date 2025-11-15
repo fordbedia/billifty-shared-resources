@@ -39,7 +39,8 @@ class InvoiceService
 		}
 
 		// Check for ny duplicate invoice_number
-		if ($this->repo->hasDuplicateInvoice($data['invoice_number'])) {
+		$duplicateInvoice = $this->repo->duplicateInvoice($data['invoice_number']);
+		if ($duplicateInvoice && $duplicateInvoice->id !== $invoice->id) {
 			DB::rollback();
 			throw new DomainException("Invoice Number has duplicate. Please provide a unique invoice number.");
 		}
