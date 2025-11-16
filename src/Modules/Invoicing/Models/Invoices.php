@@ -47,11 +47,17 @@ class Invoices extends Model
 			'colorScheme.colors',
 			'template.category',
 			'paymentInformation',
+			'currency',
 		];
 	}
 
 	public function paymentInformation()
 	{
 		return $this->belongsTo(PaymentInformation::class, 'payment_information_id');
+	}
+
+	public function currency()
+	{
+		return $this->belongsTo(Currency::class, 'currency_id');
 	}
 }

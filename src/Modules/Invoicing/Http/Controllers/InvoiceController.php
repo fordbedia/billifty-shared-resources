@@ -20,9 +20,17 @@ class InvoiceController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request, InvoiceContracts $repo)
     {
-
+		$dateRange = null;
+		if ($request->start_date && $request->end_date) {
+			$dateRange = ['start' => $request->start_date, 'end' => $request->end_date];
+		}
+		$search = null;
+		if ($request->search) {
+			$search = $request->search;
+		}
+		return $repo->paginate(dateRange: $dateRange, search: $search);
     }
 
 	/**

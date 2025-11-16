@@ -63,8 +63,8 @@ abstract class RepositoryLayer
         return $this->model->where($field, $value)->exists();
     }
 
-		public function getByUser(): Builder
-		{
-			return $this->model->where('user_id', auth()->id());
-		}
+	public function getByUser(): Builder
+	{
+		return $this->model->where('user_id', auth()->id());
+	}
 }

@@ -73,10 +73,38 @@ class InvoiceRepository extends BaseRepository implements InvoiceContracts
 		return Invoices::class;
 	}
 
-	public function duplicateInvoice($invoiceNumber): Model
+	public function duplicateInvoice($invoiceNumber): ?Model
 	{
 		return $this->getByUser()
 			->where('invoice_number', $invoiceNumber)
 			->first();
 	}
+
+	public function paginate(
+        $query = null,
+        int $perPage = 15,
+        array $columns = ['*'],
+        string $pageName = 'page',
+        int|null $page = null,
+		$dateRange = null,
+		$search = null,
+    ) {
+        // Add custom condition(s)
+        $query = $this->getByUser()->whereNull('archived_at')->with(Invoices::relationships());
+
+		if ($dateRange) {
+			$query->whereBetween('issued_on', [$dateRange['start'], $dateRange['end']]);
+		}
+
+		if ($search) {
+			$query->whereHas('client', function ($q1) use ($search) {
+				$q1
+					->where('name', 'like', "%{$search}%")
+					->orWhere('email', 'like', "%{$search}%");
+			});
+		}
+
+        // You can chain more: ->where('type', 'admin')->orderBy('name')
+        return parent::paginate($query, $perPage, $columns, $pageName, $page);
+    }
 }
