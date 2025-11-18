@@ -27,7 +27,6 @@ return new class extends Migration
 			$table->unsignedInteger('client_id');
 			$table->unsignedInteger('invoice_template_id');
 			$table->unsignedInteger('color_scheme_id');
-			$table->unsignedInteger('payment_information_id')->nullable();
 			$table->unsignedInteger('currency_id');
 
 						// BusinessProfile identity
@@ -78,7 +77,6 @@ return new class extends Migration
 			$table->foreign('client_id')->references('id')->on('clients')->cascadeOnDelete();
 			$table->foreign('invoice_template_id')->references('id')->on('invoice_templates')->cascadeOnDelete();
 			$table->foreign('color_scheme_id')->references('id')->on('color_scheme')->cascadeOnDelete();
-			$table->foreign('payment_information_id')->references('id')->on('payment_information')->cascadeOnDelete();
 			$table->foreign('currency_id')->references('id')->on('currency')->cascadeOnDelete();
 			$table->index(['user_id', 'invoice_number'], 'invoices_user_invoice_unique');
         });

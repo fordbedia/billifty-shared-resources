@@ -13,25 +13,23 @@ return new class extends Migration
     {
         Schema::create('payment_information', function (Blueprint $table) {
             $table->id();
-						$table->unsignedBigInteger('user_id');
-						$table->enum('payment_method', [
-							'bank_transfer',
-							'paypal',
-							'stripe',
-							'cash_app'
-						]);
-						$table->string('bank_name');
-						$table->string('account_name');
-						$table->string('account_number');
-						$table->string('routing_number');
-						$table->string('iban')->nullable();
-						$table->string('swift_code')->nullable();
-						$table->string('paypal_email')->nullable();
-						$table->string('cash_app')->nullable();
-						$table->text('notes')->nullable();
-						$table->tinyInteger('is_test')->default(0);
+			$table->enum('payment_method', [
+				'bank_transfer',
+				'paypal',
+				'stripe',
+				'cash_app'
+			]);
+			$table->string('bank_name')->nullable();
+			$table->string('account_name')->nullable();
+			$table->string('account_number')->nullable();
+			$table->string('routing_number')->nullable();
+			$table->string('iban')->nullable();
+			$table->string('swift_code')->nullable();
+			$table->string('paypal_email')->nullable();
+			$table->string('cash_app')->nullable();
+			$table->text('notes')->nullable();
+			$table->tinyInteger('is_test')->default(0);
             $table->timestamps();
-						$table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

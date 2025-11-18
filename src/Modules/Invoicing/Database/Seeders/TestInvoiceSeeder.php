@@ -83,14 +83,10 @@ class TestInvoiceSeeder extends MakeSeeder
     public function run(): void
     {
 			$user = User::where('email', 'fordbedia@billifty.com')->first();
-			foreach($this->businessProfile as $businessProfile) {
-				BusinessProfiles::updateOrCreate(array_merge($businessProfile, ['user_id' => $user->id]));
-			}
 
 			foreach($this->clients as $client) {
 				Clients::updateOrCreate(array_merge($client, ['user_id' => $user->id]));
 			}
-			$businessProfile = BusinessProfiles::where('email', 'test_company_llc@gmail.com')->first();
 			$client = Clients::where('name', 'John Doe')->first();
 			$invoiceTemplate = InvoiceTemplates::where('slug', 'moderno')->first();
 			$colorScheme = ColorScheme::where('slug', 'ocean')->first();
@@ -99,7 +95,6 @@ class TestInvoiceSeeder extends MakeSeeder
 				'account_number' => '123456789',
 				'routing_number' => '12345678914662',
 			],[
-				'user_id' => $user->id,
 				'payment_method' => 'bank_transfer',
 				'bank_name' => 'BoFa',
 				'account_name' => 'John Doe',
@@ -107,11 +102,15 @@ class TestInvoiceSeeder extends MakeSeeder
 				'is_test' => 1,
 			]);
 
+			foreach($this->businessProfile as $businessProfile) {
+				BusinessProfiles::updateOrCreate(array_merge($businessProfile, ['user_id' => $user->id, 'payment_information_id' => $paymentInfo->id]));
+			}
+			$businessProfile = BusinessProfiles::where('email', 'test_company_llc@gmail.com')->first();
+
 			$invoice = Invoices::updateOrCreate([
 				'business_profile_id' => $businessProfile->id,
 				'client_id' => $client->id,
 			],[
-				'payment_information_id' => $paymentInfo->id,
 				'user_id' => $user->id,
 				'invoice_template_id' => $invoiceTemplate->id,
 				'color_scheme_id' => $colorScheme->id,

@@ -13,9 +13,10 @@ return new class extends Migration
     {
         Schema::create('business_profiles', function (Blueprint $table) {
             $table->id();
-						$table->unsignedBigInteger('user_id');
-						$table->string('name');
-						$table->string('legal_name')->nullable();
+			$table->unsignedBigInteger('user_id');
+			$table->unsignedBigInteger('payment_information_id')->nullable();
+			$table->string('name');
+			$table->string('legal_name')->nullable();
             $table->string('email')->nullable();
             $table->string('phone')->nullable();
             $table->string('website')->nullable();
@@ -29,15 +30,17 @@ return new class extends Migration
             $table->string('postal_code')->nullable();
             $table->string('country')->nullable();
 
+			$table->string('logo_disk')->default('public');
             $table->string('logo_path')->nullable(); // e.g., s3 path
             $table->json('branding_json')->nullable(); // optional extra branding
-						$table->tinyInteger('is_test')->default(0);
+			$table->tinyInteger('is_test')->default(0);
             $table->timestamps();
 
-						$table->foreign('user_id')
-							->references('id')
-							->on('users')
-							->cascadeOnDelete();
+			$table->foreign('user_id')
+				->references('id')
+				->on('users')
+				->cascadeOnDelete();
+			$table->foreign('payment_information_id')->references('id')->on('payment_information')->cascadeOnDelete();
         });
     }
 
