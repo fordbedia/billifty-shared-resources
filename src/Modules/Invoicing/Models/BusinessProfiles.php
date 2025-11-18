@@ -8,5 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 class BusinessProfiles extends Model
 {
     protected $table = 'business_profiles';
-		protected $guarded = [];
+	protected $guarded = [];
+
+	public function paymentInformation()
+	{
+		return $this->hasOne(PaymentInformation::class, 'id', 'payment_information_id');
+	}
 }

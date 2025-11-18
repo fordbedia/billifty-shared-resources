@@ -20,6 +20,11 @@ class BusinessProfileController extends Controller
         return $businessProfile->get();
     }
 
+	public function getAll(BusinessProfileContract $businessProfile)
+	{
+		return $businessProfile->paginate();
+	}
+
     /**
      * Store a newly created resource in storage.
      */

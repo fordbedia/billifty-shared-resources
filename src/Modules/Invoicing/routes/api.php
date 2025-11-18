@@ -16,6 +16,8 @@ Route::group(['prefix' => 'v1'], function () {
 		Route::get('/generated-invoice-number', [InvoiceController::class, 'generateInvoiceNumber']);
 		Route::post('/save-draft', [InvoiceController::class, 'saveDraft']);
 	});
+
+	Route::get('business-profile/get-all', [BusinessProfileController::class, 'getAll']);
 	Route::apiResource('invoice', InvoiceController::class);
 	Route::get('template/category/{id}', [TemplateController::class, 'getTemplate']);
 	Route::apiResource('business-profile', BusinessProfileController::class);

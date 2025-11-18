@@ -51,4 +51,28 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
 
 		return null;
 	}
+
+	public function paginate(
+        $query = null,
+        int $perPage = 15,
+        array $columns = ['*'],
+        string $pageName = 'page',
+        int|null $page = null,
+		$dateRange = null,
+		$search = null,
+    ) {
+        // Add custom condition(s)
+        $query = $this->getByUser()->whereNull('archived_at')->with(['paymentInformation']);
+
+//		if ($search) {
+//			$query->whereHas('client', function ($q1) use ($search) {
+//				$q1
+//					->where('name', 'like', "%{$search}%")
+//					->orWhere('email', 'like', "%{$search}%");
+//			});
+//		}
+
+        // You can chain more: ->where('type', 'admin')->orderBy('name')
+        return parent::paginate($query, $perPage, $columns, $pageName, $page);
+    }
 }

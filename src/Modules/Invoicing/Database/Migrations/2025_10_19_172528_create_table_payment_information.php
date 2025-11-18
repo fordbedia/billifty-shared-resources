@@ -18,7 +18,7 @@ return new class extends Migration
 				'paypal',
 				'stripe',
 				'cash_app'
-			]);
+			])->nullable();
 			$table->string('bank_name')->nullable();
 			$table->string('account_name')->nullable();
 			$table->string('account_number')->nullable();
