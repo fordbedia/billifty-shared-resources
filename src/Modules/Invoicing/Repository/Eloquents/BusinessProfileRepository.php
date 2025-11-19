@@ -17,6 +17,11 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
 		return $this->getByUser()->get();
 	}
 
+	public function findById(int $id)
+	{
+		return $this->getByUser()->findOrFail($id);
+	}
+
 	public function makeModel(): string
 	{
 		return BusinessProfiles::class;
@@ -32,25 +37,89 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
 		return "logo_{$hash}.{$extension}";
 	}
 
-	public function store(array $data, array $paymentInfoData)
+	public function createWithPaymentInfo(array $data, array $paymentInfoData): BusinessProfiles
 	{
-		$paymentInfo = $this->syncPaymentInfo($paymentInfoData);
+		$paymentInfo = $this->savePaymentInformation(null, $paymentInfoData);
 
-		return $this->getByUser()->create([
-			...$data,
-			'user_id' => auth()->id(),
-			'payment_information_id' => $paymentInfo->id
-		]);
+		$data['user_id'] = auth()->id();
+        $data['payment_information_id'] = $paymentInfo?->id;
+
+		 /** @var BusinessProfiles $profile */
+        $profile = $this->getByUser()->create($data);
+
+        return $profile->fresh(['paymentInformation']);
 	}
+
+	/**
+     * UPDATE
+     */
+    public function updateWithPaymentInfo(
+        int $id,
+        array $data,
+        array $paymentInfoData
+    ): BusinessProfiles {
+        /** @var BusinessProfiles $profile */
+        $profile = $this->findById($id);
+
+        $paymentInfo = $this->savePaymentInformation(
+            $profile->payment_information_id,
+            $paymentInfoData
+        );
+
+        if ($paymentInfo) {
+            $data['payment_information_id'] = $paymentInfo->id;
+        }
+
+        $profile->fill($data);
+        $profile->save();
+
+        return $profile->fresh(['paymentInformation']);
+    }
 
 	public function syncPaymentInfo(array $data): ?Model
 	{
 		if ($data['paymentInfo']) {
+			if (isset($data['paymentInfo']['id']) && $data['paymentInfo']['id']) {
+				return PaymentInformation::where('id', $data['paymentInfo']['id'])
+					->update($data['paymentInfo']);
+			}
 			return PaymentInformation::create($data['paymentInfo']);
 		}
 
 		return null;
 	}
+
+	/**
+     * “Upsert” payment info.
+     * - If id exists → update
+     * - Else → create
+     */
+    protected function savePaymentInformation(
+        ?int $existingPaymentInformationId,
+        array $paymentInfoData
+    ): ?PaymentInformation {
+        // If nothing was submitted, just bail out
+        if (empty($paymentInfoData)) {
+            return null;
+        }
+
+        // If you keep nesting under paymentInfo[...] in the request,
+        // normalize here so the repo always deals with a flat array.
+        if (isset($paymentInfoData['paymentInfo'])) {
+            $paymentInfoData = $paymentInfoData['paymentInfo'];
+        }
+
+        if ($existingPaymentInformationId) {
+            /** @var PaymentInformation $paymentInfo */
+            $paymentInfo = PaymentInformation::findOrFail($existingPaymentInformationId);
+            $paymentInfo->fill($paymentInfoData);
+            $paymentInfo->save();
+
+            return $paymentInfo;
+        }
+
+        return PaymentInformation::create($paymentInfoData);
+    }
 
 	public function paginate(
         $query = null,

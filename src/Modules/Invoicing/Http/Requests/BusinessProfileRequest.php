@@ -15,6 +15,9 @@ class BusinessProfileRequest extends FormRequest
 	public function rules(): array
 	{
 		return [
+			'id' => ['nullable', 'integer'],
+			'payment_information_id' => ['nullable', 'integer'],
+			'user_id' => ['nullable', 'integer'],
 			'name' => ['required', 'string', 'max:255'],
 			'legal_name' => ['required', 'string', 'max:255'],
 			'email' => ['required', 'string', 'max:255'],
@@ -29,7 +32,7 @@ class BusinessProfileRequest extends FormRequest
 			'postal_code' => ['nullable', 'string'],
 			'country' => ['nullable', 'string'],
 			'logo_disk' => ['nullable', 'string'],
-			'logo_path' => ['nullable', 'image', 'max:2048'],
+			'logo_path' => ['nullable'],
 			'branding_json' => ['nullable', 'string'],
 		];
 	}

@@ -14,11 +14,12 @@ class PaymentInformationRequest extends FormRequest
 	public function rules(): array
 	{
 		return [
+			'paymentInfo.id' => ['nullable', 'integer'],
 			'paymentInfo.payment_method' => ['nullable', 'string'],
-			'bank_name'        => ['required_if:payment_method,bank_transfer', 'string'],
-			'account_name'     => ['required_if:payment_method,bank_transfer', 'string'],
-			'account_number'   => ['required_if:payment_method,bank_transfer', 'string'],
-			'routing_number'   => ['required_if:payment_method,bank_transfer', 'string'],
+			'paymentInfo.bank_name'        => ['required_if:payment_method,bank_transfer', 'string'],
+			'paymentInfo.account_name'     => ['required_if:payment_method,bank_transfer', 'string'],
+			'paymentInfo.account_number'   => ['required_if:payment_method,bank_transfer', 'string'],
+			'paymentInfo.routing_number'   => ['required_if:payment_method,bank_transfer', 'string'],
 			'paymentInfo.iban' => ['nullable', 'string'],
 			'paymentInfo.swift_code' => ['nullable', 'string'],
 			'paymentInfo.paypal_email' => ['nullable', 'string'],
