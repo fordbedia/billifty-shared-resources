@@ -14,17 +14,37 @@ class PaymentInformationRequest extends FormRequest
 	public function rules(): array
 	{
 		return [
-			'paymentInfo.id' => ['nullable', 'integer'],
-			'paymentInfo.payment_method' => ['nullable', 'string'],
-			'paymentInfo.bank_name'        => ['required_if:payment_method,bank_transfer', 'string'],
-			'paymentInfo.account_name'     => ['required_if:payment_method,bank_transfer', 'string'],
-			'paymentInfo.account_number'   => ['required_if:payment_method,bank_transfer', 'string'],
-			'paymentInfo.routing_number'   => ['required_if:payment_method,bank_transfer', 'string'],
-			'paymentInfo.iban' => ['nullable', 'string'],
-			'paymentInfo.swift_code' => ['nullable', 'string'],
-			'paymentInfo.paypal_email' => ['nullable', 'string'],
-			'paymentInfo.cash_app' => ['nullable', 'string'],
-			'paymentInfo.notes' => ['nullable', 'string'],
-		];
+            'paymentInfo.id'                 => ['nullable', 'integer'],
+
+            'paymentInfo.payment_method'     => ['nullable', 'string'],
+
+            // Only care about these IF payment_method === bank_transfer
+            'paymentInfo.bank_name'          => [
+                'exclude_unless:paymentInfo.payment_method,bank_transfer',
+                'required',
+                'string',
+            ],
+            'paymentInfo.account_name'       => [
+                'exclude_unless:paymentInfo.payment_method,bank_transfer',
+                'required',
+                'string',
+            ],
+            'paymentInfo.account_number'     => [
+                'exclude_unless:paymentInfo.payment_method,bank_transfer',
+                'required',
+                'string',
+            ],
+            'paymentInfo.routing_number'     => [
+                'exclude_unless:paymentInfo.payment_method,bank_transfer',
+                'required',
+                'string',
+            ],
+
+            'paymentInfo.iban'               => ['nullable', 'string'],
+            'paymentInfo.swift_code'         => ['nullable', 'string'],
+            'paymentInfo.paypal_email'       => ['nullable', 'string'],
+            'paymentInfo.cash_app'           => ['nullable', 'string'],
+            'paymentInfo.notes'              => ['nullable', 'string'],
+        ];
 	}
 }
