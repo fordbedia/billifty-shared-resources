@@ -36,4 +36,13 @@ class BusinessProfileRequest extends FormRequest
 			'branding_json' => ['nullable', 'string'],
 		];
 	}
+
+	public function attributes(): array
+	{
+		return [
+			'name' => 'Name',
+			'legal_name' => 'Legal Name',
+			'email' => 'Email',
+		];
+	}
 }

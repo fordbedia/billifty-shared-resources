@@ -26,6 +26,7 @@ return new class extends Migration
 			$table->string('iban')->nullable();
 			$table->string('swift_code')->nullable();
 			$table->string('paypal_email')->nullable();
+			$table->string('stripe_payment_link')->nullable();
 			$table->string('cash_app')->nullable();
 			$table->text('notes')->nullable();
 			$table->tinyInteger('is_test')->default(0);
