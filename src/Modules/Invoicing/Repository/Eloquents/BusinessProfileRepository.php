@@ -76,19 +76,6 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
         return $profile->fresh(['paymentInformation']);
     }
 
-	public function syncPaymentInfo(array $data): ?Model
-	{
-		if ($data['paymentInfo']) {
-			if (isset($data['paymentInfo']['id']) && $data['paymentInfo']['id']) {
-				return PaymentInformation::where('id', $data['paymentInfo']['id'])
-					->update($data['paymentInfo']);
-			}
-			return PaymentInformation::create($data['paymentInfo']);
-		}
-
-		return null;
-	}
-
 	/**
      * “Upsert” payment info.
      * - If id exists → update
@@ -133,13 +120,12 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
         // Add custom condition(s)
         $query = $this->getByUser()->whereNull('archived_at')->with(['paymentInformation']);
 
-//		if ($search) {
-//			$query->whereHas('client', function ($q1) use ($search) {
-//				$q1
-//					->where('name', 'like', "%{$search}%")
-//					->orWhere('email', 'like', "%{$search}%");
-//			});
-//		}
+		if ($search) {
+			$query->where(function ($query) use ($search) {
+				$query->where('name', 'like', "%{$search}%")
+					->orWhere('email', 'like', "%{$search}%");
+			});
+		}
 
         // You can chain more: ->where('type', 'admin')->orderBy('name')
         return parent::paginate($query, $perPage, $columns, $pageName, $page);

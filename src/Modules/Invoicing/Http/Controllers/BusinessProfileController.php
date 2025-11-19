@@ -21,9 +21,9 @@ class BusinessProfileController extends Controller
         return $businessProfile->get();
     }
 
-	public function getAll(BusinessProfileContract $businessProfile)
+	public function getAll(Request $request, BusinessProfileContract $businessProfile)
 	{
-		return $businessProfile->paginate();
+		return $businessProfile->paginate(search: $request['search']);
 	}
 
     /**
