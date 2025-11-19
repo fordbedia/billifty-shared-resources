@@ -111,4 +111,9 @@ class BusinessProfileController extends Controller
     {
         //
     }
+
+	public function archive(int $id, BusinessProfileContract $repo)
+	{
+		return $repo->archive($id);
+	}
 }

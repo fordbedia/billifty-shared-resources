@@ -18,6 +18,7 @@ Route::group(['prefix' => 'v1'], function () {
 	});
 
 	Route::get('business-profile/get-all', [BusinessProfileController::class, 'getAll']);
+	Route::post('business-profile/archive/{id}', [BusinessProfileController::class, 'archive']);
 	Route::apiResource('invoice', InvoiceController::class);
 	Route::get('template/category/{id}', [TemplateController::class, 'getTemplate']);
 	Route::apiResource('business-profile', BusinessProfileController::class);

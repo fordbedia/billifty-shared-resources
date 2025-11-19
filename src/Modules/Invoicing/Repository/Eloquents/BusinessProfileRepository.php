@@ -108,6 +108,11 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
         return PaymentInformation::create($paymentInfoData);
     }
 
+	public function archive(int $id)
+	{
+		return $this->getByUser()->whereKey($id)->update(['archived_at' => now()]);
+	}
+
 	public function paginate(
         $query = null,
         int $perPage = 15,
