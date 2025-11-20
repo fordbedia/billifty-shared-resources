@@ -12,9 +12,9 @@ class ClientsController extends Controller
      * Display a listing of the resource.
      */
     public function index(
-			Request $request,
-			ClientsContract $clients
-		) {
+		Request $request,
+		ClientsContract $clients
+	) {
         return $clients->all();
     }
 
@@ -49,4 +49,9 @@ class ClientsController extends Controller
     {
         //
     }
+
+	public function paginate(Request $request, ClientsContract $repo)
+	{
+		return $repo->paginate();
+	}
 }

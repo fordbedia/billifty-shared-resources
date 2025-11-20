@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('clients', function (Blueprint $table) {
             $table->id();
-						$table->unsignedBigInteger('user_id');
-						$table->string('name');
+			$table->unsignedBigInteger('user_id');
+			$table->string('name');
             $table->string('company')->nullable();
             $table->string('email')->nullable();
             $table->string('phone')->nullable();
@@ -30,13 +30,14 @@ return new class extends Migration
             $table->string('country')->nullable();
 
             $table->json('meta')->nullable();
-						$table->tinyInteger('is_test')->default(0);
+			$table->tinyInteger('is_test')->default(0);
             $table->timestamps();
+			$table->timestamp('archived_at')->nullable();
 
-						$table->foreign('user_id')
-							->references('id')
-							->on('users')
-							->cascadeOnDelete();
+			$table->foreign('user_id')
+				->references('id')
+				->on('users')
+				->cascadeOnDelete();
         });
     }
 
