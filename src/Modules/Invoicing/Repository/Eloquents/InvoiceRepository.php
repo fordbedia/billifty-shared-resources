@@ -8,6 +8,7 @@ use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\BaseRepository;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\InvoiceContracts;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 use RuntimeException;
 
 class InvoiceRepository extends BaseRepository implements InvoiceContracts
@@ -20,7 +21,7 @@ class InvoiceRepository extends BaseRepository implements InvoiceContracts
 
 	public function findForUpdate(int $id): Invoices
 	{
-		$row = $this->model->whereKey($id)->lockForUpdate()->first();
+		$row = $this->model->where('user_id', Auth::user()->id)->whereKey($id)->lockForUpdate()->first();
 		if (!$row) {
 			throw new RuntimeException("Invoice {$id} could not be found.");
 		}
@@ -90,7 +91,7 @@ class InvoiceRepository extends BaseRepository implements InvoiceContracts
 		$search = null,
     ) {
         // Add custom condition(s)
-        $query = $this->getByUser()->whereNull('archived_at')->with(Invoices::relationships());
+        $query = $this->getByUser()->with(Invoices::relationships());
 
 		if ($dateRange) {
 			$query->whereBetween('issued_on', [$dateRange['start'], $dateRange['end']]);

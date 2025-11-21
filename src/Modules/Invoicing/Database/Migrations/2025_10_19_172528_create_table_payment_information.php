@@ -31,6 +31,7 @@ return new class extends Migration
 			$table->text('notes')->nullable();
 			$table->tinyInteger('is_test')->default(0);
             $table->timestamps();
+			$table->softDeletes();
         });
     }
 

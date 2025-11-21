@@ -110,7 +110,7 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
 
 	public function archive(int $id)
 	{
-		return $this->getByUser()->whereKey($id)->update(['archived_at' => now()]);
+		return $this->getByUser()->whereKey($id)->delete();
 	}
 
 	public function paginate(
@@ -123,7 +123,7 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
 		$search = null,
     ) {
         // Add custom condition(s)
-        $query = $this->getByUser()->whereNull('archived_at')->with(['paymentInformation']);
+        $query = $this->getByUser()->with(['paymentInformation']);
 
 		if ($search) {
 			$query->where(function ($query) use ($search) {

@@ -32,7 +32,7 @@ return new class extends Migration
             $table->json('meta')->nullable();
 			$table->tinyInteger('is_test')->default(0);
             $table->timestamps();
-			$table->timestamp('archived_at')->nullable();
+			$table->softDeletes();
 
 			$table->foreign('user_id')
 				->references('id')

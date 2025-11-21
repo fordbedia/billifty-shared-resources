@@ -5,6 +5,9 @@ namespace BilliftySDK\SharedResources\Modules\Invoicing\Repository\Eloquents;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Clients;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\BaseRepository;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\ClientsContract;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class ClientsRepository extends BaseRepository implements ClientsContract
 {
@@ -18,6 +21,31 @@ class ClientsRepository extends BaseRepository implements ClientsContract
 		return Clients::class;
 	}
 
+	public function findById(int $id): Model
+	{
+		return $this->getByUser()->whereKey($id)->firstOrFail();
+	}
+
+	public function save(array $data, int $id = null): Model
+	{
+		DB::beginTransaction();
+		if ($id && $id === (int)$data['id']) {
+			$model = $this->getByUser()->findOrFail($id);
+		} else {
+			$model = new Clients($data);
+		}
+
+		$model->user_id = Auth::user()->id;
+
+		if ($model->exists()) {
+			$model->fill($data);
+		}
+
+		$model->save();
+		DB::commit();
+		return $model->refresh();
+	}
+
 	public function paginate(
         $query = null,
         int $perPage = 15,
@@ -28,7 +56,7 @@ class ClientsRepository extends BaseRepository implements ClientsContract
 		$search = null,
     ) {
         // Add custom condition(s)
-        $query = $this->getByUser()->whereNull('archived_at');
+        $query = $this->getByUser();
 
 //		if ($search) {
 //			$query->where(function ($query) use ($search) {

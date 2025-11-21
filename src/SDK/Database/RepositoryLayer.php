@@ -2,6 +2,7 @@
 
 namespace BilliftySDK\SharedResources\SDK\Database;
 
+use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\ClientsContract;
 use http\Exception\RuntimeException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
@@ -34,6 +35,11 @@ abstract class RepositoryLayer
     {
         return $this->model->find($id);
     }
+
+	public function destroy(int $id)
+	{
+		return $this->getByUser()->whereKey($id)->delete();
+	}
 
     public function findBy(string $field, string $value): self
     {

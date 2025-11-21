@@ -59,7 +59,6 @@ return new class extends Migration
 			$table->bigInteger('shipping_tax_cents')->default(0);
             $table->bigInteger('total_cents')->default(0);
             $table->bigInteger('amount_due_cents')->default(0);
-			$table->timestamp('deleted_at')->nullable();
 
             // Notes & attachments
             $table->text('notes')->nullable();      // visible to client
@@ -68,8 +67,8 @@ return new class extends Migration
             $table->longText('render_snapshot_html')->nullable(); // optional HTML
 
             $table->json('meta')->nullable();
-						$table->tinyInteger('is_test')->default(0);
-			$table->timestamp('archived_at')->nullable();
+			$table->tinyInteger('is_test')->default(0);
+			$table->softDeletes();
             $table->timestamps();
 
 			$table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
