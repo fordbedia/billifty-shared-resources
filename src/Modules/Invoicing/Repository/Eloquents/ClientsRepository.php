@@ -58,12 +58,13 @@ class ClientsRepository extends BaseRepository implements ClientsContract
         // Add custom condition(s)
         $query = $this->getByUser();
 
-//		if ($search) {
-//			$query->where(function ($query) use ($search) {
-//				$query->where('name', 'like', "%{$search}%")
-//					->orWhere('email', 'like', "%{$search}%");
-//			});
-//		}
+		if ($search) {
+			$query->where(function ($q1) use ($search) {
+				$q1->where('name', 'like', "%{$search}%")
+					->orWhere('company', 'like', "%{$search}%")
+					->orWhere('email', 'like', "%{$search}%");
+			});
+		}
 
         // You can chain more: ->where('type', 'admin')->orderBy('name')
         return parent::paginate($query, $perPage, $columns, $pageName, $page);

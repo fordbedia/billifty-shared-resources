@@ -62,6 +62,10 @@ class ClientsController extends Controller
 
 	public function paginate(Request $request, ClientsContract $repo)
 	{
-		return $repo->paginate();
+		$search = null;
+		if ($request->search) {
+			$search = $request->search;
+		}
+		return $repo->paginate(search: $search);
 	}
 }
