@@ -79,7 +79,7 @@ class InvoiceController extends Controller
 		try {
 			$action = InvoiceAction::from($data['action']); // save_changes or issue
 			$invoice = $svc->upsert($data, $action, (int)$id);
-			return response()->json($invoice, Response::HTTP_OK);
+			return response()->json([...$invoice->toArray(), 'action' => InvoiceAction::actionStatus($data['action'])], Response::HTTP_OK);
 		} catch (\Throwable $e) {
 			$errors = ['errors' => [$e->getCode() => $e->getMessage()]];
 			return response()->json($errors, Response::HTTP_INTERNAL_SERVER_ERROR);
@@ -89,9 +89,9 @@ class InvoiceController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(int $id, InvoiceContracts $repo)
     {
-        //
+        return $repo->deleteInvoice($id);
     }
 
 	public function saveDraft(

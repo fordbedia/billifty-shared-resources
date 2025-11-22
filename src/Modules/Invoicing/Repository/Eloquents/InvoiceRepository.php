@@ -81,6 +81,11 @@ class InvoiceRepository extends BaseRepository implements InvoiceContracts
 			->first();
 	}
 
+	public function deleteInvoice(int $id)
+	{
+		return $this->getByUser()->whereKey($id)->delete();
+	}
+
 	public function paginate(
         $query = null,
         int $perPage = 15,
