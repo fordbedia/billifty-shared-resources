@@ -174,6 +174,7 @@ abstract class ModularMakeCommand extends ModularCommand
 			case 'provider':
 				$this->fileName = $this->className;
 				$this->stubPath = $this->resolveProviderStubPath('stub');
+				break;
 			case 'request':
 				$this->fileName = $this->className;
 				$this->stubPath = $this->resolveRequestStubPath('stub');

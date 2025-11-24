@@ -64,6 +64,15 @@ abstract class RepositoryLayer
         return $this->model->create($data);
     }
 
+	public function update(array $data, ?int $id = null): Model|bool
+	{
+		if ($id) {
+			return $this->model->whereKey($id)->update($data);
+		}
+
+		return $this->model->update($data);
+	}
+
     public function isExists(string $field, string $value): bool
     {
         return $this->model->where($field, $value)->exists();

@@ -3,6 +3,7 @@
 namespace BilliftySDK\SharedResources;
 
 use BilliftySDK\SharedResources\Modules\Invoicing\InvoicingProvider;
+use BilliftySDK\SharedResources\Modules\User\UserProvider;
 use BilliftySDK\SharedResources\SDK\Console\Config\Make;
 use BilliftySDK\SharedResources\SDK\Console\Config\ResetTestData;
 use Illuminate\Support\Facades\Route;
@@ -12,7 +13,8 @@ use Illuminate\Support\Facades\File;
 class SharedResourceServiceProvider extends ServiceProvider
 {
     protected array $providers = [
-			InvoicingProvider::class,
+		InvoicingProvider::class,
+		UserProvider::class
     ];
 
     public function boot()
@@ -42,7 +44,7 @@ class SharedResourceServiceProvider extends ServiceProvider
         $moduleDirs = File::directories($modulesPath);
 
         foreach ($moduleDirs as $moduleDir) {
-						$moduleName = basename($moduleDir); // e.g., "Invoicing"
+			$moduleName = basename($moduleDir); // e.g., "Invoicing"
             // ==============================================================
             // Load Route Path: web and api.php
             // ==============================================================

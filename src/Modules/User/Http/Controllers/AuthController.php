@@ -1,0 +1,57 @@
+<?php
+
+namespace BilliftySDK\SharedResources\Modules\User\Http\Controllers;
+
+use App\Http\Controllers\Controller;
+use BilliftySDK\SharedResources\Modules\User\Auth\GoogleAuthService;
+use BilliftySDK\SharedResources\Modules\User\AuthTypes\PasswordAuthServiceInterface;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class AuthController extends Controller
+{
+	public function __construct(
+		protected PasswordAuthServiceInterface $passwordAuth,
+		protected GoogleAuthService            $googleAuth,
+	)
+	{}
+
+	public function login(Request $request)
+    {
+        $result = $this->passwordAuth->login($request);
+
+        $user  = $result->user;
+        $token = $result->token;
+
+        Auth::login($user, true);
+
+        return response()->json([
+            'user'  => [
+                'id'     => $user->id,
+                'name'   => $user->name,
+                'email'  => $user->email,
+                'avatar' => $user->avatar,
+            ],
+            'token' => $token,
+        ]);
+    }
+
+    // 2) Google callback login
+    public function googleCallback(Request $request)
+    {
+        $result = $this->googleAuth->handleCallback($request);
+
+        $user  = $result->user;
+        $token = $result->token;
+
+        Auth::login($user, true);
+
+        $frontendUrl = config('app.frontend_url');
+
+        return response()->view('user::auth.google-bridge', [
+            'token'   => $token,
+            'user'    => $user,
+            'nextUrl' => $frontendUrl . '/app/welcome',
+        ]);
+    }
+}
