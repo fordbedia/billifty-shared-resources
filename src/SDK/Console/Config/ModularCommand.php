@@ -97,7 +97,7 @@ abstract class ModularCommand extends Command
 
         // hydrate if you still need to store them on the object
         $this->shortName           = $data['shortName'];
-        $this->reflectionFileName            = $data['reflectionFileName'];
+        $this->reflectionFileName  = $data['reflectionFileName'];
         $this->reflectionClassName = $data['reflectionClassName'];
 
         return (object) $data;

@@ -3,6 +3,7 @@
 namespace BilliftySDK\SharedResources\SDK\Console\Config;
 
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 
 class Make extends ModularMakeCommand
 {
@@ -34,6 +35,7 @@ class Make extends ModularMakeCommand
 			'make:resource'   	=> 'Http/Resources',
 			'make:provider'  	=> 'Providers',
 			'make:request'    	=> 'Http/Requests',
+			'make:observer'   	=> 'Observers',
         ];
 
         $subPath = $paths[$command] ?? 'Misc';
@@ -75,7 +77,9 @@ class Make extends ModularMakeCommand
                 '{{ rootNamespace }}',
                 '{{ table }}',
                 '{{ factoryImport }}',
-                '{{ factory }}'
+                '{{ factory }}',
+				'{{ model }}',
+				'{{ modelVariable }}',
             ],
             [
                 $this->calculateNamespace(),
@@ -83,7 +87,9 @@ class Make extends ModularMakeCommand
                 app()->getNamespace(),
                 $this->table ?: $this->create, // fallback if --table is not provided
                 $this->factory ? 'use Illuminate\Database\Eloquent\Factories\HasFactory;' : '',
-                $this->factory ? 'use HasFactory;' : ''
+                $this->factory ? 'use HasFactory;' : '',
+				$this->modelName,
+				Str::camel($this->modelName)
             ],
             $stub
         );
@@ -111,6 +117,8 @@ class Make extends ModularMakeCommand
 				return 'BilliftySDK\\SharedResources\\Modules\\' . $this->module . '\\Providers';
 			case 'request':
 				return 'BilliftySDK\\SharedResources\\Modules\\' . $this->module . '\\Http\\Requests';
+			case 'observer':
+				return 'BilliftySDK\\SharedResources\\Modules\\' . $this->module . '\\Observers';
             default:
                 return '';
         }

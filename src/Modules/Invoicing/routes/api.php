@@ -10,23 +10,26 @@ use BilliftySDK\SharedResources\Modules\Invoicing\Http\Controllers\TemplateContr
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
-Auth::loginUsingId(1);
-Route::group(['prefix' => 'v1'], function () {
-	Route::prefix('invoice')->group(function () {
-		Route::get('/generated-invoice-number', [InvoiceController::class, 'generateInvoiceNumber']);
-		Route::post('/save-draft', [InvoiceController::class, 'saveDraft']);
-	});
+//Auth::loginUsingId(1);
+Route::prefix('v1')->group(function () {
 
-	Route::get('business-profile/get-all', [BusinessProfileController::class, 'getAll']);
-	Route::post('business-profile/archive/{id}', [BusinessProfileController::class, 'archive']);
-	// Client
-	Route::get('client/paginate', [ClientsController::class, 'paginate']);
-	Route::apiResource('invoice', InvoiceController::class);
-	Route::get('template/category/{id}', [TemplateController::class, 'getTemplate']);
-	Route::apiResource('business-profile', BusinessProfileController::class);
-	Route::apiResource('client', ClientsController::class);
-	Route::apiResource('currency', CurrencyController::class);
-	Route::apiResource('template-category', TemplateCategoryController::class);
-	Route::apiResource('template', TemplateController::class);
-	Route::apiResource('color-scheme', ColorSchemeController::class);
+	Route::middleware('auth:api')->group(function () {
+		Route::prefix('invoice')->group(function () {
+			Route::get('/generated-invoice-number', [InvoiceController::class, 'generateInvoiceNumber']);
+			Route::post('/save-draft', [InvoiceController::class, 'saveDraft']);
+		});
+
+		Route::get('business-profile/get-all', [BusinessProfileController::class, 'getAll']);
+		Route::post('business-profile/archive/{id}', [BusinessProfileController::class, 'archive']);
+		// Client
+		Route::get('client/paginate', [ClientsController::class, 'paginate']);
+		Route::apiResource('invoice', InvoiceController::class);
+		Route::get('template/category/{id}', [TemplateController::class, 'getTemplate']);
+		Route::apiResource('business-profile', BusinessProfileController::class);
+		Route::apiResource('client', ClientsController::class);
+		Route::apiResource('currency', CurrencyController::class);
+		Route::apiResource('template-category', TemplateCategoryController::class);
+		Route::apiResource('template', TemplateController::class);
+		Route::apiResource('color-scheme', ColorSchemeController::class);
+	});
 });

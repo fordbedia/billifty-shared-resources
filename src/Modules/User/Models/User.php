@@ -22,6 +22,8 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
+		'fname',
+		'lname',
         'name',
         'email',
         'password',
@@ -39,6 +41,18 @@ class User extends Authenticatable
         'password',
         'remember_token',
     ];
+
+	protected static function booted()
+	{
+		static::saving(function ($user) {
+			if (empty($user->name)) {
+				if ($user->fname || $user->lname) {
+					$user->name = trim(($user->fname ?? '') . ' ' . ($user->lname ?? ''));
+				}
+			}
+		});
+	}
+
 
     /**
      * Get the attributes that should be cast.

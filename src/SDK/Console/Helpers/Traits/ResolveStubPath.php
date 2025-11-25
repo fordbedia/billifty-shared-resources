@@ -64,4 +64,9 @@ trait ResolveStubPath
 		{
 			return base_path(StubsPathEnum::REQUEST->getFullPath() . $stub);
 		}
+
+		public function resolveObserverStubPath(string $stub): string
+		{
+			return base_path(StubsPathEnum::OBSERVER->getFullPath() . $stub);
+		}
 }

@@ -12,6 +12,8 @@ enum StubsPathEnum: string
 	case RESOURCE = 'resource.';
 	case PROVIDER = 'provider.';
 
+	case OBSERVER = 'observer.';
+
 	case REQUEST = 'request.';
 
     public function getFullPath()

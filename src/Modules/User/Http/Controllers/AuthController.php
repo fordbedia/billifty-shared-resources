@@ -26,12 +26,7 @@ class AuthController extends Controller
         Auth::login($user, true);
 
         return response()->json([
-            'user'  => [
-                'id'     => $user->id,
-                'name'   => $user->name,
-                'email'  => $user->email,
-                'avatar' => $user->avatar,
-            ],
+            'user'  => $user,
             'token' => $token,
         ]);
     }
@@ -51,7 +46,18 @@ class AuthController extends Controller
         return response()->view('user::auth.google-bridge', [
             'token'   => $token,
             'user'    => $user,
-            'nextUrl' => $frontendUrl . '/app/welcome',
+            'nextUrl' => $frontendUrl . '/app/invoices',
         ]);
     }
+
+	public function logout(Request $request)
+	{
+		$user = $request->user();
+
+		$user->token()->revoke();
+
+		return response()->json([
+			'message' => 'Successfully logged out',
+		]);
+	}
 }

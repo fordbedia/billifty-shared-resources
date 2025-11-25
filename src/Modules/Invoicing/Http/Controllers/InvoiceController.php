@@ -5,6 +5,7 @@ namespace BilliftySDK\SharedResources\Modules\Invoicing\Http\Controllers;
 use App\Http\Controllers\Controller;
 use BilliftySDK\SharedResources\Modules\Invoicing\Domain\InvoiceAction;
 use BilliftySDK\SharedResources\Modules\Invoicing\Http\Requests\StoreInvoiceRequest;
+use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\InvoiceContracts;
 use BilliftySDK\SharedResources\Modules\Invoicing\Services\InvoiceService;
 use BilliftySDK\SharedResources\SDK\Exception\ApiException;
@@ -60,7 +61,7 @@ class InvoiceController extends Controller
     public function show(string $id, InvoiceContracts $repo)
     {
 		try {
-			return $repo->findForUpdate($id);
+			return $repo->findForUpdate($id)?->loadMissing(Invoices::relationships());
 		} catch (\Throwable $exception) {
 			throw new ApiException($exception->getMessage(), 404);
 		}

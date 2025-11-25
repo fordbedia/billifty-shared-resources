@@ -13,10 +13,13 @@ use RuntimeException;
 
 class InvoiceRepository extends BaseRepository implements InvoiceContracts
 {
-	public function autoInvoiceNumber(): string
+	public function autoInvoiceNumber(): ?string
 	{
 		$lastInvoice = $this->getByUser()->latest()->pluck('invoice_number')->first();
-		return InvoiceHelpers::incrementInvoiceNumber($lastInvoice);
+		if ($lastInvoice) {
+			return InvoiceHelpers::incrementInvoiceNumber($lastInvoice);
+		}
+		return null;
 	}
 
 	public function findForUpdate(int $id): Invoices

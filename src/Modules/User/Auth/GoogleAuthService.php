@@ -2,6 +2,7 @@
 
 namespace BilliftySDK\SharedResources\Modules\User\Auth;
 
+use BilliftySDK\SharedResources\Modules\User\Auth\traits\TokenName;
 use BilliftySDK\SharedResources\Modules\User\AuthTypes\GoogleAuthServiceInterface;
 use BilliftySDK\SharedResources\Modules\User\Repository\Contract\UserInterface;
 use Illuminate\Http\Request;
@@ -11,6 +12,8 @@ use Laravel\Socialite\Facades\Socialite;
 
 class GoogleAuthService implements GoogleAuthServiceInterface
 {
+	use TokenName;
+
 	public function __construct(protected UserInterface $user)
 	{
 	}
@@ -50,7 +53,7 @@ class GoogleAuthService implements GoogleAuthServiceInterface
         }
 
         // If you’re building an SPA with Passport, you might instead return a token:
-         $token = $user->createToken('web')->accessToken;
+         $token = $this->getAccessToken($user);
 
          $frontendUrl = config('app.frontend_url');
 

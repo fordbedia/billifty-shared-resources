@@ -100,7 +100,12 @@ abstract class ModularMakeCommand extends ModularCommand
     // Empty stubs — override these in child class as needed
     protected function makeAction(): int { return 0; }
     protected function makeCommand(): int { return 0; }
-    protected function makeObserver(): int { return 0; }
+    protected function makeObserver(): int {
+		return $this->artisanCallOrCustom('make:observer', [
+			'name' => $this->className,
+			'--model-name' => $this->modelName,
+		]);
+	}
     protected function makeRequest(): int
 	{
 		return $this->artisanCallOrCustom('make:request', [
@@ -178,6 +183,11 @@ abstract class ModularMakeCommand extends ModularCommand
 			case 'request':
 				$this->fileName = $this->className;
 				$this->stubPath = $this->resolveRequestStubPath('stub');
+				break;
+			case 'observer':
+				$this->fileName = $this->className;
+				$this->stubPath = $this->resolveObserverStubPath('stub');
+				break;
         }
     }
 }

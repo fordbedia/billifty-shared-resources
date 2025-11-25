@@ -1,8 +1,20 @@
 <?php
 
+use BilliftySDK\SharedResources\Modules\Invoicing\Http\Controllers\BusinessProfileController;
 use BilliftySDK\SharedResources\Modules\User\Http\Controllers\AuthController;
 use BilliftySDK\SharedResources\Modules\User\Http\Controllers\GoogleController;
+use BilliftySDK\SharedResources\Modules\User\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
+
+Route::group(['prefix' => 'v1', 'middleware' => ['auth:api']], function () {
+	Route::post('user/logout', [AuthController::class, 'logout'])
+		->name('user.logout');
+});
+
+Route::prefix('v1')->group(function () {
+	Route::post('user/login', [AuthController::class, 'login']);
+	Route::apiResource('user', UserController::class);
+});
 
 Route::get('/auth/google/redirect', [GoogleController::class, 'redirect'])
     ->name('auth.google.redirect');
