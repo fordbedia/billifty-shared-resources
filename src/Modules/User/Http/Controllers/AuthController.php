@@ -5,6 +5,7 @@ namespace BilliftySDK\SharedResources\Modules\User\Http\Controllers;
 use App\Http\Controllers\Controller;
 use BilliftySDK\SharedResources\Modules\User\Auth\GoogleAuthService;
 use BilliftySDK\SharedResources\Modules\User\AuthTypes\PasswordAuthServiceInterface;
+use BilliftySDK\SharedResources\SDK\Exception\ApiException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -18,7 +19,11 @@ class AuthController extends Controller
 
 	public function login(Request $request)
     {
-        $result = $this->passwordAuth->login($request);
+		try {
+			$result = $this->passwordAuth->login($request);
+		}catch (\Throwable $e){
+			throw new ApiException('Oops! Something went wrong. Please check your email and password.');
+		}
 
         $user  = $result->user;
         $token = $result->token;
