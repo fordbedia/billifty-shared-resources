@@ -20,8 +20,9 @@
 
   $category = $categoryMap[$categoryName ?? 'Modern'] ?? 'modern';
 
-  $fmtMoney = function ($cents, $currency = 'USD') {
+  $fmtMoney = function ($cents, object|string $currency = 'USD') {
       $val = ($cents ?? 0) / 100;
+	  $currency = is_string($currency) ? $currency : $currency->code;
       try {
           $fmt = new \NumberFormatter(\Locale::getDefault() ?: 'en_US', \NumberFormatter::CURRENCY);
           return $fmt->formatCurrency($val, $currency);
