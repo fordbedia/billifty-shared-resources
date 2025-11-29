@@ -8,6 +8,7 @@ use BilliftySDK\SharedResources\Modules\Invoicing\Http\Requests\PaymentInformati
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\BusinessProfileContract;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Intervention\Image\Laravel\Facades\Image;
 
 class BusinessProfileController extends Controller
 {
@@ -30,7 +31,7 @@ class BusinessProfileController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(
-		BusinessProfileRequest $request,
+		BusinessProfileRequest    $request,
 		PaymentInformationRequest $paymentInformationRequest,
 		BusinessProfileContract   $businessProfileRepo
 	) {
@@ -39,12 +40,12 @@ class BusinessProfileController extends Controller
 
 		if ($request->hasFile('logo_path')) {
 			$file = $request->file('logo_path');
-			$year = now()->year;
-			$filename = $businessProfileRepo->getNewNameFromFile($file);
-			$path = $file->storeAs("logo_path/{$year}", $filename, $disk);
 
-			$data['logo_path'] = $path;
-			$data['logo_disk'] = $disk;
+			// 👇 Let the repo + LogoImageProcessor handle resize & storage
+			$logo = $businessProfileRepo->storeResizedLogo($file, $disk);
+
+			$data['logo_path'] = $logo['logo_path'];
+			$data['logo_disk'] = $logo['logo_disk'];
 		}
 
 		$paymentInfoData = $paymentInformationRequest->validated();
@@ -52,7 +53,7 @@ class BusinessProfileController extends Controller
 		$profile = $businessProfileRepo->createWithPaymentInfo($data, $paymentInfoData);
 
 		return response()->json($profile, 201);
-    }
+	}
 
     /**
      * Display the specified resource.
@@ -65,7 +66,7 @@ class BusinessProfileController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(
+	public function update(
 		string                    $id,
 		BusinessProfileRequest    $businessProfileRequest,
 		PaymentInformationRequest $paymentInformationRequest,
@@ -87,12 +88,12 @@ class BusinessProfileController extends Controller
 			}
 
 			$file = $businessProfileRequest->file('logo_path');
-			$year = now()->year;
-			$filename = $businessProfileRepo->getNewNameFromFile($file);
-			$path = $file->storeAs("logo_path/{$year}", $filename, $disk);
 
-			$data['logo_path'] = $path;
-			$data['logo_disk'] = $disk;
+			// Same repo method for consistency
+			$logo = $businessProfileRepo->storeResizedLogo($file, $disk);
+
+			$data['logo_path'] = $logo['logo_path'];
+			$data['logo_disk'] = $logo['logo_disk'];
 		}
 
 		$updated = $businessProfileRepo->updateWithPaymentInfo(
@@ -102,7 +103,7 @@ class BusinessProfileController extends Controller
 		);
 
 		return response()->json($updated);
-    }
+	}
 
     /**
      * Remove the specified resource from storage.

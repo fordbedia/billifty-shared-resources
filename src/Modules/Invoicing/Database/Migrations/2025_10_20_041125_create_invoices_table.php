@@ -67,6 +67,8 @@ return new class extends Migration
             $table->longText('render_snapshot_html')->nullable(); // optional HTML
 
             $table->json('meta')->nullable();
+			$table->text('pdf_path')->nullable();
+            $table->string('pdf_disk')->nullable();
 			$table->tinyInteger('is_test')->default(0);
 			$table->softDeletes();
             $table->timestamps();

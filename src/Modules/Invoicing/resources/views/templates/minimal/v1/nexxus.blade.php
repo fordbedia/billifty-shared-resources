@@ -178,11 +178,15 @@
 		padding-top: 30px;
 		padding-bottom: 30px;
 		font-family:{{ $theme->fontFamily ?? "Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif" }};
-		width: 1224px;
+		 width: 100%;              /* 👈 fill the .invoice-page container */
+    max-width: 100%;          /* 👈 don't overflow horizontally */
+    box-sizing: border-box;
 		background: linear-gradient({{$scheme->gradient_bg_1_light->code}});
   }
 	.content {
-		width: 1024px;
+		 width: 100%;              /* 👈 fill the .invoice-page container */
+    max-width: 100%;          /* 👈 don't overflow horizontally */
+    box-sizing: border-box;
 		margin: 0 auto;
 	}
 

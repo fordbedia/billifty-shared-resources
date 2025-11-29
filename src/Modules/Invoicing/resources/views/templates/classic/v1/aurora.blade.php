@@ -140,7 +140,9 @@
 
   <style>
     /* Basics */
-    .sheet{width: 914px; position:relative; background: {{ $bg }}; border-radius:16px; padding:28px; font-family: {{ $fontFamily }}; color: {{ $ink }}; }
+    .sheet{ width: 100%;              /* 👈 fill the .invoice-page container */
+    max-width: 100%;          /* 👈 don't overflow horizontally */
+    box-sizing: border-box;position:relative; background: {{ $bg }}; border-radius:16px; padding:28px; font-family: {{ $fontFamily }}; color: {{ $ink }}; }
     /* Simple, supported shadow (optional; remove if you see artifacts) */
     .sheet{ box-shadow: 0 4px 14px rgba(2,6,23,0.08); }
 		.head {margin-bottom: 12px;}

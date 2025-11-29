@@ -2,7 +2,9 @@
 
 namespace BilliftySDK\SharedResources\Modules\Invoicing\Repository\Eloquents;
 
+use BilliftySDK\SharedResources\Modules\Invoicing\Action\GenerateInvoicePdf;
 use BilliftySDK\SharedResources\Modules\Invoicing\Helpers\InvoiceHelpers;
+use BilliftySDK\SharedResources\Modules\Invoicing\Jobs\GenerateInvoicePdfJob;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\InvoiceItems;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\BaseRepository;
@@ -115,5 +117,31 @@ class InvoiceRepository extends BaseRepository implements InvoiceContracts
 
         // You can chain more: ->where('type', 'admin')->orderBy('name')
         return parent::paginate($query, $perPage, $columns, $pageName, $page);
+    }
+
+	public function findByKey(int $id): ?Invoices
+    {
+        /** @var Invoices|null $invoice */
+        $invoice = Invoices::with(Invoices::relationships())->find($id);
+
+        return $invoice;
+    }
+
+	/**
+	 * @param Invoices $invoice
+	 * @return array
+	 */
+	public function generatePdf(Invoices $invoice): array
+	{
+		return (new GenerateInvoicePdf)($invoice);
+	}
+
+	/**
+	 * @param Invoices $invoice
+	 * @return void
+	 */
+    public function queuePdfGeneration(Invoices $invoice): void
+    {
+        GenerateInvoicePdfJob::dispatch($invoice->getKey());
     }
 }

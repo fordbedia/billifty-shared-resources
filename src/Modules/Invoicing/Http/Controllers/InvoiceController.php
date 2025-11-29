@@ -105,4 +105,21 @@ class InvoiceController extends Controller
 
 		return response()->json($data, 201);
 	}
+
+	public function generate(
+        int $id,
+        InvoiceContracts $invoices
+    ) {
+        $invoice = $invoices->findForUpdate($id); // user-scoped, with Auth
+        // ... mark as issued, save, etc.
+
+        // queue PDF generation
+//        $invoices->queuePdfGeneration($invoice);
+
+		$invoices->generatePdf($invoice);
+
+        return response()->json([
+            'data' => $invoice->fresh(), // or resource
+        ]);
+    }
 }

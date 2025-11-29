@@ -6,8 +6,8 @@ use BilliftySDK\SharedResources\Modules\Invoicing\Models\BusinessProfiles;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\PaymentInformation;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\BaseRepository;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\BusinessProfileContract;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Http\Request;
+use BilliftySDK\SharedResources\Modules\Invoicing\Support\LogoImageProcessor;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 
 class BusinessProfileRepository extends BaseRepository implements BusinessProfileContract
@@ -36,6 +36,17 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
 
 		return "logo_{$hash}.{$extension}";
 	}
+
+	public function storeResizedLogo(UploadedFile $file, ?string $disk = null): array
+    {
+        $disk = $disk ?? config('filesystems.default', 'public');
+
+        return LogoImageProcessor::resizeAndStore(
+            file: $file,
+            disk: $disk,
+            baseDirectory: 'logo_path'
+        );
+    }
 
 	public function createWithPaymentInfo(array $data, array $paymentInfoData): BusinessProfiles
 	{

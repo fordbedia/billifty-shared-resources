@@ -113,7 +113,9 @@
   </div>
 
   <style>
-    .wrap{width: 900px;background:#fff; border-radius:16px; padding:22px; font-family: {{ $fontFamily }}; color: {{ $ink }}; box-shadow: 0 4px 14px rgba(2,6,23,0.07); }
+    .wrap{ width: 100%;              /* 👈 fill the .invoice-page container */
+    max-width: 100%;          /* 👈 don't overflow horizontally */
+    box-sizing: border-box;background:#fff; border-radius:16px; padding:22px; font-family: {{ $fontFamily }}; color: {{ $ink }}; box-shadow: 0 4px 14px rgba(2,6,23,0.07); }
     .eyebrow{ color: {{ $muted }}; text-transform:uppercase; letter-spacing:.1em; font-size:12px; }
     .id{ margin:2px 0 6px; font-size:26px; font-weight:800; letter-spacing:.3px; }
 		.org .strong {font-weight: bold; font-size: 20px;}

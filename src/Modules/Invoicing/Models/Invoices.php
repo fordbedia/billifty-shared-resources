@@ -5,6 +5,7 @@ namespace BilliftySDK\SharedResources\Modules\Invoicing\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 class Invoices extends Model
 {
@@ -12,6 +13,10 @@ class Invoices extends Model
 
     protected $table = 'invoices';
 	protected $guarded = [];
+
+	protected $appends = [
+        'pdf_url',
+    ];
 
 	public function businessProfile()
 	{
@@ -60,4 +65,13 @@ class Invoices extends Model
 	{
 		return $this->belongsTo(Currency::class, 'currency_id');
 	}
+
+	public function getPdfUrlAttribute(): ?string
+    {
+        if (!$this->pdf_path || !$this->pdf_disk) {
+            return null;
+        }
+
+        return Storage::disk($this->pdf_disk)->url($this->pdf_path);
+    }
 }
