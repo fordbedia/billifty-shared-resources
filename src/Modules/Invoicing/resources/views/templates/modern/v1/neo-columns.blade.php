@@ -645,7 +645,7 @@
   }
 
   .summary .row {
-    padding: 12px 0;
+    padding: 22px 0;
     border-top: 1px dashed #E5E7EB;
   }
 
@@ -657,6 +657,7 @@
     font-weight: 900;
     font-size: 24px;
     border-top: 1px solid {{ $tbodyBorderColor }};
+	  padding-top: 7px;
   }
 
   .summary .grand .value {
@@ -681,9 +682,9 @@
     background-color: #fff;
     padding: 20px 30px;
     box-shadow: 0 0 12px #aeaab3;
-    width: auto;
+    width: 250px;
     min-height: 165px;
-	  min-width: 200px;
+	  max-width: 250px;
   }
 
   .section--bill-to .box ul {

@@ -23,9 +23,9 @@
         </div>
       </div>
       <div class="org">
-				 @if(($bp?->logo_path))
+				 @if($logoSrc)
 					<div class="clearfix">
-						<img src="{{ $bp->logo_path }}" class="logo" alt="logo" />
+						<img src="{{ $logoSrc }}" class="logo" alt="logo" />
 					</div>
 				@endif
         <div class="strong">{{ $bp?->name ?? 'Your Business' }}</div>
@@ -84,17 +84,32 @@
     <div class="totals clearfix">
       <div class="pad"></div>
       <div class="sum">
-        <div class="row"><span>Subtotal</span><span>{{ $fmtMoney($invoice->subtotal_cents ?? 0, $invoice->currency ?? 'USD') }}</span></div>
+        <div class="row">
+			<span class="left">Subtotal</span>
+			<span class="right">{{ $fmtMoney($invoice->subtotal_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
+		</div>
         @if((int)($invoice->discount_cents ?? 0) > 0)
-          <div class="row"><span>Discount</span><span>-{{ $fmtMoney($invoice->discount_cents ?? 0, $invoice->currency ?? 'USD') }}</span></div>
+          <div class="row">
+			  <span class="left">Discount</span>
+			  <span class="right">-{{ $fmtMoney($invoice->discount_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
+		  </div>
         @endif
         @if((int)($invoice->tax_cents ?? 0) > 0)
-          <div class="row"><span>Tax</span><span>{{ $fmtMoney($invoice->tax_cents ?? 0, $invoice->currency ?? 'USD') }}</span></div>
+          <div class="row">
+			  <span class="left">Tax</span>
+			  <span class="right">{{ $fmtMoney($invoice->tax_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
+		  </div>
         @endif
         @if((int)($invoice->shipping_cents ?? 0) > 0)
-          <div class="row"><span>Shipping</span><span>{{ $fmtMoney($invoice->shipping_cents ?? 0, $invoice->currency ?? 'USD') }}</span></div>
+          <div class="row">
+			  <span class="left">Shipping</span>
+			  <span class="right">{{ $fmtMoney($invoice->shipping_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
+		  </div>
         @endif
-        <div class="row grand"><span>Total</span><span>{{ $fmtMoney($invoice->total_cents ?? 0, $invoice->currency ?? 'USD') }}</span></div>
+        <div class="row grand">
+			<span class="left">Total</span>
+			<span class="right">{{ $fmtMoney($invoice->total_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
+		</div>
       </div>
     </div>
 
@@ -152,20 +167,20 @@
     /* Totals (floats instead of grid) */
     .totals .pad{ float:left; width:60%; }
     .totals .sum{ float:right; width:38%; border:1px solid {{ $border }}; border-radius:12px; padding:12px 14px; background:#fff; box-sizing:border-box; }
-    .sum .row{ padding:8px 0; border-top:1px dashed {{ $border }}; display:block; }
+    .sum .row{ padding:20px 0; border-top:1px dashed {{ $border }}; display:block; }
     .sum .row:first-child{ border-top:0; }
-    .sum .row span:first-child{ float:left; }
-    .sum .row span:last-child{ float:right; }
+    /*.sum .row span:first-child{ float:left; }*/
+    /*.sum .row span:last-child{ float:right; }*/
     .grand{ font-size:16px; font-weight:900; }
 
     /* Foot (two columns via floats) */
     .col-6{ float:left; width:50%; box-sizing:border-box; }
-    .foot .panel{width: 400px;border:1px dashed {{ $border }}; border-radius:12px; padding:12px 14px; background:#fcfdff; }
+    .foot .panel{width: 280px;max-width: 280px; min-height: 80px; border:1px dashed {{ $border }}; border-radius:12px; padding:12px 14px; background:#fcfdff; }
     .foot .panel:first-child{ padding-right:9px; }
     .foot .panel:last-child{ padding-left:9px; }
     .panel h4{ margin:0 0 8px; font-size:12px; color: {{ $muted }}; text-transform:uppercase; letter-spacing:.1em; }
     .panel p{ margin:0; white-space:pre-wrap; font-size:13px; }
-		.watermark{width: 300px;margin: 40px auto 0; font-weight: bold;}
+		.watermark{text-align: center;font-size: 15px; font-weight: bold;margin-top: 50px;}
 
     @media print{ .wrap{ box-shadow:none; padding:18px; border-radius:0; } }
   </style>

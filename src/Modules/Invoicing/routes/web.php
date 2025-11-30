@@ -76,7 +76,7 @@ Route::middleware('web')->group(function () {
 			'invoice'        => data_get($payload, 'data'),
 			'category'       => data_get($payload, 'data.template.category'),
 			'colorScheme'    => data_get($payload, 'data.colorScheme'),
-			'renderContext'  => 'pdf',   // 👈 let blade know it's for Dompdf
+			'renderContext'  => 'pdf',   // let blade know it's for Dompdf
 		])->render();
 
 		/** @var \Barryvdh\DomPDF\PDF $pdf */
@@ -102,7 +102,7 @@ Route::middleware('web')->group(function () {
 		$filename = 'dev-invoice-'.$invoiceId.'.pdf';
 
 		return $pdf->stream($filename, [
-			'Attachment' => false, // 👈 open in browser, not download
+			'Attachment' => false, // open in browser, not download
 		]);
 	})->name('dev.invoice.pdf');
 

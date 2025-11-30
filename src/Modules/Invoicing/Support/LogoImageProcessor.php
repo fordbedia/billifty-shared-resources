@@ -43,8 +43,8 @@ class LogoImageProcessor
 
         // Resize without stretching (fit inside 300×300, keep aspect ratio)
         $image->scaleDown(
-            width: 80,
-            height: 80
+            width: 150,
+            height: 150
         );
 
         // Encode as PNG (good balance for logos)

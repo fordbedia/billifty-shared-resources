@@ -10,8 +10,7 @@
   $stripe     = '#f8fafc';
   $accentInk  = '#ffffff';
 
-  $logoW = 150;
-	$pi = $invoice->paymentInformation;
+  $logoW = 100;
 
 @endphp
 
@@ -22,20 +21,20 @@
     <div class="content clearfix">
 
 			<div class="header clearfix">
-				<div class="left">
-					<div class="logo-div left">
-						@if(!empty($bp?->logo_path))
-							<img src="{{ asset($bp->logo_path) }}" alt="Business Logo" class="logo"/>
+				<div class="left business-info">
+					<div class="logo-div">
+						@if($logoSrc)
+							<img src="{{ $logoSrc }}" alt="Business Logo" class="logo"/>
 						@endif
 					</div>
-					<div class="info-div left">
-            <h1 class="title">{{ $bp?->name ?? 'Your Business' }}</h1>
-          	<div class="muted">{{ $bp ? $addr($bp) : '' }}</div>
+					<div class="info-div">
+						<h1 class="title">{{ $bp?->name ?? 'Your Business' }}</h1>
+						<div class="muted">{{ $bp ? $addr($bp) : '' }}</div>
 						<div class="muted">{{ $bp?->email }}</div>
 						<div class="muted">@if($bp?->email && $bp?->phone) @endif{{ $bp?->phone }}</div>
-          </div>
+					</div>
 				</div>
-				<div class="right">
+				<div class="bill-to right">
 					<h2 class="text-right">Bill To</h2>
 					<div class="box">
 						<div class="tile-b text-right">
@@ -50,31 +49,22 @@
 				</div>
 			</div>
 
-			<div class="invoice-info clearfix">
-				<div class="left">
-					<h2>BusinessProfile</h2>
-				</div>
-
-				<div class="right">
-					<div class="right">
-						<div class="section">
-							<div class="label">Issue Date</div>
-							<div class="value">@if ($invoice->issued_on)<div class="muted tiny">Date {{ $fmtDate($invoice->issued_on ?? null) }}</div>@else -- @endif</div>
-						</div>
-						<div class="section">
-							<div class="label">Due Date</div>
-							<div class="value">@if ($invoice->due_on)<div class="duepill">Due {{ $fmtDate($invoice->due_on ?? null) }}</div>@else -- @endif</div>
-						</div>
-					</div>
-
-					<div class="right">
-						<div class="section">
-							<div class="label">BusinessProfile Number</div>
-							<div class="value">{{ $invoice->invoice_number ?? 'INV-XXXXXX' }}</div>
-						</div>
-					</div>
-				</div>
+		<div class="row-cols">
+			<div class="business-profile-padding col">
+				<div class="label">BusinessProfile Number</div>
+				<div class="value"><strong>{{ $invoice->invoice_number ?? 'INV-XXXXXX' }}</strong></div>
 			</div>
+		  <div class="business-profile-padding col">
+			<div class="label">Issue Date</div>
+			  <div class="value">@if ($invoice->issued_on)<div class="muted tiny"><strong>{{ $fmtDate($invoice->issued_on ?? null) }}</strong></div>@else -- @endif</div>
+		  </div>
+
+			<div class="business-profile-padding col">
+				<div class="label">Due Date</div>
+				<div class="value">@if ($invoice->due_on)<div class="duepill"><strong>{{ $fmtDate($invoice->due_on ?? null) }}</strong></div>@else -- @endif</div>
+		  	</div>
+		  <div class="clearfix"></div>
+		</div>
 
 			<div class="invoice-table">
 				<table class="items">
@@ -84,6 +74,7 @@
 							<th>Qty</th>
 							<th>Unit Price</th>
 							<th>Tax</th>
+							@if ($invoice->discount_mode === 'per-line')<th>Discount</th>@endif
 							<th>Amount</th>
 						</tr>
 					</thead>
@@ -97,6 +88,7 @@
 								<td>{{ rtrim(rtrim((string)($it->quantity ?? 0),'0'),'.') }}{{ $it->unit ? ' '.$it->unit : '' }}</td>
 								<td>{{ $fmtMoney($it->unit_price_cents ?? 0, $invoice->currency ?? 'USD') }}</td>
 								<td>{{ $fmtMoney($it->tax_cents ?? 0, $invoice->currency ?? 'USD') }}</td>
+								@if ($invoice->discount_mode === 'per-line')<td><strong>{{ $fmtPercent($it->line_discount_rate) }}</strong></td>@endif
 								<td><strong>{{ $fmtMoney($it->line_total_cents ?? 0, $invoice->currency ?? 'USD') }}</strong></td>
 							</tr>
 						@empty
@@ -107,6 +99,8 @@
 						<tr>
 							<td></td>
 							<td></td>
+							<td></td>
+							@if ($invoice->discount_mode === 'per-line')<td></td>@endif
 							<td class="label">Subtotal</td>
 							<td class="value">{{ $fmtMoney($invoice->subtotal_cents ?? 0,$invoice->currency ?? 'USD') }}</td>
 						</tr>
@@ -114,6 +108,8 @@
 							<tr>
 								<td></td>
 								<td></td>
+								<td></td>
+								@if ($invoice->discount_mode === 'per-line')<td></td>@endif
 								<td class="label">Discount</td>
 								<td class="value">-{{ $fmtMoney($invoice->discount_cents ?? 0,$invoice->currency ?? 'USD') }}</td>
 							</tr>
@@ -122,6 +118,8 @@
 							<tr>
 								<td></td>
 								<td></td>
+								<td></td>
+								@if ($invoice->discount_mode === 'per-line')<td></td>@endif
 								<td class="label">Tax</td>
 								<td class="value">{{ $fmtMoney($invoice->tax_cents ?? 0,$invoice->currency ?? 'USD') }}</td>
 							</tr>
@@ -130,6 +128,8 @@
 							<tr>
 								<td></td>
 								<td></td>
+								<td></td>
+								@if ($invoice->discount_mode === 'per-line')<td></td>@endif
 								<td class="label">Shipping</td>
 								<td class="value">{{ $fmtMoney($invoice->shipping_cents ?? 0,$invoice->currency ?? 'USD') }}</td>
 							</tr>
@@ -137,6 +137,8 @@
 						<tr>
 							<td></td>
 							<td></td>
+							<td></td>
+							@if ($invoice->discount_mode === 'per-line')<td></td>@endif
 							<td class="line label">Total</td>
 							<td class="line value">{{ $fmtMoney($invoice->total_cents ?? 0,$invoice->currency ?? 'USD') }}</td>
 						</tr>
@@ -144,7 +146,9 @@
       	</table>
 			</div>
 
+
 			<div class="payment_info__notes">
+				@if($pi)
 				<div class="left box payment_info">
 					<h2>Payment Information</h2>
 					<ul>
@@ -157,11 +161,19 @@
 						@if(($pi->paypal_email ?? 0)>0)<li><span class="label">PayPal:</span> <span class="value"> {{$pi->paypal_email}}</span></li>@endif
 					</ul>
 				</div>
-				<div class="right box notes">
-					<h2>Notes</h2>
-					@if ($invoice->notes)<p>{{$invoice->notes}}</p>@else -- @endif
+				@endif
+				<div class="right">
+					<div class="box notes">
+						<h2>Notes</h2>
+						@if ($invoice->notes)<p>{{$invoice->notes}}</p>@else -- @endif
+					</div>
+					<div class="box notes">
+						<h2>Terms</h2>
+						@if ($invoice->terms)<p>{{$invoice->terms}}</p>@else -- @endif
+					</div>
 				</div>
 			</div>
+
 
     </div>
   </div>
@@ -171,10 +183,15 @@
 	.bg-light {
 		margin-top: 0;
 	}
+	.business-profile-padding {
+		padding-top: 20px;
+		padding-bottom: 20px;
+		padding-right: 30px;
+	}
   .page {
     position: relative;         /* anchor for abs. children */
     /* optional if you want spacing so text doesn't sit under the wall */
-    padding-left: 14px;
+    padding-left: 20px;
 		padding-top: 30px;
 		padding-bottom: 30px;
 		font-family:{{ $theme->fontFamily ?? "Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif" }};
@@ -196,14 +213,24 @@
     bottom: 0;                  /* <-- stretches to parent's full height */
     left: 0;
     width: 7px;
-		min-height: 20px;
+	  min-height: 20px;
 
     /* Dompdf prefers the shorthand 'background' */
-    background: linear-gradient(
-      {{ $scheme->gradient_bg_1->code }}
-    );
+    background: {{ $scheme->main->code }};
   }
-	.logo{width:100px;height:100px;border-radius:10px;background:rgba(255,255,255,.15);object-fit:contain}
+  .business-info {
+	  width:380px;
+  }
+  .logo-div {
+  }
+  .info-div {
+	  width: 250px;
+	  max-width: 250px;
+  }
+  .bill-to {
+	  width: 250px;
+  }
+	.logo{width:{{$logoW}}px;border-radius:10px;background:rgba(255,255,255,.15);object-fit:contain}
 	.logo.placeholder{display:grid;place-items:center;font-weight:800}
 	.box {border: 1px solid #E0E7FF; border-radius: 12px;background-color: #fff;padding: 14px 16px;}
 	.header .right h2 {font-size: 14px;padding-bottom: 10px;padding-right: 7px;}
@@ -234,13 +261,13 @@
 	table.items tfoot tr:last-child td:first-child{border-bottom-left-radius: 12px;}
 	table.items tfoot tr:last-child td:last-child{border-bottom-right-radius: 12px;}
 	.payment_info__notes{margin-top:25px;}
-	.payment_info__notes .payment_info.box {width: 450px;}
+	.payment_info__notes .payment_info.box {width: 250px;}
 	.payment_info__notes .payment_info.box h2 {font-size: 16px;color: #111827; font-weight: 600;}
 	.payment_info__notes .payment_info.box ul {list-style: none;padding-left: 0;}
 	.payment_info__notes .payment_info.box ul li {line-height: 20px;}
 	.payment_info__notes .payment_info.box ul li span.label {font-size: 14px;color:#4B5563;font-weight: 600;}
 	.payment_info__notes .payment_info.box ul li span.value {font-size: 14px;color:#4B5563;font-weight: 300;}
-	.payment_info__notes .notes.box {width: 450px;}
+	.payment_info__notes .notes.box {width: 250px;}
 	.payment_info__notes .notes.box h2 {font-size: 16px;color: #111827;font-weight: 600;}
 	.payment_info__notes .notes.box p{color: #4B5563;font-size: 14px;line-height: 20px;font-weight: 300;}
 </style>

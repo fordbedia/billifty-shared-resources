@@ -6,26 +6,26 @@
 
 		{{-- Left side: Logo + Business Info --}}
 		<div class="brand clearfix">
-		  <div class="logo-div left">
+		  <div class="logo-div">
 			@if($logoSrc)
 			  <img
 				src="{{ $logoSrc }}"
 				alt="Business Logo"
 				class="logo"
-				width="80"
-				height="80"
-			/>
+			  />
 			@endif
 		  </div>
 
 		  <div class="info-div">
-			<h1 class="title">{{ $bp?->name ?? 'Your Business' }}</h1>
-			<div class="muted">{{ $bp ? $addr($bp) : '' }}</div>
-			<div class="muted">{{ $bp?->email }}</div>
-			<div class="muted">
-			  @if($bp?->email && $bp?->phone) • @endif
-			  {{ $bp?->phone }}
-			</div>
+			  <div class="left">
+				<h1 class="title">{{ $bp?->name ?? 'Your Business' }}</h1>
+				@if ($bp->address_line1)<div class="muted">{{ $bp->address_line1 }}</div>@endif
+				@if($bp?->email)<div class="muted">{{ $bp?->email }}</div>@endif
+				@if($bp?->phone)<div class="muted">
+				  {{ $bp?->phone }}
+				</div>@endif
+			  </div>
+			  <div class="clearfix"></div>
 		  </div>
 		</div>
 
@@ -35,7 +35,7 @@
 		  <h2 class="text-right">INVOICE</h2>
 		  <div class="due--bg right">
 			<div class="muted">
-			  BusinessProfile:
+			  Invoice #:
 			  <strong>{{ $invoice->invoice_number ?? 'INV-XXXXXX' }}</strong>
 			</div>
 			@if ($invoice->issued_on)
@@ -46,6 +46,7 @@
 			@endif
 		  </div>
 		</div>
+		<div class="clearfix"></div>
 
 	  </div>
 	  <div class="angle"></div>
@@ -56,32 +57,22 @@
       <div class="tile col-6">
         <div class="tile-h">
           <svg class="img-color left" width="16" height="28" viewBox="0 0 16 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M15.75 28H0V0H15.75V28Z" stroke="#E5E7EB"/>
-            <g clip-path="url(#clip0_146_126)">
-              <path d="M7.875 13.25C6.68153 13.25 5.53693 12.7759 4.69302 11.932C3.84911 11.0881 3.375 9.94347 3.375 8.75C3.375 7.55653 3.84911 6.41193 4.69302 5.56802C5.53693 4.72411 6.68153 4.25 7.875 4.25C9.06847 4.25 10.2131 4.72411 11.057 5.56802C11.9009 6.41193 12.375 7.55653 12.375 8.75C12.375 9.94347 11.9009 11.0881 11.057 11.932C10.2131 12.7759 9.06847 13.25 7.875 13.25ZM7.35117 16.8781L6.69727 15.7883C6.47227 15.4121 6.74297 14.9375 7.17891 14.9375H7.875H8.56758C9.00352 14.9375 9.27422 15.4156 9.04922 15.7883L8.39531 16.8781L9.56953 21.234L10.8352 16.0695C10.9055 15.7848 11.1797 15.5984 11.4645 15.6723C13.9289 16.291 15.75 18.5199 15.75 21.1707C15.75 21.7684 15.2648 22.25 14.6707 22.25H10.0371C9.96328 22.25 9.89648 22.2359 9.8332 22.2113L9.84375 22.25H5.90625L5.9168 22.2113C5.85352 22.2359 5.7832 22.25 5.71289 22.25H1.0793C0.485156 22.25 0 21.7648 0 21.1707C0 18.5164 1.82461 16.2875 4.28555 15.6723C4.57031 15.602 4.84453 15.7883 4.91484 16.0695L6.18047 21.234L7.35469 16.8781H7.35117Z" fill="currentColor"/>
-            </g>
-            <defs>
-              <clipPath id="clip0_146_126">
-                <path d="M0 4.25H15.75V22.25H0V4.25Z" fill="white"/>
-              </clipPath>
-            </defs>
-          </svg>
+		  <path d="M15.75 28H0V0H15.75V28Z" stroke="#E5E7EB" />
+		  <path
+			d="M7.875 13.25C6.68153 13.25 5.53693 12.7759 4.69302 11.932C3.84911 11.0881 3.375 9.94347 3.375 8.75C3.375 7.55653 3.84911 6.41193 4.69302 5.56802C5.53693 4.72411 6.68153 4.25 7.875 4.25C9.06847 4.25 10.2131 4.72411 11.057 5.56802C11.9009 6.41193 12.375 7.55653 12.375 8.75C12.375 9.94347 11.9009 11.0881 11.057 11.932C10.2131 12.7759 9.06847 13.25 7.875 13.25ZM7.35117 16.8781L6.69727 15.7883C6.47227 15.4121 6.74297 14.9375 7.17891 14.9375H7.875H8.56758C9.00352 14.9375 9.27422 15.4156 9.04922 15.7883L8.39531 16.8781L9.56953 21.234L10.8352 16.0695C10.9055 15.7848 11.1797 15.5984 11.4645 15.6723C13.9289 16.291 15.75 18.5199 15.75 21.1707C15.75 21.7684 15.2648 22.25 14.6707 22.25H10.0371C9.96328 22.25 9.89648 22.2359 9.8332 22.2113L9.84375 22.25H5.90625L5.9168 22.2113C5.85352 22.2359 5.7832 22.25 5.71289 22.25H1.0793C0.485156 22.25 0 21.7648 0 21.1707C0 18.5164 1.82461 16.2875 4.28555 15.6723C4.57031 15.602 4.84453 15.7883 4.91484 16.0695L6.18047 21.234L7.35469 16.8781H7.35117Z"
+			fill="currentColor"
+		  />
+		</svg>
           <span class="billto-text">Bill To</span>
         </div>
         <div class="tile-b">
-          <div class="strong">{{ $cl?->name ?? $cl?->company ?? 'Client' }}</div>
-          <div class="muted">
-            {{ $cl?->email }}
-            @if($cl?->email && $cl?->phone) • @endif
-            {{ $cl?->phone }}
-          </div>
-          @if($cl?->tax_id)
-            <div class="muted">Tax ID: {{ $cl->tax_id }}</div>
-          @endif
-          @if($cl?->license_no)
-            <div class="muted">License No: {{ $cl->license_no }}</div>
-          @endif
-          <div class="muted">{{ $cl ? $addr($cl) : '' }}</div>
+          <div class="strong">{{ $cl?->name ?? 'Client' }}</div>
+			@if ($cl?->company)<div>{{$cl->company}}</div>@endif
+          	@if ($cl?->email)<div class="muted">{{ $cl->email }}</div>@endif
+			@if ($cl?->phone ){{ $cl->phone }}@endif
+          	@if($cl?->tax_id)<div class="muted">Tax ID: {{ $cl->tax_id }}</div>@endif
+          	@if($cl?->license_no)<div class="muted">License No: {{ $cl->license_no }}</div>@endif
+          	@if ($cl->address_line1)<div class="muted">{{ $cl->address_line1 }}</div>@endif
         </div>
       </div>
     </div>
@@ -108,6 +99,7 @@
           <th>Qty</th>
           <th>Unit Price</th>
           <th>Tax</th>
+		  @if ($invoice->discount_mode === 'per-line')<th>Discount</th>@endif
           <th>Amount</th>
         </tr>
         </thead>
@@ -123,6 +115,7 @@
             <td>{{ rtrim(rtrim((string)($it->quantity ?? 0),'0'),'.') }}{{ $it->unit ? ' '.$it->unit : '' }}</td>
             <td>{{ $fmtMoney($it->unit_price_cents ?? 0, $invoice->currency ?? 'USD') }}</td>
             <td>{{ $fmtMoney($it->tax_cents ?? 0, $invoice->currency ?? 'USD') }}</td>
+	  		@if ($invoice->discount_mode === 'per-line')<td><strong>{{ $fmtPercent($it->line_discount_rate) }}</strong></td>@endif
             <td>{{ $fmtMoney($it->line_total_cents ?? 0, $invoice->currency ?? 'USD') }}</td>
           </tr>
         @empty
@@ -228,65 +221,76 @@
       color:var(--accent-ink);
       border-radius:16px 16px 0 0;
       padding: 20px 20px 20px 20px;
+		height: auto;
+		min-height: 150px;
     }
+
+	.banner{
+	  position:relative;
+	  background-color: {{$scheme->main->code }};
+	  color:var(--accent-ink);
+	  border-radius:16px 16px 0 0;
+	  padding: 20px 20px 20px 20px;
+	  height: auto;
+	  min-height: auto;
+		overflow: hidden;
+	}
+	.clearfix::after {
+	  content: "";
+	  display: block;
+	  clear: both;
+	}
 
     .banner-inner {
 	  padding: 18px 0;
 	}
 
-	/* Left + right columns in header */
+	/* Logo + info inside brand */
 	.brand {
+		float: left;
+	  	width: 55%;
+	}
+
+	/* Logo column */
+	.logo-div {
 	  float: left;
-	  width: 60%;         /* take 60% of header */
-		overflow: hidden; /* helps contain floats */
+	  width: 80px;
+	  margin-right: 22px;
+	}
+
+	.logo {
+	  border-radius: 10px;
+	  background: rgba(255,255,255,.15);
+	  padding: 7px;
+	  width: 100px;
+	}
+
+	/* Info column */
+	.info-div {
+	  float: none; /* make sure it's NOT floating */
+	  margin-left: 125px; /* logo width (80) + margin (20-ish) */
+	  width: auto;
+	  min-height: 80px;
+		height: auto;
 	}
 
 	.due {
 	  float: right;
-	  width: 35%;         /* right column */
+	  width: 35%;
 	  padding-right: 20px;
 	}
 
-	/* Logo + info inside brand */
-	.logo-div {
-		float: left;
-		margin-right: 12px;
-	}
-
-	.logo {
-	  display: block;
-	  border-radius: 10px;
-	  background: rgba(255,255,255,.15);
-	}
-
-	.logo.placeholder {
-	  display: flex;      /* flex here is safe: single box centering */
-	  align-items: center;
-	  justify-content: center;
-	  width: 80px;
-	  height: 80px;
-	  border-radius: 10px;
-	  background: rgba(255,255,255,.15);
-	  font-weight: 800;
-	  font-size: 32px;
-	  text-align: center;
-	  overflow: hidden;
-	}
-
-	.info-div {
-	   float: left;
-    	max-width: 100%; /* adjust until nice */
-	}
 
 	.title {
 	  margin: 0;
 	  font-size: 22px;
-		line-height: 1.2rem;
+		line-height: 1.4rem;
+		margin-bottom:5px;
 	}
-	.brand .info-div {
-	  float: none;          /* override .left float */
-	  margin-left: 100px;   /* logo width (80) + margin (10) + a bit of padding */
-	}
+	/*.brand .info-div {*/
+	/*  float: none;          !* override .left float *!*/
+	/*  margin-left: 100px;   !* logo width (80) + margin (10) + a bit of padding *!*/
+	/*}*/
 
 
     .kicker{opacity:.9;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
@@ -363,15 +367,16 @@
       padding:10px 12px
     }
 
-    table thead th{border-radius: 12px;}
-    .items tbody td{padding:12px;border-top:1px solid var(--border)}
+    table thead th{border-radius: 12px;font-size: 15px;}
+    .items tbody td{font-size: 15px;padding:12px;border-top:1px solid var(--border)}
     .items tbody tr:nth-child(odd){background:#fafafa}
     .right{text-align:right}
-    .small{font-size:12px;color:#64748b;line-height: 22px;}
+    .small{font-size:15px;color:#64748b;line-height: 22px;}
 
     .totals{
       width:auto;
       /*padding:18px 22px 0;*/
+		margin-top: 12px;
     }
 
     /* hide the empty first column div */
@@ -388,19 +393,20 @@
       box-sizing:border-box;
     }
 
-    .totals h2{font-size: 18px;}
+    .totals h2{font-size: 16px;}
     .totals .label {font-size: 16px;}
-    .totals .box .left {padding: 12px 0 12px 0;}
-    .totals .box .right {padding: 12px 0 12px 0;}
+    .totals .box .left {font-size: 16px; padding: 12px 0 12px 0;}
+    .totals .box .right {font-size: 16px; padding: 12px 0 12px 0;}
 
     .row{border-top:1px dashed #e5e7eb}
     .row:first-child{border-top:0}
-    .grand{font-weight:800;font-size:24px; font-family: "DejaVu Sans", sans-serif !important;}
-    .grand .total {color: {{$scheme->main->code}};}
+    .grand{font-weight:800;font-size:18px; font-family: "DejaVu Sans", sans-serif !important;}
+    .grand .total {font-size:18px;color: {{$scheme->main->code}};}
 
     .footer{
       width:100%;
       /*padding:18px 22px;*/
+		margin-top: 22px;
     }
 
     .fcard{

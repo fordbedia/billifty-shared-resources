@@ -35,6 +35,7 @@ class InvoiceResource extends JsonResource
 			'template_slug' => $this->template_slug,
 			'template_version' => $this->template_version,
 			'theme_json' => $this->theme_json,
+			'discount_mode' => $this->discount_mode,
 			'subtotal_cents' => $this->subtotal_cents,
 			'discount_cents' => $this->discount_cents,
 			'discount_rate' => $this->discount_rate,

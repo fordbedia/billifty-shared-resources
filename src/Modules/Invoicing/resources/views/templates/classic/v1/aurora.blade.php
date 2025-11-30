@@ -10,7 +10,7 @@
   $stripe     = '#f8fafc';
   $accentInk  = '#ffffff';
 
-  $logoW = 150;
+  $logoW = 100;
 @endphp
 
 <div class="aurora--theme aurora-root scheme cat">
@@ -19,8 +19,8 @@
 
     <div class="head clearfix">
       <div class="brand">
-        @if(($bp?->logo_path))
-          <img src="{{ $bp->logo_path }}" alt="logo" class="logo" />
+        @if($logoSrc)
+          <img src="{{ $logoSrc }}" alt="logo" class="logo" />
         @endif
         <div class="brand-text">
           <div class="eyebrow">BusinessProfile</div>
@@ -28,7 +28,7 @@
           <div class="meta tiny">
             <span>Issued: {{ $fmtDate($invoice->issued_on ?? null) }}</span>
             <span class="dot">•</span>
-            <span>Currency: {{ $invoice->currency ?? 'USD' }}</span>
+            <span>Currency: {{ $getCurrency($invoice->currency) ?? 'USD' }}</span>
           </div>
         </div>
       </div>
@@ -100,30 +100,30 @@
       <div class="totals-pad"></div>
       <div class="panel">
         <div class="prow clearfix">
-					<span>Subtotal</span>
-					<span>{{ $fmtMoney($invoice->subtotal_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
+					<span class="left">Subtotal</span>
+					<span class="right">{{ $fmtMoney($invoice->subtotal_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
 				</div>
         @if((int)($invoice->discount_cents ?? 0) > 0)
           <div class="prow clearfix">
-						<span>Discount</span>
-						<span>-{{ $fmtMoney($invoice->discount_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
+						<span class="left">Discount</span>
+						<span class="right">-{{ $fmtMoney($invoice->discount_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
 					</div>
         @endif
         @if((int)($invoice->tax_cents ?? 0) > 0)
           <div class="prow clearfix">
-						<span>Tax</span>
-						<span>{{ $fmtMoney($invoice->tax_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
+						<span class="left">Tax</span>
+						<span class="right">{{ $fmtMoney($invoice->tax_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
 					</div>
         @endif
         @if((int)($invoice->shipping_cents ?? 0) > 0)
           <div class="prow clearfix">
-						<span>Shipping</span>
-						<span>{{ $fmtMoney($invoice->shipping_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
+						<span class="left">Shipping</span>
+						<span class="right">{{ $fmtMoney($invoice->shipping_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
 					</div>
         @endif
         <div class="prow clearfix grand">
-					<span>Total</span>
-					<span>{{ $fmtMoney($invoice->total_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
+					<span class="left">Total</span>
+					<span class="right">{{ $fmtMoney($invoice->total_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
 				</div>
       </div>
       <div class="clearfix"></div>
@@ -167,7 +167,7 @@
     .col-6{ float:left; width:50%; box-sizing:border-box; }
     .cards .col-6:first-child{ padding-right:9px; }
     .cards .col-6:last-child{ padding-left:9px; }
-    .card{width: 400px;background: {{ $card }}; border:1px solid {{ $border }}; border-radius:14px; padding:14px 16px; }
+    .card{width: 270px;max-width: 270px; background: {{ $card }}; border:1px solid {{ $border }}; border-radius:14px; padding:14px 16px; }
     .label{ font-size:11px; color: {{ $muted }}; text-transform:uppercase; letter-spacing:.12em; margin-bottom:4px; }
 
     /* Items table */
@@ -183,21 +183,23 @@
     /* Totals: fake grid with floats */
 		.totals {margin: 20px 0;}
     .totals .totals-pad{ float:left; width:65%; }
-    .totals .panel{ float:right; width:35%; border:1px solid {{ $border }}; border-radius:14px; padding:12px 14px; background:#fff; box-sizing:border-box; }
-    .panel .prow{ padding:8px 0; border-top:1px dashed {{ $border }}; display:block; }
+    .totals .panel{ float:right; width:35%; border:1px solid {{ $border }}; border-radius:14px; padding:20px 14px; background:#fff; box-sizing:border-box; }
+    .panel .prow{ padding:12px 0; border-top:1px dashed {{ $border }}; display:block;}
     .panel .prow:first-child{ border-top:0; }
-    .panel .prow span:first-child{ float:left; }
-    .panel .prow span:last-child{ float:right; }
+    /*.panel .prow span:first-child{ float:left; }*/
+    /*.panel .prow span:last-child{ float:right; }*/
     .panel .grand{ font-weight:900; font-size:16px; }
 
     /* Footer two columns */
-    .footer .box{width: 400px; border:1px dashed {{ $border }}; border-radius:12px; padding:14px; background:#fcfdff; box-sizing:border-box; }
+    .footer .box{width: 280px;max-width: 280px; min-height: 80px; border:1px dashed {{ $border }}; border-radius:12px; padding:14px; background:#fcfdff; box-sizing:border-box; }
     .footer .box h4{ margin:0 0 8px 0; font-size:12px; color: {{ $muted }}; text-transform:uppercase; letter-spacing:.1em; }
     .footer .box p{ margin:0; white-space:pre-wrap; font-size:13px; }
     .footer .box.col-6:first-child{ padding-right:9px; }
     .footer .box.col-6:last-child{ padding-left:9px; }
     .badge{ float:right; margin-top:10px; background:#0b1220; color:#e2e8f0; padding:6px 10px; border-radius:10px; font-size:12px; }
-		.watermark{width: 300px;margin: 40px auto 0; font-weight: bold;}
+		.watermark{text-align: center;
+			margin-top: 50px; font-weight: bold;
+			font-size: 15px;}
     /* Print cleanup */
     @media print{ .sheet{ box-shadow:none; padding:18px; border-radius:0; } .rail{ display:none; } }
   </style>

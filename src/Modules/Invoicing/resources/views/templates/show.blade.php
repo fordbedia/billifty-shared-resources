@@ -31,6 +31,23 @@
 			return number_format($val, 2) . ' ' . $currency;
 		}
 	};
+	$fmtPercent = function ($value, int $decimals = 2) {
+		$num = ($value ?? 0);
+
+		// If it's stored like 5.0000, just render 5%
+		// If your DB stores 0.05 for 5%, then multiply
+		if($num < 1) {
+			$num *= 100;
+		}
+
+		return number_format($num, $decimals) . '%';
+	};
+	$getCurrency = function(object|string $currency) {
+		if (is_object($currency)) {
+			return $currency->code;
+		}
+		return $currency;
+	};
 	$fmtDate = fn($d) => $d ? \Carbon\Carbon::parse($d)->toFormattedDateString() : '—';
 	$addr = function ($x) {
 		$g = is_array($x) ? $x : (method_exists($x, 'toArray') ? $x->toArray() : []);
@@ -48,6 +65,8 @@
 	$bp = $invoice->businessProfile ?? null;
 	$cl = $invoice->client ?? null;
 	$items = $invoice->items ?? collect();
+
+	$pi = $invoice->businessProfile?->payment_information;
 
 	// Decide which visual template to render (DB-driven or fallback)
 	$template = $invoice->template->view ?? 'modern.v1.aurora';
@@ -178,6 +197,24 @@
 			width: 180mm;
 			margin: 0 auto;
 		}
+		.row-cols {
+		  width: 100%;
+		}
 
+		/* Shared column style */
+		.col {
+		  float: left;
+		}
+
+		/* Left column: 50% - gutter */
+		.col-left {
+		  width: 48%;
+		  margin-right: 4%;
+		}
+
+		/* Right column */
+		.col-right {
+		  width: 48%;
+		}
 	</style>
 @endsection

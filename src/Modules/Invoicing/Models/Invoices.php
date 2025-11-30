@@ -46,19 +46,13 @@ class Invoices extends Model
 	public static function relationships(): array
 	{
 		return [
-			'businessProfile',
+			'businessProfile.paymentInformation',
 			'client',
 			'items',
 			'colorScheme.colors',
 			'template.category',
-			'paymentInformation',
 			'currency',
 		];
-	}
-
-	public function paymentInformation()
-	{
-		return $this->belongsTo(PaymentInformation::class, 'payment_information_id');
 	}
 
 	public function currency()
