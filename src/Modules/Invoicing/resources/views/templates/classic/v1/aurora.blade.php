@@ -23,7 +23,7 @@
           <img src="{{ $logoSrc }}" alt="logo" class="logo" />
         @endif
         <div class="brand-text">
-          <div class="eyebrow">BusinessProfile</div>
+          <div class="eyebrow">Business Profile</div>
           <h1 class="title">{{ $invoice->invoice_number ?? 'INV-XXXXXX' }}</h1>
           <div class="meta tiny">
             <span>Issued: {{ $fmtDate($invoice->issued_on ?? null) }}</span>

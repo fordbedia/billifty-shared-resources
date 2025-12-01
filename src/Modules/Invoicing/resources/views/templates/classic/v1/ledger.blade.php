@@ -8,46 +8,65 @@
   $grid       = '#eef2f7';
   $border     = '#e5e7eb';
 
-  $logoW = 150;
+  $logoW = 120;
 @endphp
 
 <div class="ledger--theme ledger-root scheme cat">
   <div class="wrap">
     <div class="header clearfix">
-      <div class="side">
-        <div class="eyebrow">BusinessProfile</div>
+		<table class="dompdf-table">
+		<tr>
+      <td class="side">
+        <div class="eyebrow">Business Profile</div>
         <h1 class="id">{{ $invoice->invoice_number ?? 'INV-XXXXXX' }}</h1>
         <div class="chips">
           <span class="chip">Issued {{ $fmtDate($invoice->issued_on ?? null) }}</span>
           <span class="chip accent">Due {{ $fmtDate($invoice->due_on ?? null) }}</span>
         </div>
-      </div>
-      <div class="org">
-				 @if($logoSrc)
-					<div class="clearfix">
-						<img src="{{ $logoSrc }}" class="logo" alt="logo" />
-					</div>
-				@endif
+      </td>
+      <td class="org dompdf-col">
+		  @if($logoSrc)
+			  <div class="clearfix">
+				  <img src="{{ $logoSrc }}" class="logo" alt="logo" />
+			  </div>
+		  @endif
         <div class="strong">{{ $bp?->name ?? 'Your Business' }}</div>
-        <div class="muted tiny">{{ $bp?->email }}</div>
-				@if ($bp?->phone) <div class="muted tiny">{{$bp?->phone}}</div>@endif
-        <div class="muted tiny">{{ $bp ? $addr($bp) : '' }}</div>
-        @if($bp?->tax_id)<div class="muted tiny">Tax ID: {{ $bp->tax_id }}</div>@endif
-        @if($bp?->license_no)<div class="muted tiny">License No: {{ $bp->license_no }}</div>@endif
-      </div>
+        <div class="muted tiny">Email: <strong>{{ $bp?->email }}</strong></div>
+		@if ($bp?->phone) <div class="muted tiny">Phone: <strong>{{$bp?->phone}}</strong></div>@endif
+			  @if ($bp->address_line1)<div class="muted tiny">Address: <strong>{{ $bp->address_line1  }}</strong></div>@endif
+			  @if ($bp->address_line2)<div class="muted tiny">Address 2: <strong>{{ $bp->address_line2  }}</strong></div>@endif
+			  @if($bp?->tax_id)<div class="muted tiny">Tax ID: <strong>{{ $bp->tax_id }}</strong></div>@endif
+			  @if($bp?->license_no)<div class="muted tiny">License No: <strong>{{ $bp->license_no }}</strong></div>@endif
+      </td>
+		</tr>
+	</table>
     </div>
 
-    <div class="to clearfix">
-      <div class="box">
-        <div class="label tiny">Bill To</div>
-        <div class="strong">{{ $cl?->name ?? $cl?->company ?? 'Client' }}</div>
-        <div class="muted tiny">{{ $cl?->email }}</div>
-				@if ($cl?->phone)<div class="muted tiny">{{ $cl?->phone }}</div>@endif
-        <div class="muted tiny">{{ $cl ? $addr($cl) : '' }}</div>
-        @if($cl?->tax_id)<div class="muted tiny">Tax ID: {{ $cl->tax_id }}</div>@endif
-        @if($cl?->license_no)<div class="muted tiny">License No: {{ $cl->license_no }}</div>@endif
-      </div>
-    </div>
+	<table class="dompdf-table">
+		<tr>
+		<td class="dompdf-col to">
+		  <div class="box paymentinfo-box">
+			<div class="label tiny">Payment Information</div>
+			{!! $paymentInfo($pi) !!}
+		  </div>
+		</td>
+		<td class="dompdf-col to">
+		  <div class="box billto-box">
+			<div class="label tiny">Bill To</div>
+			  <ul>
+				<li><span class="label">Name: </span><span class="value">{{ $cl?->name ?? 'Client' }}</span></li>
+				@if ($cl?->company)<li><span class="label">Company: </span><span class="value">{{ $cl->company }}</span></li>@endif
+				@if ($cl?->email)<li><span class="label">Email: </span><span class="value">{{ $cl?->email }}</span></li>@endif
+				@if ($cl?->phone)<li><span class="label">Phone: </span><span class="value">{{ $cl?->phone }}</span></li>@endif
+				@if ($cl->address_line1)<li><span class="label">Address: </span><span class="value">{{ $cl->address_line1 }}</span></li>@endif
+				@if ($cl->address_line2)<li><span class="label">Address 2: </span><span class="value">{{ $c->address_line2 }}</span></li>@endif
+				@if($cl?->tax_id)<li><span class="label">Tax ID: </span><span class="value">{{ $cl->tax_id }}</span></li>@endif
+				@if($cl?->license_no)<li><span class="label">License No: </span><span class="value">{{ $cl->license_no }}</span></li>@endif
+			</ul>
+		  </div>
+		</td>
+		</tr>
+	</table>
 
     <div class="gridcard">
       <table class="gridtbl" cellspacing="0" cellpadding="0">
@@ -56,7 +75,8 @@
             <th class="desc">Description</th>
             <th>Qty</th>
             <th>Unit Price</th>
-			<th>Tax</th>
+			<th>Tax</th>\
+			@if ($invoice->discount_mode === 'per-line')<th>Discount</th>@endif
             <th>Amount</th>
           </tr>
         </thead>
@@ -73,6 +93,7 @@
                 <td><span class="qty">{{ rtrim(rtrim((string)($it->quantity ?? 0), '0'), '.') }}{{ $it->unit ? ' '.$it->unit : '' }}</span></td>
                 <td>{{ $fmtMoney($it->unit_price_cents ?? 0, $invoice->currency ?? 'USD') }}</td>
 				<td>{{ $fmtMoney($it->tax_cents ?? 0, $invoice->currency ?? 'USD') }}</td>
+				@if ($invoice->discount_mode === 'per-line')<td><strong>{{ $fmtPercent($it->line_discount_rate) }}</strong></td>@endif
                 <td>{{ $fmtMoney($it->line_total_cents ?? 0, $invoice->currency ?? 'USD') }}</td>
               </tr>
             @endforeach
@@ -136,11 +157,12 @@
 		.org .strong {font-weight: bold; font-size: 20px;}
 
     /* Header (floats instead of flex) */
+	.header {margin-bottom: 12px;}
     .header.clearfix:after, .to.clearfix:after, .totals.clearfix:after, .foot.clearfix:after, .clearfix:after { content:""; display:table; clear:both; }
-    .header .side{ float:left; width:65%; }
-    .header .org{ float:right; width:33%; text-align:right; }
-		.header .org .muted {line-height: 22px;}
-		.totals {margin: 20px 0;}
+    .header .side{ width:40%; }
+    .header .org{ width:40%; text-align:right; }
+	.header .org .muted {line-height: 22px;font-size: 15px;}
+	.totals {margin: 20px 0;}
 
     /* Chips (inline-block instead of flex) */
     .chips{ margin-top:6px; }
@@ -148,10 +170,14 @@
     .chip.accent{ border:none; background: {{ $accent }}; color: {{ $accentInk }}; }
 
     /* Bill To row */
-    .to .box{ float:left; width:50%; border:1px solid {{ $border }}; border-radius:12px; padding:12px 14px; box-sizing:border-box; background:#fff; }
+    .to .box{border:1px solid {{ $border }}; border-radius:12px; padding:12px 14px; background:#fff;}
     .to .box .label{ color: {{ $muted }}; text-transform:uppercase; letter-spacing:.12em; }
-    .logo{ float:right; width: {{ $logoW }}px; border-radius:10px; }
+    .logo{ width: {{ $logoW }}px; border-radius:10px; }
 		.to .box .muted {line-height: 22px;}
+	.to .box .paymentinfo {list-style: none;padding-left: 0;}
+	.to .box.billto-box {margin-left: 12px;}
+	.to .box.billto-box ul {padding-left: 0;list-style: none;}
+	.to .box.paymentinfo-box {margin-right: 12px;}
 
     /* Items table */
     .gridcard{ margin-top:18px; border:1px solid {{ $border }}; border-radius:14px; overflow:hidden; }
