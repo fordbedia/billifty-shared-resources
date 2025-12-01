@@ -216,5 +216,55 @@
 		.col-right {
 		  width: 48%;
 		}
+		.watermark {
+			text-align: center;
+			font-size: 18px;
+		}
+		/**------------------------- Dompdf Safe ------------------------*/
+		/* Section Wrapper */
+		.dompdf-section {
+		  background: #f4f4f4;
+		  padding: 16px 22px;
+		  clear: both;
+		  overflow: visible;     /* SAFE */
+		  display: block;
+		}
+
+		/* Title */
+		.dompdf-section .section-title {
+		  font-size: 14px;
+		  margin: 0 0 10px 0;
+		}
+
+		/* The Table Layout (SUPER SAFE) */
+		.dompdf-table {
+		  width: 100%;
+		  border-collapse: collapse;
+		}
+
+		.dompdf-col {
+		  vertical-align: top;
+		  padding: 0;
+		}
+
+		/* Column widths */
+		.left-col {
+		  width: 40%;
+		  padding-right: 12px;
+		}
+
+		.right-col {
+		  width: 60%;
+		  padding-left: 12px;
+		}
+
+		/* Each Box/Card */
+		.dompdf-box {
+		  background: #fff;
+		  padding: 20px;
+		  box-shadow: 0 0 12px rgba(0,0,0,0.15);
+		  margin-top: 4px;
+		  border-radius: 6px; /* optional */
+		}
 	</style>
 @endsection

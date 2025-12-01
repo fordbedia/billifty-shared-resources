@@ -1,13 +1,14 @@
 <div class="neo--theme invoice-root neo-root scheme cat">
   <div class="canvas header">
-    <div class="row clearfix">
-      <div class="left col-6">
-        <div class="brand clearfix left">
+    <table class="header-table">
+		<tr>
+      <td class="dompdf-col left-col">
+        <div class="brand">
           @if ($logoSrc)
             <img
               src="{{ $logoSrc }}"
               alt="Business Logo"
-              class="logo left"
+              class="logo"
             />
 			@endif
 
@@ -85,11 +86,11 @@
 			@endif
           </div>
         </div>
-      </div>
-      <div class="right">
+      </td>
+      <td class="dompdf-col right-col">
         <h2 class="text-right">INVOICE</h2>
 
-        <div class="box px-4 py-4 clearfix">
+        <div class="box px-4 py-4">
           <div class="inner-box">
             <div class="label">Invoice Number</div>
             <div class="value">{{ $invoice->invoice_number ?? 'INV-XXXXXX' }}</div>
@@ -101,10 +102,10 @@
             <div class="value">{{ $fmtDate($invoice->due_on ?? null) }}</div>
           </div>
         </div>
-      </div>
-    </div>
+      </td>
+		</tr>
+    </table>
   </div>
-	<div class="clearfix"></div>
 
   <div class="section--bill-to">
   <h2>Bill To</h2>
@@ -276,6 +277,7 @@
       </div>
     </div>
   </div>
+	<div class="watermark">Powered by <strong>Billifty.com</strong></div>
 
   @php
     $tbodyBorderColor = $scheme->table_tbody_color->code ?? '#E5E7EB';
@@ -293,7 +295,6 @@
     border-radius: 12px;
     box-shadow: 0 0 12px rgba(51, 51, 51, 0.2);
   }
-
   /* ===========================
      BRAND: LOGO + TITLE LAYOUT
      =========================== */
@@ -331,11 +332,11 @@
 
   .brand .business-profile .title {
     margin: 0 0 4px;
-    font-size: 18px;
+    font-size: 22px;
     font-weight: 700;
     color: #FFFFFF;
     word-wrap: break-word;
-	  line-height: 1.1rem;
+	  line-height: 1.4rem;
   }
 
   .brand .business-profile .muted {
@@ -351,6 +352,7 @@
 
   .brand .business-profile .muted span {
     vertical-align: middle;
+	  font-size: 15px;
   }
 
   /* If .business-profile is used elsewhere, keep it harmless */
@@ -381,9 +383,24 @@
   .header {
     background-color: {{ $scheme->main->code }};
     border-bottom: 1px solid #E5E7EB;
-	      display: block;
-    overflow: hidden;
+	display: block;
+    overflow: visible;
+	  clear: both;
   }
+  .header-table {
+	width: 100%;
+  	border-collapse: collapse;
+  }
+  .header-table h2 {
+	  font-size: 22px;
+  }
+  .header-table .inner-box .label,
+  .header-table .inner-box .value{
+	  font-size: 16px;
+  }
+	.header-table .inner-box .value {
+		font-weight: bold;
+	}
 
   .eyebrow {
     color: #6B7280;
@@ -675,6 +692,9 @@
     color: #4B5563;
     border-radius: 12px;
     box-shadow: 0 0 12px rgba(122, 101, 101, 0.17);
+  }
+  .watermark {
+	  margin-top: 22px;
   }
 
   /* ===========================
