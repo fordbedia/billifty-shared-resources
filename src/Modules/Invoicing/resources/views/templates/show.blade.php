@@ -95,6 +95,36 @@
 		  }
 	  }
 
+	$paymentInfo = function(object $pi, string $baseClass = 'paymentinfo') {
+        $html = "<ul class='".$baseClass."'>";
+		switch($pi->payment_method) {
+			case 'bank_transfer':
+				$html .= "<li><span class='label'>Bank Name: </span><span class='value'>{$pi->bank_name}</span></li>";
+				$html .= "<li><span class='label'>Account Name: </span><span class='value'>{$pi->account_name}</span></li>";
+				$html .= "<li><span class='label'>Account Number: </span><span class='value'>{$pi->account_number}</span></li>";
+				$html .= "<li><span class='label'>Routing Number: </span><span class='value'>{$pi->routing_number}</span></li>";
+				if ($pi->iban) {
+					$html .= "<li><span class='label'>IBAN: </span><span class='value'>{$pi->iban}</span></li>";
+				}
+				if ($pi->swift_code) {
+					$html .= "<li><span class='label'>Swift Code: </span><span class='value'>{$pi->swift_code}</span></li>";
+				}
+				break;
+			case 'paypal':
+				$html .= "<li><span class='label'>PayPal Email: </span><span class='value'>{$pi->paypal_email}</span></li>";
+				break;
+			case 'stripe':
+				$html .= "<li><span class='label'>Stripe Payment Link: </span><span class='value'>{$pi->stripe_payment_link}</span></li>";
+				break;
+			case 'cash_app':
+				$html .= "<li><span class='label'>Cash App: </span><span class='value'>{$pi->cash_app}</span></li>";
+				break;
+		}
+		$html .= "</ul>";
+
+		return $html;
+	}
+
 @endphp
 
 

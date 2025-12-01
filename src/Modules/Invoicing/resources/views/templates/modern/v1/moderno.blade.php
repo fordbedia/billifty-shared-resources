@@ -2,38 +2,35 @@
   <div class="page">
 
    <div class="banner">
-	  <div class="banner-inner clearfix">
-
-		{{-- Left side: Logo + Business Info --}}
-		<div class="brand clearfix">
-		  <div class="logo-div">
+	  <table class="dompdf-table">
+		<tr>
 			@if($logoSrc)
-			  <img
-				src="{{ $logoSrc }}"
-				alt="Business Logo"
-				class="logo"
-			  />
+				<td class="dompdf-col logo-div">
+					<img
+						src="{{ $logoSrc }}"
+						alt="Business Logo"
+						class="logo"
+					/>
+				</td>
 			@endif
-		  </div>
-
-		  <div class="info-div">
-			  <div class="left">
-				<h1 class="title">{{ $bp?->name ?? 'Your Business' }}</h1>
-				@if ($bp->address_line1)<div class="muted">{{ $bp->address_line1 }}</div>@endif
-				@if($bp?->email)<div class="muted">{{ $bp?->email }}</div>@endif
-				@if($bp?->phone)<div class="muted">
-				  {{ $bp?->phone }}
-				</div>@endif
+			<td class="brand dompdf-col">
+			  <div class="info-div">
+				  <div class="">
+					<h1 class="title">{{ $bp?->name ?? 'Your Business' }}</h1>
+					@if ($bp->address_line1)<div class="muted">{{ $bp->address_line1 }}</div>@endif
+					@if($bp?->email)<div class="muted">{{ $bp?->email }}</div>@endif
+					@if($bp?->phone)<div class="muted">
+					  {{ $bp?->phone }}
+					</div>@endif
+				  </div>
 			  </div>
-			  <div class="clearfix"></div>
-		  </div>
-		</div>
+			</td>
 
 
 		{{-- Right side: Invoice Info --}}
-		<div class="due right">
+		<td class="due dompdf-col">
 		  <h2 class="text-right">INVOICE</h2>
-		  <div class="due--bg right">
+		  <div class="due--bg text-right">
 			<div class="muted">
 			  Invoice #:
 			  <strong>{{ $invoice->invoice_number ?? 'INV-XXXXXX' }}</strong>
@@ -45,36 +42,35 @@
 			  <div class="duepill">Due {{ $fmtDate($invoice->due_on ?? null) }}</div>
 			@endif
 		  </div>
-		</div>
-		<div class="clearfix"></div>
+		</td>
+		</tr>
 
-	  </div>
-	  <div class="angle"></div>
+	  </table>
 	</div>
 
-
-    <div class="grid2 clearfix">
-      <div class="tile col-6">
-        <div class="tile-h">
-          <svg class="img-color left" width="16" height="28" viewBox="0 0 16 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-		  <path d="M15.75 28H0V0H15.75V28Z" stroke="#E5E7EB" />
-		  <path
-			d="M7.875 13.25C6.68153 13.25 5.53693 12.7759 4.69302 11.932C3.84911 11.0881 3.375 9.94347 3.375 8.75C3.375 7.55653 3.84911 6.41193 4.69302 5.56802C5.53693 4.72411 6.68153 4.25 7.875 4.25C9.06847 4.25 10.2131 4.72411 11.057 5.56802C11.9009 6.41193 12.375 7.55653 12.375 8.75C12.375 9.94347 11.9009 11.0881 11.057 11.932C10.2131 12.7759 9.06847 13.25 7.875 13.25ZM7.35117 16.8781L6.69727 15.7883C6.47227 15.4121 6.74297 14.9375 7.17891 14.9375H7.875H8.56758C9.00352 14.9375 9.27422 15.4156 9.04922 15.7883L8.39531 16.8781L9.56953 21.234L10.8352 16.0695C10.9055 15.7848 11.1797 15.5984 11.4645 15.6723C13.9289 16.291 15.75 18.5199 15.75 21.1707C15.75 21.7684 15.2648 22.25 14.6707 22.25H10.0371C9.96328 22.25 9.89648 22.2359 9.8332 22.2113L9.84375 22.25H5.90625L5.9168 22.2113C5.85352 22.2359 5.7832 22.25 5.71289 22.25H1.0793C0.485156 22.25 0 21.7648 0 21.1707C0 18.5164 1.82461 16.2875 4.28555 15.6723C4.57031 15.602 4.84453 15.7883 4.91484 16.0695L6.18047 21.234L7.35469 16.8781H7.35117Z"
-			fill="currentColor"
-		  />
-		</svg>
-          <span class="billto-text">Bill To</span>
-        </div>
-        <div class="tile-b">
-          <div class="strong">{{ $cl?->name ?? 'Client' }}</div>
-			@if ($cl?->company)<div>{{$cl->company}}</div>@endif
-          	@if ($cl?->email)<div class="muted">{{ $cl->email }}</div>@endif
-			@if ($cl?->phone ){{ $cl->phone }}@endif
-          	@if($cl?->tax_id)<div class="muted">Tax ID: {{ $cl->tax_id }}</div>@endif
-          	@if($cl?->license_no)<div class="muted">License No: {{ $cl->license_no }}</div>@endif
-          	@if ($cl->address_line1)<div class="muted">{{ $cl->address_line1 }}</div>@endif
-        </div>
-      </div>
+	  <div class="grid2 clearfix">
+		<table class="dompdf-table">
+			<tr>
+				<td class="dompdf-col">
+					<div class="tile tile-b">
+						<div class="billto-text">Payment Information:</div>
+						{!! $paymentInfo($pi) !!}
+					</div>
+				</td>
+				<td class="dompdf-col">
+					<div class="tile tile-b">
+						<div class="billto-text">Bill To:</div>
+					  <div class="strong">{{ $cl?->name ?? 'Client' }}</div>
+						@if ($cl?->company)<div class="muted">{{$cl->company}}</div>@endif
+						@if ($cl?->email)<div class="muted">{{ $cl->email }}</div>@endif
+						@if ($cl?->phone )<div class="muted">{{ $cl->phone }}</div>@endif
+						@if($cl?->tax_id)<div class="muted">Tax ID: {{ $cl->tax_id }}</div>@endif
+						@if($cl?->license_no)<div class="muted">License No: {{ $cl->license_no }}</div>@endif
+						@if ($cl->address_line1)<div class="muted">{{ $cl->address_line1 }}</div>@endif
+					</div>
+				</td>
+			</tr>
+		</table>
     </div>
     <div class="clearfix"></div>
 
@@ -247,36 +243,31 @@
 
 	/* Logo + info inside brand */
 	.brand {
-		float: left;
-	  	width: 55%;
+	  	width: 45%;
 	}
 
 	/* Logo column */
 	.logo-div {
-	  float: left;
-	  width: 80px;
-	  margin-right: 22px;
+	  width: 10%;
 	}
 
 	.logo {
 	  border-radius: 10px;
 	  background: rgba(255,255,255,.15);
 	  padding: 7px;
-	  width: 100px;
+	  width: 90px;
 	}
 
 	/* Info column */
 	.info-div {
-	  float: none; /* make sure it's NOT floating */
-	  margin-left: 125px; /* logo width (80) + margin (20-ish) */
 	  width: auto;
 	  min-height: 80px;
 		height: auto;
+		margin-left: 7px;
 	}
 
 	.due {
-	  float: right;
-	  width: 35%;
+	  width: 28%;
 	  padding-right: 20px;
 	}
 
@@ -286,6 +277,9 @@
 	  font-size: 22px;
 		line-height: 1.4rem;
 		margin-bottom:5px;
+	}
+	.info-div .muted {
+		font-size: 14px;
 	}
 	/*.brand .info-div {*/
 	/*  float: none;          !* override .left float *!*/
@@ -323,14 +317,24 @@
     }
 
     .img-color {color: {{$scheme->main->code}}; }
-    .billto-text {vertical-align: -webkit-baseline-middle;}
+    .billto-text {padding-bottom: 4px;font-size: 16px;font-weight:bold;}
+	.billto-text .muted {
+		font-size: 14px;
+	}
 
     .grid2{
       padding:22px 12px;
       background-color: #F9FAFB;
     }
 
-    .tile{border-radius:12px;background:#fff;}
+    .tile{border-radius:12px;background:#fff;min-height: 110px;overflow: visible; display: block;}
+	.tile .paymentinfo {
+		list-style: none;
+		padding-left: 0;
+	}
+	.tile .paymentinfo .value {
+		font-weight: bold;
+	}
     .tile-h{
       padding:10px 0;
       font-size:12px;
@@ -340,7 +344,9 @@
       font-weight: bold;
     }
 
-    .tile-b{padding:14px}
+    .tile-b{padding:14px;
+		margin:0 12px;
+		font-size: 14px;}
     .strong{font-weight:600}
     .tile-b .muted {padding: 3px 0;}
 
