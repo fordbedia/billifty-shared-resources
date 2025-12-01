@@ -29,21 +29,24 @@
 					</div>
 					<div class="info-div">
 						<h1 class="title">{{ $bp?->name ?? 'Your Business' }}</h1>
-						<div class="muted">{{ $bp ? $addr($bp) : '' }}</div>
-						<div class="muted">{{ $bp?->email }}</div>
-						<div class="muted">@if($bp?->email && $bp?->phone) @endif{{ $bp?->phone }}</div>
+						@if ($bp->address_line1)<div class="muted">Address: <strong>{{ $bp->address_line1 }}</strong></div>@endif
+						@if ($bp->address_line2 )<div class="muted">Address 2: {{ $bp->address_line2  }}</div>@endif
+						@if ($bp?->email)<div class="muted">Email: <strong>{{ $bp?->email }}</strong></div>@endif
+						@if($bp?->phone)<div class="muted">Phone: <strong>{{ $bp?->phone }}</strong></div>@endif
 					</div>
 				</div>
 				<div class="bill-to right">
 					<h2 class="text-right">Bill To</h2>
 					<div class="box">
-						<div class="tile-b text-right">
-							<div class="strong">{{ $cl?->name ?? $cl?->company ?? 'Client' }}</div>
-							<div class="muted">{{ $cl?->email }}</div>
-							@if ($cl?->phone) <div class="muted">{{$cl?->phone}}</div> @endif
-							@if($cl?->tax_id)<div class="muted">Tax ID: {{ $cl->tax_id }}</div>@endif
-							@if($cl?->license_no)<div class="muted">License No: {{ $cl->license_no }}</div>@endif
-							<div class="muted">{{ $cl ? $addr($cl) : '' }}</div>
+						<span class="tile-b text-right">
+							<div><span class="muted">Name: </span><span class="strong"> {{ $cl?->name ?? 'Client' }}</span></div>
+							@if ($cl?->company)<div><span class="muted">Company: </span><span class="strong">{{ $cl->company }}</span></div>@endif
+							@if ($cl?->email)<div> <span class="muted">Email: <strong>{{ $cl->email }}</strong></span></div>@endif
+							@if ($cl?->phone)<div> <span class="muted">Phone: <strong>{{$cl?->phone}}</strong></span> </div>@endif
+							@if($cl?->tax_id)<div> <span class="muted">Tax ID: <strong>{{ $cl->tax_id }}</strong></span></div>@endif
+							@if($cl?->license_no)<div> <span class="muted">License No.: <strong>{{ $cl->license_no }}</strong></span></div>@endif
+							@if($cl->address_line1)<div><span class="muted">Address: <strong>{{ $cl->address_line1 }}</strong></span></div>@endif
+							@if ($cl->address_line2)<div><span class="muted">Address 2: <strong>{{ $cl->address_line2 }}</strong></span></div>@endif
 						</div>
 					</div>
 				</div>
@@ -51,7 +54,7 @@
 
 		<div class="row-cols">
 			<div class="business-profile-padding col">
-				<div class="label">BusinessProfile Number</div>
+				<div class="label">Invoice #</div>
 				<div class="value"><strong>{{ $invoice->invoice_number ?? 'INV-XXXXXX' }}</strong></div>
 			</div>
 		  <div class="business-profile-padding col">
@@ -179,7 +182,11 @@
   </div>
 </div>
 
+<div class="clearfix"></div>
+{!! $watermark() !!}
+
 <style>
+	.watermark {margin-top: 22px;}
 	.bg-light {
 		margin-top: 0;
 	}
@@ -188,6 +195,8 @@
 		padding-bottom: 20px;
 		padding-right: 30px;
 	}
+	.business-profile-padding .label {font-size: 15px;}
+	.business-profile-padding .value {font-size: 15px;}
   .page {
     position: relative;         /* anchor for abs. children */
     /* optional if you want spacing so text doesn't sit under the wall */
@@ -227,6 +236,7 @@
 	  width: 250px;
 	  max-width: 250px;
   }
+  .info-div .muted {font-size: 15px;}
   .bill-to {
 	  width: 250px;
   }

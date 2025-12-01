@@ -51,12 +51,12 @@
 	  <div class="grid2 clearfix">
 		<table class="dompdf-table">
 			<tr>
-				<td class="dompdf-col">
+				@if ($pi)<td class="dompdf-col">
 					<div class="tile tile-b">
 						<div class="billto-text">Payment Information:</div>
 						{!! $paymentInfo($pi) !!}
 					</div>
-				</td>
+				</td>@endif
 				<td class="dompdf-col">
 					<div class="tile tile-b">
 						<div class="billto-text">Bill To:</div>
@@ -177,6 +177,8 @@
       </div>
     </div>
   </div>
+
+	{!! $watermark() !!}
 
   <style>
     /* Dompdf-friendly font */

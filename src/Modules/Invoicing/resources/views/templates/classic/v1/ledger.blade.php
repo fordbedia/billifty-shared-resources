@@ -44,12 +44,12 @@
 
 	<table class="dompdf-table">
 		<tr>
-		<td class="dompdf-col to">
+		@if ($pi)<td class="dompdf-col to">
 		  <div class="box paymentinfo-box">
 			<div class="label tiny">Payment Information</div>
 			{!! $paymentInfo($pi) !!}
 		  </div>
-		</td>
+		</td>@endif
 		<td class="dompdf-col to">
 		  <div class="box billto-box">
 			<div class="label tiny">Bill To</div>
@@ -145,7 +145,7 @@
       </div>
       <div class="clearfix"></div>
     </div>
-		<div class="watermark">Powered by Billifty.com</div>
+		{!! $watermark() !!}
   </div>
 
   <style>

@@ -44,22 +44,25 @@
     <div class="cards clearfix">
       <div class="card left">
         <div class="label">From</div>
-        <div class="strong">{{ $bp?->name ?? 'Your Business' }}</div>
-        <div class="muted">{{ $bp?->email }}</div>
-				@if (($bp?->phone ?? 0)>0) <div class="muted">{{$bp?->phone}}</div>@endif
-        <div class="muted">{{ $bp ? $addr($bp) : '' }}</div>
-        @if($bp?->tax_id)<div class="muted">Tax ID: {{ $bp->tax_id }}</div>@endif
-        @if($bp?->license_no)<div class="muted">License No: {{ $bp->license_no }}</div>@endif
+        <div><span class="strong">{{ $bp?->name ?? 'Your Business' }}</span></div>
+        <div><span class="muted">Email: <strong>{{ $bp?->email }}</strong></span></div>
+		@if (($bp?->phone ?? 0)>0) <div><span class="muted">Phone: <strong>{{$bp?->phone}}</strong></span></div>@endif
+        @if ($bp->address_line1)<div><span class="muted">Address: <strong>{{ $bp->address_line1 }}</strong></span></div>@endif
+		@if ($bp->address_line2)<div><span class="muted">Address 2: <strong>{{ $bp->address_line2 }}</strong></span></div>@endif
+        @if($bp?->tax_id)<div><span class="muted">Tax ID: <strong>{{ $bp->tax_id }}</strong></span></div>@endif
+        @if($bp?->license_no)<div><span class="muted">License No: <strong>{{ $bp->license_no }}</strong></span></div>@endif
       </div>
 
       <div class="card right">
         <div class="label">Bill To</div>
-        <div class="strong">{{ $cl?->name ?? $cl?->company ?? 'Client' }}</div>
-        <div class="muted">{{ $cl?->email }}</div>
-				@if(($cl?->phone ?? 0)>0)<div class="muted">{{$cl?->phone}}</div>@endif
-        <div class="muted">{{ $cl ? $addr($cl) : '' }}</div>
-        @if($cl?->tax_id)<div class="muted">Tax ID: {{ $cl->tax_id }}</div>@endif
-        @if($cl?->license_no)<div class="muted">License No: {{ $cl->license_no }}</div>@endif
+        <div class="strong">{{ $cl?->name ?? 'Client' }}</div>
+		  @if ($cl?->company)<div><span class="muted">Company: </span><span class="strong">{{ $cl?->company }}</span></div>@endif
+        @if ($cl?->email)<div><span class="muted">Email: <strong>{{ $cl?->email }}</strong></span></div>@endif
+		@if(($cl?->phone ?? 0)>0)<div><span class="muted">Phone: <strong>{{$cl?->phone}}</strong></span></div>@endif
+        @if ($cl->address_line1)<div><span class="muted">Address: <strong>{{ $cl->address_line1 }}</strong></span></div>@endif
+		@if ($cl->address_line2)<div><span class="muted">Address 2: <strong>{{ $cl->address_line2 }}</strong></span></div>@endif
+        @if($cl?->tax_id)<div><span class="muted">Tax ID: <strong>{{ $cl->tax_id }}</strong></span></div>@endif
+        @if($cl?->license_no)<div><span class="muted">License No: <strong>{{ $cl->license_no }}</strong></span></div>@endif
       </div>
       <div class="clearfix"></div>
     </div>
@@ -135,7 +138,7 @@
       <div class="clearfix"></div>
     </div>
 
-		<div class="watermark">Powered by Billifty.com</div>
+		{!! $watermark() !!}
   </div>
 
   <style>

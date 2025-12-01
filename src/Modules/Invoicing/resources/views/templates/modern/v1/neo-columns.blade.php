@@ -175,6 +175,7 @@
             <th>Qty</th>
             <th class="right">Unit Price</th>
             <th class="right">Tax</th>
+			@if ($invoice->discount_mode === 'per-line')<th>Discount</th>@endif
             <th class="right">Amount</th>
           </tr>
         </thead>
@@ -217,6 +218,8 @@
                 <td class="right">
                   {{ $fmtMoney($it->tax_cents ?? 0, $invoice->currency ?? 'USD') }}
                 </td>
+
+				  @if ($invoice->discount_mode === 'per-line')<td class="right"><strong>{{ $fmtPercent($it->line_discount_rate) }}</strong></td>@endif
 
                 <td class="right">
                   {{ $fmtMoney($it->line_total_cents ?? 0, $invoice->currency ?? 'USD') }}
@@ -277,7 +280,18 @@
       </div>
     </div>
   </div>
-	<div class="watermark">Powered by <strong>Billifty.com</strong></div>
+	@if ($pi)
+		<table class="dompdf-table paymentinfo">
+			<tr>
+				<td class="dompdf-col">
+					<div class="paymentinfo-box">
+						{!! $paymentInfo($pi) !!}
+					</div>
+				</td>
+			</tr>
+		</table>
+	@endif
+	{!! $watermark() !!}
 
   @php
     $tbodyBorderColor = $scheme->table_tbody_color->code ?? '#E5E7EB';
@@ -288,7 +302,17 @@
     font-family: '{{ $theme->fontFamily ?? "DejaVu Sans" }}', sans-serif;
     font-size: 12px;
   }
-
+  .paymentinfo {margin-top: 12px;}
+  .paymentinfo-box  {
+	padding: 12px 12px;
+    border: 1px solid #d3d0d0;
+    background: #FFF;
+    width: 50%;
+    border-radius: 12px;
+  }
+  .paymentinfo-box ul {padding-left: 0;list-style: none;}
+  .paymentinfo-box ul li .label{font-size: 15px; text-transform:uppercase; letter-spacing:0.1em;}
+  .paymentinfo-box ul li .value {font-size: 15px;font-weight: bold;}
   .container {
     width: 916px;
     margin-bottom: 12px;

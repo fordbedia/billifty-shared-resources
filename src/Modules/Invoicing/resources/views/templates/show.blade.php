@@ -123,7 +123,12 @@
 		$html .= "</ul>";
 
 		return $html;
-	}
+	};
+	$watermark = function() {
+		  $html = '<div class="watermark">Powered by <strong>Billifty.com</strong></div>';
+
+		  return $html;
+	};
 
 @endphp
 
