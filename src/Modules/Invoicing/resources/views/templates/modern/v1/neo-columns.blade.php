@@ -104,130 +104,65 @@
       </div>
     </div>
   </div>
+	<div class="clearfix"></div>
 
   <div class="section--bill-to">
-    <div class="columns">
-      <div class="col main">
-        <div class="clearfix">
-          <h2>Bill To</h2>
+  <h2>Bill To</h2>
 
-          <div class="box left">
-            <h2>{{ $cl?->company }}</h2>
+  <table class="billto-table">
+    <tr>
+      {{-- Left column: client info --}}
+      <td class="billto-cell billto-left">
+        <div class="box">
+          <h2>{{ $cl?->company }}</h2>
 
-            <ul>
+          <ul>
+            <li>
+              {{ $cl?->name }}
+            </li>
+
+            @if ($cl->address_line1 || $cl->address_line2)
               <li>
-                <svg
-                  width="14"
-                  height="16"
-                  viewBox="0 0 14 16"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <g clip-path="url(#clip0_171_276)">
-                    <g clip-path="url(#clip1_171_276)">
-                      <path
-                        d="M7 8C8.06087 8 9.07828 7.57857 9.82843 6.82843C10.5786 6.07828 11 5.06087 11 4C11 2.93913 10.5786 1.92172 9.82843 1.17157C9.07828 0.421427 8.06087 0 7 0C5.93913 0 4.92172 0.421427 4.17157 1.17157C3.42143 1.92172 3 2.93913 3 4C3 5.06087 3.42143 6.07828 4.17157 6.82843C4.92172 7.57857 5.93913 8 7 8ZM5.57188 9.5C2.49375 9.5 0 11.9937 0 15.0719C0 15.5844 0.415625 16 0.928125 16H13.0719C13.5844 16 14 15.5844 14 15.0719C14 11.9937 11.5063 9.5 8.42813 9.5H5.57188Z"
-                        fill="currentColor"
-                      />
-                    </g>
-                  </g>
-                  <defs>
-                    <clipPath id="clip0_171_276">
-                      <rect width="14" height="16" fill="white" />
-                    </clipPath>
-                    <clipPath id="clip1_171_276">
-                      <path d="M0 0H14V16H0V0Z" fill="white" />
-                    </clipPath>
-                  </defs>
-                </svg>
-
-                {{ $cl?->name }}
+                {{ $cl->address_line1 }}<br />
+                {{ $cl->address_line2 }}
               </li>
+            @endif
 
-              @if ($cl->address_line1 || $cl->address_line2)
-                <li>
-                  <svg
-                    width="12"
-                    height="16"
-                    viewBox="0 0 12 16"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M6.74062 15.6C8.34375 13.5938 12 8.73125 12 6C12 2.6875 9.3125 0 6 0C2.6875 0 0 2.6875 0 6C0 8.73125 3.65625 13.5938 5.25938 15.6C5.64375 16.0781 6.35625 16.0781 6.74062 15.6ZM6 4C6.53043 4 7.03914 4.21071 7.41421 4.58579C7.78929 4.96086 8 5.46957 8 6C8 6.53043 7.78929 7.03914 7.41421 7.41421C7.03914 7.78929 6.53043 8 6 8C5.46957 8 4.96086 7.78929 4.58579 7.41421C4.21071 7.03914 4 6.53043 4 6C4 5.46957 4.21071 4.96086 4.58579 4.58579C4.96086 4.21071 5.46957 4 6 4Z"
-                      fill="currentColor"
-                    />
-                  </svg>
+            @if ($cl?->email)
+              <li>
+                {{ $cl?->email }}
+              </li>
+            @endif
 
-                  {{ $cl->address_line1 }}<br />
-                  {{ $cl->address_line2 }}
-                </li>
-              @endif
+            @if ($cl?->phone)
+              <li>
+                {{ $cl?->phone }}
+              </li>
+            @endif
+          </ul>
+        </div>
+      </td>
 
-              @if ($cl?->email)
-                <li>
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M1.5 2C0.671875 2 0 2.67188 0 3.5C0 3.97187 0.221875 4.41562 0.6 4.7L7.4 9.8C7.75625 10.0656 8.24375 10.0656 8.6 9.8L15.4 4.7C15.7781 4.41562 16 3.97187 16 3.5C16 2.67188 15.3281 2 14.5 2H1.5ZM0 5.5V12C0 13.1031 0.896875 14 2 14H14C15.1031 14 16 13.1031 16 12V5.5L9.2 10.6C8.4875 11.1344 7.5125 11.1344 6.8 10.6L0 5.5Z"
-                      fill="currentColor"
-                    />
-                  </svg>
+      {{-- Right column: notes & terms --}}
+      <td class="billto-cell billto-right">
+        <div class="box">
+          <h2>Notes & Terms</h2>
 
-                  {{ $cl?->email }}
-                </li>
-              @endif
-
-              @if ($cl?->phone)
-                <li>
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <g clip-path="url(#clip0_171_292)">
-                      <path
-                        d="M5.15312 0.768966C4.9125 0.187716 4.27812 -0.121659 3.67188 0.0439663L0.921875 0.793966C0.378125 0.943966 0 1.43772 0 2.00022C0 9.73147 6.26875 16.0002 14 16.0002C14.5625 16.0002 15.0563 15.6221 15.2063 15.0783L15.9563 12.3283C16.1219 11.7221 15.8125 11.0877 15.2312 10.8471L12.2312 9.59709C11.7219 9.38459 11.1313 9.53147 10.7844 9.95959L9.52188 11.5002C7.32188 10.4596 5.54063 8.67834 4.5 6.47834L6.04063 5.21897C6.46875 4.86897 6.61562 4.28147 6.40312 3.77209L5.15312 0.772091V0.768966Z"
-                        fill="currentColor"
-                      />
-                    </g>
-                    <defs>
-                      <clipPath id="clip0_171_292">
-                        <path d="M0 0H16V16H0V0Z" fill="white" />
-                      </clipPath>
-                    </defs>
-                  </svg>
-
-                  {{ $cl?->phone }}
-                </li>
-              @endif
-            </ul>
+          <div class="panel">
+            <h4>Notes</h4>
+            <p>{{ $invoice->notes ?? '—' }}</p>
           </div>
 
-          <div class="box right">
-            <h2>Notes & Terms</h2>
-
-            <div class="panel">
-              <h4>Notes</h4>
-              <p>{{ $invoice->notes ?? '—' }}</p>
-            </div>
-
-            <div class="panel">
-              <h4>Terms</h4>
-              <p>{{ $invoice->terms ?? '—' }}</p>
-            </div>
+          <div class="panel">
+            <h4>Terms</h4>
+            <p>{{ $invoice->terms ?? '—' }}</p>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
+      </td>
+    </tr>
+  </table>
+</div>
+
 
   <div class="section--table">
     <div class="card table">
@@ -363,25 +298,24 @@
      BRAND: LOGO + TITLE LAYOUT
      =========================== */
 
-  .brand {
-    margin-top: 12px;
-    /*width: 100%;*/
-    display: table;          /* Dompdf-friendly layout */
-    table-layout: fixed;
-  }
+	 .brand {
+	  margin-top: 12px;
+	  display: table;
+	  table-layout: fixed;
+		 overflow: hidden;
+	}
 
-  /* Logo cell */
-  .brand .logo {
-    display: table-cell;
-    width: 100px;
-    height: 100px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.15);
-    overflow: hidden;
-    vertical-align: middle;
-    text-align: center;
-    float: none !important;          /* override .left */
-  }
+	.brand .logo {
+	  display: table-cell;
+	  float: none !important;
+	}
+
+	.brand .business-profile {
+	  display: table-cell;
+	  float: none !important;
+	  padding-left: 12px;
+
+	}
 
   .brand .logo img {
     max-width: 100%;
@@ -393,17 +327,6 @@
     background-color: {{ $scheme->light->code }};
     color: #111827;
     line-height: 100px;             /* center initial vertically */
-  }
-
-  /* Business profile cell (title + address + contact) */
-  .brand .business-profile {
-    display: table-cell;
-    vertical-align: top;
-    padding-left: 12px;
-    width: auto;
-    float: none !important;         /* override .right */
-    margin-left: 0;
-	  padding-bottom: 20px;
   }
 
   .brand .business-profile .title {
@@ -444,7 +367,6 @@
   .inner-box {
     /*float: right;*/
     text-align: right;
-    padding-right: 20px;
   }
 
   .canvas {
@@ -664,54 +586,76 @@
     color: {{ $scheme->main->code }};
   }
 
-  /* ===========================
-     BILL TO
-     =========================== */
+  	/* ===========================
+	BILL TO
+	=========================== */
 
-  .section--bill-to {
-    background-color: {{ $scheme->light->code }};
-    padding: 12px 22px;
-  }
+	.section--bill-to {
+	  background-color: {{ $scheme->light->code }};
+	  padding: 16px 22px 18px 22px;
+	  clear: both;
+	  display: block;
+	  overflow: visible;   /* let content define height */
+	}
 
-  .section--bill-to h2 {
-    color: {{ $scheme->main->code }};
-    font-size: 14px;
-  }
+	.section--bill-to h2 {
+	  color: {{ $scheme->main->code }};
+	  font-size: 14px;
+	  margin: 0 0 8px 0;
+	}
 
-  .section--bill-to .box {
-    background-color: #fff;
-    padding: 20px 30px;
-    box-shadow: 0 0 12px #aeaab3;
-    width: 250px;
-    min-height: 165px;
-	  max-width: 250px;
-  }
+	/* Layout table for the two columns */
+	.billto-table {
+	  width: 100%;
+	  border-collapse: collapse;
+	}
 
-  .section--bill-to .box ul {
-    list-style: none;
-    padding: 0;
-    margin: 12px 0 0;
-  }
+	.billto-cell {
+	  vertical-align: top;
+	  padding: 0;
+	}
 
-  .section--bill-to .box ul li {
-    color: #000000;
-    padding: 6px 0;
-  }
+	/* Left and right widths */
+	.billto-left {
+	  width: 40%;
+	  padding-right: 12px;
+	}
 
-  .section--bill-to .box ul li svg {
-    color: {{ $scheme->main->code }};
-    padding-right: 7px;
-  }
+	.billto-right {
+	  width: 60%;
+	  padding-left: 12px;
+	}
 
-  .section--bill-to .box .panel h4,
-  .section--bill-to .box .panel p {
-    color: #000000;
-  }
+	/* Card styling inside each cell */
+	.section--bill-to .box {
+	  margin-top: 4px;
+	  background-color: #fff;
+	  padding: 20px 30px;
+	  box-shadow: 0 0 12px #aeaab3;
+	}
 
-  .section--bill-to .box h2 {
-    font-size: 20px;
-    color: #000000;
-  }
+	.section--bill-to .box h2 {
+	  font-size: 20px;
+	  color: #000000;
+	  margin: 0 0 6px 0;
+	}
+
+	.section--bill-to .box ul {
+	  list-style: none;
+	  padding: 0;
+	  margin: 12px 0 0;
+	}
+
+	.section--bill-to .box ul li {
+	  color: #000000;
+	  padding: 6px 0;
+	}
+
+	.section--bill-to .box .panel h4,
+	.section--bill-to .box .panel p {
+	  color: #000000;
+	}
+
 
   /* ===========================
      TABLE + TOTALS SECTIONS
