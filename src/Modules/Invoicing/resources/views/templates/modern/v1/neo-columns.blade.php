@@ -4,15 +4,14 @@
 		<tr>
       <td class="dompdf-col left-col">
         <div class="brand">
-          @if ($logoSrc)
-            <img
-              src="{{ $logoSrc }}"
-              alt="Business Logo"
-              class="logo"
-            />
-			@endif
-
           <div class="business-profile">
+			@if ($logoSrc)
+				<img
+				  src="{{ $logoSrc }}"
+				  alt="Business Logo"
+				  class="logo"
+				/>
+			@endif
             <h1 class="title">{{ $bp?->name ?? 'Your Business' }}</h1>
 
             @if ($bp->address_line1)
