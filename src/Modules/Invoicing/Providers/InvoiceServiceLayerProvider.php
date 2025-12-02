@@ -2,6 +2,8 @@
 
 namespace BilliftySDK\SharedResources\Modules\Invoicing\Providers;
 
+use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
+use BilliftySDK\SharedResources\Modules\Invoicing\Observers\InvoiceObserver;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\BusinessProfileContract;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\ClientsContract;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\InvoiceContracts;
@@ -29,7 +31,7 @@ class InvoiceServiceLayerProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+		Invoices::observe(InvoiceObserver::class);
     }
 
 		public function provides(): array

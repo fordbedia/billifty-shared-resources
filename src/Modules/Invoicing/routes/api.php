@@ -23,6 +23,8 @@ Route::prefix('v1')->group(function () {
 			Route::post('/save-draft', [InvoiceController::class, 'saveDraft']);
 			Route::post('/{invoice}/pdf', [InvoiceController::class, 'generate'])
 				->name('invoices.pdf.generate');
+			Route::get('/{invoice}/pdf/download', [InvoiceController::class, 'download'])
+                ->name('invoices.pdf.download');
 		});
 
 		Route::get('business-profile/get-all', [BusinessProfileController::class, 'getAll']);

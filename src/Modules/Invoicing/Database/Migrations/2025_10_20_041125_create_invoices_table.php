@@ -70,6 +70,11 @@ return new class extends Migration
 			$table->text('pdf_path')->nullable();
             $table->string('pdf_disk')->nullable();
 			$table->tinyInteger('is_test')->default(0);
+			$table->string('pdf_status')
+                ->nullable()
+                ->default(null); // 'queued', 'processing', 'ready', 'failed'
+            $table->timestamp('pdf_generated_at')->nullable();
+            $table->text('pdf_error')->nullable();
 			$table->softDeletes();
             $table->timestamps();
 

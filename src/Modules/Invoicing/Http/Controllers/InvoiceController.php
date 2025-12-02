@@ -11,6 +11,8 @@ use BilliftySDK\SharedResources\Modules\Invoicing\Services\InvoiceService;
 use BilliftySDK\SharedResources\SDK\Exception\ApiException;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class InvoiceController extends Controller
 {
@@ -112,14 +114,47 @@ class InvoiceController extends Controller
     ) {
         $invoice = $invoices->findForUpdate($id); // user-scoped, with Auth
         // ... mark as issued, save, etc.
+		$invoice->forceFill([
+			'pdf_status' => 'queued',
+			'pdf_error'  => null,
+		])->save();
 
         // queue PDF generation
-//        $invoices->queuePdfGeneration($invoice);
-
-		$invoices->generatePdf($invoice);
+        $invoices->queuePdfGeneration($invoice);
 
         return response()->json([
             'data' => $invoice->fresh(), // or resource
         ]);
     }
+
+	public function download(int $id, InvoiceContracts $invoices)
+	{
+		$invoice = $invoices->findForUpdate($id); // user-scoped
+
+		if ($invoice->pdf_status !== 'ready' || !$invoice->pdf_path) {
+			abort(404, 'Invoice PDF not ready yet.');
+		}
+
+		$disk = Storage::disk($invoice->pdf_disk ?? 'public');
+
+		if (!$disk->exists($invoice->pdf_path)) {
+			abort(404, 'Invoice PDF file is missing.');
+		}
+
+		// Build nice filename: INV-0001_Client-Name.pdf
+		$number = $invoice->invoice_number ?? ('invoice-' . $invoice->getKey());
+		$client = $invoice->client->name ?? null;
+
+		$base = $client
+			? Str::slug("{$number}_{$client}", '_')
+			: Str::slug($number, '_');
+
+		$filename = "{$base}.pdf";
+
+		$absolutePath = $disk->path($invoice->pdf_path);
+
+		return response()->download($absolutePath, $filename, [
+			'Content-Type' => 'application/pdf',
+		]);
+	}
 }

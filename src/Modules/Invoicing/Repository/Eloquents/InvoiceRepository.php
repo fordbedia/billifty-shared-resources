@@ -3,6 +3,7 @@
 namespace BilliftySDK\SharedResources\Modules\Invoicing\Repository\Eloquents;
 
 use BilliftySDK\SharedResources\Modules\Invoicing\Action\GenerateInvoicePdf;
+use BilliftySDK\SharedResources\Modules\Invoicing\Domain\InvoiceStateMachine;
 use BilliftySDK\SharedResources\Modules\Invoicing\Helpers\InvoiceHelpers;
 use BilliftySDK\SharedResources\Modules\Invoicing\Jobs\GenerateInvoicePdfJob;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\InvoiceItems;
@@ -144,4 +145,9 @@ class InvoiceRepository extends BaseRepository implements InvoiceContracts
     {
         GenerateInvoicePdfJob::dispatch($invoice->getKey());
     }
+
+	public function issue(Invoices $invoice) {
+		InvoiceStateMachine::onIssue($invoice);
+		$invoice->save();
+	}
 }

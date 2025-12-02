@@ -21,13 +21,34 @@ class GenerateInvoicePdfJob implements ShouldQueue
 
     public function handle(InvoiceContracts $invoices, GenerateInvoicePdf $action): void
     {
-        // Important: repo method should NOT rely on Auth here
+        // IMPORTANT: no Auth here
         $invoice = $invoices->findByKey($this->invoiceId);
 
         if (!$invoice) {
             throw new RuntimeException("Invoice {$this->invoiceId} not found for PDF generation.");
         }
 
-        $action($invoice);
+        // Mark as processing
+        $invoice->forceFill([
+            'pdf_status' => 'processing',
+            'pdf_error'  => null,
+        ])->save();
+
+        try {
+            ['invoice' => $invoiceObj, 'path' => $path] = $action($invoice);
+
+            $invoiceObj->forceFill([
+                'pdf_status'       => 'ready',
+                'pdf_generated_at' => now(),
+                'pdf_error'        => null,
+            ])->save();
+        } catch (\Throwable $e) {
+            $invoice->forceFill([
+                'pdf_status' => 'failed',
+                'pdf_error'  => $e->getMessage(),
+            ])->save();
+
+            throw $e;
+        }
     }
 }
