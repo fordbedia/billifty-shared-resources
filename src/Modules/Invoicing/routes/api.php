@@ -25,6 +25,8 @@ Route::prefix('v1')->group(function () {
 				->name('invoices.pdf.generate');
 			Route::get('/{invoice}/pdf/download', [InvoiceController::class, 'download'])
                 ->name('invoices.pdf.download');
+			Route::post('/{invoice}/pdf/send-copy-to-business-profile', [InvoiceController::class, 'sendToBusinessProfile'])
+                ->name('invoices.pdf.send-copy-to-business-profile');;
 		});
 
 		Route::get('business-profile/get-all', [BusinessProfileController::class, 'getAll']);
@@ -63,4 +65,25 @@ Route::middleware(['auth:api'])->group(function () {
             'url' => $url,
         ]);
     })->name('api.invoice.preview-url');
+
+	Route::get('/v1/invoice/{invoice}/preview-pdf', function (Request $request, Invoices $invoice) {
+        // Guard: only allow owner to get a preview link
+        if ((int) $invoice->user_id !== (int) $request->user()->id) {
+            abort(403, 'Unauthorized');
+        }
+
+        // Permanent signed link:
+        $url = URL::signedRoute('preview.invoice.pdf', [
+            'invoice' => $invoice->id,
+        ]);
+
+        // Or temporary (expires in 30 minutes):
+        // $url = URL::temporarySignedRoute('invoice.preview', now()->addMinutes(30), [
+        //     'invoice' => $invoice->id,
+        // ]);
+
+        return response()->json([
+            'url' => $url,
+        ]);
+    })->name('api.invoice.preview-pdf');
 });

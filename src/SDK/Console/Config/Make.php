@@ -36,6 +36,8 @@ class Make extends ModularMakeCommand
 			'make:provider'  	=> 'Providers',
 			'make:request'    	=> 'Http/Requests',
 			'make:observer'   	=> 'Observers',
+			'make:mail'			=> 'Mail',
+			'make:job'			=> 'Jobs',
         ];
 
         $subPath = $paths[$command] ?? 'Misc';
@@ -119,6 +121,10 @@ class Make extends ModularMakeCommand
 				return 'BilliftySDK\\SharedResources\\Modules\\' . $this->module . '\\Http\\Requests';
 			case 'observer':
 				return 'BilliftySDK\\SharedResources\\Modules\\' . $this->module . '\\Observers';
+			case 'mail':
+				return 'BilliftySDK\\SharedResources\\Modules\\' . $this->module . '\\Mail';
+			case 'job':
+				return 'BilliftySDK\\SharedResources\\Modules\\' . $this->module . '\\Jobs';
             default:
                 return '';
         }

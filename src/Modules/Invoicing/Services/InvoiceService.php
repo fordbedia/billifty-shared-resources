@@ -27,7 +27,7 @@ class InvoiceService
 		DB::beginTransaction();
 
 		$invoice = $id
-			? $this->repo->findForUpdate($id)
+			? $this->repo->findById($id)
 			: new Invoices(Collection::make($data)->filter(fn ($inv, $key) =>
 					!in_array($key, ['invoice_items', 'business_profile', 'template'])
 				)->toArray());

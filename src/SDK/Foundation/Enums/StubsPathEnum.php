@@ -12,6 +12,10 @@ enum StubsPathEnum: string
 	case RESOURCE = 'resource.';
 	case PROVIDER = 'provider.';
 
+	case MAIL = 'mail.';
+
+	case JOB = 'job.queued.';
+
 	case OBSERVER = 'observer.';
 
 	case REQUEST = 'request.';

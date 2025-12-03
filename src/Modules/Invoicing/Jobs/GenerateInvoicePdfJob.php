@@ -15,14 +15,18 @@ class GenerateInvoicePdfJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+	protected int $userId;
+
     public function __construct(
-        public int $invoiceId
-    ) {}
+        public int $invoiceId,
+		?int $userId = null
+    ) {
+		$this->userId = $userId ?? auth()->id();
+	}
 
     public function handle(InvoiceContracts $invoices, GenerateInvoicePdf $action): void
     {
-        // IMPORTANT: no Auth here
-        $invoice = $invoices->findByKey($this->invoiceId);
+        $invoice = $invoices->findById($this->invoiceId, $this->userId);
 
         if (!$invoice) {
             throw new RuntimeException("Invoice {$this->invoiceId} not found for PDF generation.");

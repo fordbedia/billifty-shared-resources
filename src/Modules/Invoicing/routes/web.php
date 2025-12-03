@@ -50,10 +50,7 @@ Route::middleware('web')->group(function () {
         ->middleware('signed') // only valid if URL has a correct signature
         ->name('invoice.preview'); // used when generating the signed URL
 
-	// ----------------------------------------------------------------------------
-	// For testing PDF
-	// ----------------------------------------------------------------------------
-	Route::get('/dev/invoices/{invoice}/pdf', function (int $invoiceId) {
+	Route::get('/preview/invoice/{invoice}/pdf', function (int $invoiceId) {
 		/** @var \BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices $invoice */
 		$invoice = Invoices::with(Invoices::relationships())
 			->findOrFail($invoiceId);
@@ -73,10 +70,10 @@ Route::middleware('web')->group(function () {
 
 		// Render the same Blade view, but tell it we're in "pdf" mode
 		$html = view('invoicing::templates.show', [
-			'invoice'        => data_get($payload, 'data'),
-			'category'       => data_get($payload, 'data.template.category'),
-			'colorScheme'    => data_get($payload, 'data.colorScheme'),
-			'renderContext'  => 'pdf',   // let blade know it's for Dompdf
+			'invoice' => data_get($payload, 'data'),
+			'category' => data_get($payload, 'data.template.category'),
+			'colorScheme' => data_get($payload, 'data.colorScheme'),
+			'renderContext' => 'pdf',   // let blade know it's for Dompdf
 		])->render();
 
 		/** @var \Barryvdh\DomPDF\PDF $pdf */
@@ -99,12 +96,17 @@ Route::middleware('web')->group(function () {
 		}
 
 		// Stream inline in browser (no download)
-		$filename = 'dev-invoice-'.$invoiceId.'.pdf';
+		$filename = 'invoice-' . $invoiceId . '.pdf';
 
 		return $pdf->stream($filename, [
 			'Attachment' => false, // open in browser, not download
 		]);
-	})->name('dev.invoice.pdf');
+	})->name('preview.invoice.pdf');
 
-
+	// ----------------------------------------------------------------------------
+	// For testing PDF
+	// ----------------------------------------------------------------------------
+	if (config('app.env') === 'local') {
+		require base_path('../shared-resources/src/Modules/Invoicing/routes/testing.php');
+	}
 });

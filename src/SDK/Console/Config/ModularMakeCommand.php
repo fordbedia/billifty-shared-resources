@@ -49,6 +49,8 @@ abstract class ModularMakeCommand extends ModularCommand
             'seeder'     => $this->makeSeeder(),
             'factory'    => $this->makeFactory(),
 			'provider'    => $this->makeProvider(),
+			'mail'    	=> $this->makeMail(),
+			'job'		=> $this->makeJob(),
             default      => $this->error('Invalid make option: ' . $this->what),
         };
     }
@@ -125,12 +127,26 @@ abstract class ModularMakeCommand extends ModularCommand
         ]);
     }
 
-		protected function makeProvider(): int
+	protected function makeProvider(): int
     {
         return $this->artisanCallOrCustom('make:provider', [
             'name' => $this->className
         ]);
     }
+
+	public function makeMail(): int
+	{
+		return $this->artisanCallOrCustom('make:mail', [
+            'name' => $this->className
+        ]);
+	}
+
+	public function makeJob(): int
+	{
+		return $this->artisanCallOrCustom('make:job', [
+            'name' => $this->className
+        ]);
+	}
 
     /**
      * @param $what
@@ -172,7 +188,7 @@ abstract class ModularMakeCommand extends ModularCommand
                 $this->fileName = $this->className;
                 $this->stubPath = $this->resolveSeederStubPath('stub');
                 break;
-					case 'resource':
+			case 'resource':
                 $this->fileName = $this->className;
                 $this->stubPath = $this->resolveResourceStubPath('stub');
                 break;
@@ -187,6 +203,14 @@ abstract class ModularMakeCommand extends ModularCommand
 			case 'observer':
 				$this->fileName = $this->className;
 				$this->stubPath = $this->resolveObserverStubPath('stub');
+				break;
+			case 'mail':
+				$this->fileName = $this->className;
+				$this->stubPath = $this->resolveMailStubPath('stub');
+				break;
+			case 'job':
+				$this->fileName = $this->className;
+				$this->stubPath = $this->resolveJobStubPath('stub');
 				break;
         }
     }

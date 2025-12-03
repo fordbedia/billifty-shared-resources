@@ -69,4 +69,14 @@ trait ResolveStubPath
 		{
 			return base_path(StubsPathEnum::OBSERVER->getFullPath() . $stub);
 		}
+
+		public function resolveMailStubPath(string $stub): string
+		{
+			return base_path(StubsPathEnum::MAIL->getFullPath() . $stub);
+		}
+
+		public function resolveJobStubPath(string $stub): string
+		{
+			return base_path(StubsPathEnum::JOB->getFullPath() . $stub);
+		}
 }

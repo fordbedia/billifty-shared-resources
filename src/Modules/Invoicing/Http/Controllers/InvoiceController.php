@@ -5,14 +5,20 @@ namespace BilliftySDK\SharedResources\Modules\Invoicing\Http\Controllers;
 use App\Http\Controllers\Controller;
 use BilliftySDK\SharedResources\Modules\Invoicing\Domain\InvoiceAction;
 use BilliftySDK\SharedResources\Modules\Invoicing\Http\Requests\StoreInvoiceRequest;
+use BilliftySDK\SharedResources\Modules\Invoicing\Jobs\GenerateInvoicePdfJob;
+use BilliftySDK\SharedResources\Modules\Invoicing\Jobs\SendInvoiceCopyToBusinessProfileJob;
+use BilliftySDK\SharedResources\Modules\Invoicing\Mail\InvoiceSendMailToBusinessProfile;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\InvoiceContracts;
 use BilliftySDK\SharedResources\Modules\Invoicing\Services\InvoiceService;
 use BilliftySDK\SharedResources\SDK\Exception\ApiException;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Mail;
 
 class InvoiceController extends Controller
 {
@@ -63,7 +69,7 @@ class InvoiceController extends Controller
     public function show(string $id, InvoiceContracts $repo)
     {
 		try {
-			return $repo->findForUpdate($id)?->loadMissing(Invoices::relationships());
+			return $repo->findById($id)?->loadMissing(Invoices::relationships());
 		} catch (\Throwable $exception) {
 			throw new ApiException($exception->getMessage(), 404);
 		}
@@ -112,7 +118,7 @@ class InvoiceController extends Controller
         int $id,
         InvoiceContracts $invoices
     ) {
-        $invoice = $invoices->findForUpdate($id); // user-scoped, with Auth
+        $invoice = $invoices->findById($id); // user-scoped, with Auth
         // ... mark as issued, save, etc.
 		$invoice->forceFill([
 			'pdf_status' => 'queued',
@@ -129,7 +135,7 @@ class InvoiceController extends Controller
 
 	public function download(int $id, InvoiceContracts $invoices)
 	{
-		$invoice = $invoices->findForUpdate($id); // user-scoped
+		$invoice = $invoices->findById($id); // user-scoped
 
 		if ($invoice->pdf_status !== 'ready' || !$invoice->pdf_path) {
 			abort(404, 'Invoice PDF not ready yet.');
@@ -155,6 +161,21 @@ class InvoiceController extends Controller
 
 		return response()->download($absolutePath, $filename, [
 			'Content-Type' => 'application/pdf',
+		]);
+	}
+
+	public function sendToBusinessProfile(int $id, Request $request, InvoiceContracts $invoices)
+	{
+		$userId = Auth::user()->id;
+		$invoice = $invoices->findById($id, $userId);
+
+		Bus::chain([
+			new GenerateInvoicePdfJob($invoice->id, $userId),
+			new SendInvoiceCopyToBusinessProfileJob($invoice->id, $userId),
+		])->dispatch();
+
+		return response()->json([
+			'message' => 'Invoice copy has been queued for sending to your email.',
 		]);
 	}
 }

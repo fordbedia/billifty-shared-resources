@@ -25,11 +25,15 @@ class InvoiceRepository extends BaseRepository implements InvoiceContracts
 		return null;
 	}
 
-	public function findForUpdate(int $id): Invoices
+	/*
+	 * @dep name: findForUpdate(int $id): Invoices
+	 */
+	public function findById(int $id, int $authId = null): Invoices
 	{
-		$row = $this->model->where('user_id', Auth::user()->id)->whereKey($id)->lockForUpdate()->first();
+		$userId = $authId ?? Auth::user()->id ?? null;
+		$row = $this->model->where('user_id', $userId)->whereKey($id)->lockForUpdate()->first();
 		if (!$row) {
-			throw new RuntimeException("Invoice {$id} could not be found.");
+			throw new RuntimeException("Invoice {$id} and user {$userId} could not be found.");
 		}
 		return $row->loadMissing('items');
 	}
