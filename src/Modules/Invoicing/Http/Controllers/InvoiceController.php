@@ -7,6 +7,7 @@ use BilliftySDK\SharedResources\Modules\Invoicing\Domain\InvoiceAction;
 use BilliftySDK\SharedResources\Modules\Invoicing\Http\Requests\StoreInvoiceRequest;
 use BilliftySDK\SharedResources\Modules\Invoicing\Jobs\GenerateInvoicePdfJob;
 use BilliftySDK\SharedResources\Modules\Invoicing\Jobs\SendInvoiceCopyToBusinessProfileJob;
+use BilliftySDK\SharedResources\Modules\Invoicing\Jobs\SendToClientJob;
 use BilliftySDK\SharedResources\Modules\Invoicing\Mail\InvoiceSendMailToBusinessProfile;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\InvoiceContracts;
@@ -164,6 +165,12 @@ class InvoiceController extends Controller
 		]);
 	}
 
+	/**
+	 * @param int $id
+	 * @param Request $request
+	 * @param InvoiceContracts $invoices
+	 * @return \Illuminate\Http\JsonResponse
+	 */
 	public function sendToBusinessProfile(int $id, Request $request, InvoiceContracts $invoices)
 	{
 		$userId = Auth::user()->id;
@@ -172,6 +179,29 @@ class InvoiceController extends Controller
 		Bus::chain([
 			new GenerateInvoicePdfJob($invoice->id, $userId),
 			new SendInvoiceCopyToBusinessProfileJob($invoice->id, $userId),
+		])->dispatch();
+
+		return response()->json([
+			'message' => 'Invoice copy has been queued for sending to your email.',
+		]);
+	}
+
+	/**
+	 * @param int $id
+	 * @param Request $request
+	 * @param InvoiceContracts $invoices
+	 * @return \Illuminate\Http\JsonResponse
+	 */
+	public function sendToClient(int $id, Request $request, InvoiceContracts $invoices)
+	{
+		$userId = Auth::user()->id;
+		$invoice = $invoices->findById($id, $userId);
+
+		$userMessage = $request->input('message');
+
+		Bus::chain([
+			new GenerateInvoicePdfJob($invoice->id, $userId),
+			new SendToClientJob($invoice->id, $userMessage, $userId)
 		])->dispatch();
 
 		return response()->json([
