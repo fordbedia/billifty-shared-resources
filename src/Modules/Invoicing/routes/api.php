@@ -6,6 +6,7 @@ use BilliftySDK\SharedResources\Modules\Invoicing\Http\Controllers\ClientsContro
 use BilliftySDK\SharedResources\Modules\Invoicing\Http\Controllers\ColorSchemeController;
 use BilliftySDK\SharedResources\Modules\Invoicing\Http\Controllers\CurrencyController;
 use BilliftySDK\SharedResources\Modules\Invoicing\Http\Controllers\InvoiceController;
+use BilliftySDK\SharedResources\Modules\Invoicing\Http\Controllers\PlansController;
 use BilliftySDK\SharedResources\Modules\Invoicing\Http\Controllers\TemplateCategoryController;
 use BilliftySDK\SharedResources\Modules\Invoicing\Http\Controllers\TemplateController;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
@@ -43,6 +44,7 @@ Route::prefix('v1')->group(function () {
 		Route::apiResource('template-category', TemplateCategoryController::class);
 		Route::apiResource('template', TemplateController::class);
 		Route::apiResource('color-scheme', ColorSchemeController::class);
+		Route::apiResource('plan', PlansController::class);
 	});
 });
 
