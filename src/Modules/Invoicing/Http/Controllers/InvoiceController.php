@@ -177,7 +177,7 @@ class InvoiceController extends Controller
 		$invoice = $invoices->findById($id, $userId);
 
 		Bus::chain([
-			new GenerateInvoicePdfJob($invoice->id, $userId),
+			new GenerateInvoicePdfJob($invoice->id, $request->hasCsvReport, $userId),
 			new SendInvoiceCopyToBusinessProfileJob($invoice->id, $userId),
 		])->dispatch();
 

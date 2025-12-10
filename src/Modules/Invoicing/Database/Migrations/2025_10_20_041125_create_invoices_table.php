@@ -69,6 +69,7 @@ return new class extends Migration
             $table->json('meta')->nullable();
 			$table->text('pdf_path')->nullable();
             $table->string('pdf_disk')->nullable();
+			$table->text('csv_path')->nullable();;
 			$table->tinyInteger('is_test')->default(0);
 			$table->string('pdf_status')
                 ->nullable()

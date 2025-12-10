@@ -8,6 +8,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Support\Str;
@@ -16,22 +17,43 @@ class InvoiceSendMailToClient extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    /**
-     * Create a new message instance.
-     */
-    public function __construct(public Invoices $invoice, public string $userMessage)
-    {
-        //
-    }
+    public function __construct(
+        public Invoices $invoice,
+        public string   $userMessage,
+    ) {}
 
     /**
      * Get the message envelope.
      */
     public function envelope(): Envelope
     {
-		$invoiceNumber =  $this->invoice->invoice_number ?? ('invoice-' . $this->invoice->getKey());
+        $invoiceNumber = $this->invoice->invoice_number ?? ('invoice-' . $this->invoice->getKey());
+
+        // Try to pull business profile (adjust relation name if needed)
+        $business = $this->invoice->businessProfile ?? $this->invoice->business_profile ?? null;
+
+        // FROM: use your domain (for deliverability)
+        $fromName = $business?->name
+            ? "{$business->name} via Billifty"
+            : 'Billifty Invoices';
+
+        $from = new Address(
+            address: config('mail.from.address', 'invoices@billifty.com'),
+            name: $fromName
+        );
+
+        $replyTo = [];
+        if (!empty($business?->email)) {
+            $replyTo[] = new Address(
+                address: $business->email,
+                name: $business->name ?? null
+            );
+        }
+
         return new Envelope(
-            subject: 'Copy of invoice ' . $invoiceNumber . '',
+            from: $from,
+            replyTo: $replyTo,
+            subject: 'Copy of invoice ' . $invoiceNumber,
         );
     }
 
@@ -41,10 +63,10 @@ class InvoiceSendMailToClient extends Mailable implements ShouldQueue
     public function content(): Content
     {
         return new Content(
-            view: 'invoicing::emails.invoice_send_direct_to_client', // create this Blade
+            view: 'invoicing::emails.invoice_send_direct_to_client',
             with: [
-                'invoice' => $this->invoice,
-				'userMessage' => $this->userMessage
+                'invoice'     => $this->invoice,
+                'userMessage' => $this->userMessage,
             ],
         );
     }
@@ -56,7 +78,7 @@ class InvoiceSendMailToClient extends Mailable implements ShouldQueue
      */
     public function attachments(): array
     {
-		$invoice = $this->invoice;
+        $invoice = $this->invoice;
         $disk    = $invoice->pdf_disk ?? 'public';
         $path    = $invoice->pdf_path;
 
@@ -66,10 +88,13 @@ class InvoiceSendMailToClient extends Mailable implements ShouldQueue
 
         $number = $invoice->invoice_number ?? ('invoice-' . $invoice->getKey());
         $client = $invoice->client->name ?? null;
-        $base   = $client
+
+        $base = $client
             ? Str::slug("{$number}_{$client}", '_')
             : Str::slug($number, '_');
+
         $filename = "{$base}.pdf";
+
         return [
             Attachment::fromStorageDisk($disk, $path)
                 ->as($filename)

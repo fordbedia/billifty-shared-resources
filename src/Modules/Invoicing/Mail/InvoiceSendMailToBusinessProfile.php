@@ -55,6 +55,7 @@ class InvoiceSendMailToBusinessProfile extends Mailable implements ShouldQueue
         $invoice = $this->invoice;
         $disk    = $invoice->pdf_disk ?? 'public';
         $path    = $invoice->pdf_path;
+		$csvPath = $invoice->csv_path;
 
         if (!$path) {
             return []; // nothing to attach (defensive)
@@ -67,10 +68,19 @@ class InvoiceSendMailToBusinessProfile extends Mailable implements ShouldQueue
             : Str::slug($number, '_');
         $filename = "{$base}.pdf";
 
-        return [
-            Attachment::fromStorageDisk($disk, $path)
+		$csvFilename = "{$base}.csv";
+
+		$attachments = [];
+		$attachments[] = Attachment::fromStorageDisk($disk, $path)
                 ->as($filename)
-                ->withMime('application/pdf'),
-        ];
+                ->withMime('application/pdf');
+
+		if ($csvPath) {
+			$attachments[] = Attachment::fromStorageDisk($disk, $csvPath)
+                ->as($csvFilename)
+                ->withMime('application/csv');
+		}
+
+        return $attachments;
     }
 }

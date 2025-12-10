@@ -92,7 +92,7 @@ enum PlanCode: string
                 'custom_branding' => false,
                 'automation'      => false,
                 'analytics'       => 'basic',     // basic | standard | advanced
-                'attachments'     => 0,
+//                'attachments'     => 0,
                 'multi_templates' => false,
 
                 // NEW: values used by comparison table
@@ -113,7 +113,7 @@ enum PlanCode: string
                 'custom_branding' => true,
                 'automation'      => false,
                 'analytics'       => 'standard',
-                'attachments'     => 1,
+//                'attachments'     => 1,
                 'multi_templates' => true,
 
                 // comparison table values
@@ -134,7 +134,7 @@ enum PlanCode: string
                 'custom_branding' => true,
                 'automation'      => true,
                 'analytics'       => 'advanced',
-                'attachments'     => 'unlimited',
+//                'attachments'     => 'unlimited',
                 'multi_templates' => true,
 
                 // comparison table values

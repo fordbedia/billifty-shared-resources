@@ -3,6 +3,7 @@
 namespace BilliftySDK\SharedResources\Modules\User\Models;
 
 
+use BilliftySDK\SharedResources\Modules\Invoicing\Models\BusinessProfiles;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -22,6 +23,7 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
+		'plan_id',
 		'fname',
 		'lname',
         'name',
@@ -71,4 +73,38 @@ class User extends Authenticatable
 	{
 		return $this->hasMany(Invoices::class, 'user_id', 'id');
 	}
+
+	public function plan()
+	{
+		return $this->belongsTo(Plan::class);
+	}
+
+	public function getPlanCapabilitiesAttribute(): array
+    {
+        $plan = $this->plan;
+
+        if (! $plan) {
+            return [];
+        }
+
+        // You can fetch counts from relationships or pass them from a service.
+        $context = [
+            'business_profiles_count'    => $this->businessProfiles()->count() ?? 0,
+            'invoices_this_month'       => $this->invoices()
+                ->whereBetween('created_at', [
+                    now()->startOfMonth(),
+                    now()->endOfMonth(),
+                ])->count() ?? 0,
+        ];
+
+        $capabilities = PlanCapabilities::fromPlan($plan);
+
+        return $capabilities->toArrayForUser($this, $context);
+    }
+
+    // Example relationships
+    public function businessProfiles()
+    {
+        return $this->hasMany(BusinessProfiles::class);
+    }
 }

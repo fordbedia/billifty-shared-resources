@@ -3,12 +3,14 @@
 namespace BilliftySDK\SharedResources\Modules\Invoicing\Jobs;
 
 use BilliftySDK\SharedResources\Modules\Invoicing\Action\GenerateInvoicePdf;
+use BilliftySDK\SharedResources\Modules\Invoicing\Action\GenerateInvoiceItemsToCsv;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\InvoiceContracts;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 
 class GenerateInvoicePdfJob implements ShouldQueue
@@ -17,16 +19,42 @@ class GenerateInvoicePdfJob implements ShouldQueue
 
 	protected int $userId;
 
+	/**
+     * The number of times the job may be attempted.
+     *
+     * @var int
+     */
+    public $tries = 5;
+
+	/**
+     * The maximum number of unhandled exceptions to allow before failing.
+     *
+     * @var int
+     */
+    public $maxExceptions = 3;
+
+	/**
+     * Delay between retries (in seconds)
+     */
+    public function backoff(): array
+    {
+        return [5, 10, 20, 30, 60];
+    }
+
     public function __construct(
         public int $invoiceId,
-		?int $userId = null
+		protected bool $hasCsvReport = false,
+		?int $userId = null,
     ) {
 		$this->userId = $userId ?? auth()->id();
 	}
 
-    public function handle(InvoiceContracts $invoices, GenerateInvoicePdf $action): void
-    {
-        $invoice = $invoices->findById($this->invoiceId, $this->userId);
+    public function handle(
+		InvoiceContracts          $invoiceRepo,
+		GenerateInvoicePdf        $action,
+		GenerateInvoiceItemsToCsv $generateCsvAction
+	): void {
+        $invoice = $invoiceRepo->findById($this->invoiceId, $this->userId);
 
         if (!$invoice) {
             throw new RuntimeException("Invoice {$this->invoiceId} not found for PDF generation.");
@@ -39,12 +67,20 @@ class GenerateInvoicePdfJob implements ShouldQueue
         ])->save();
 
         try {
+			if ($invoice->csv_path) {
+				// Deleting the last CSV so storage doesn’t clutter
+				Storage::delete($invoice->csv_path);
+			}
+
             ['invoice' => $invoiceObj, 'path' => $path] = $action($invoice);
+
+			['path' => $csvPath] = $generateCsvAction($invoice, $this->userId, $this->hasCsvReport);
 
             $invoiceObj->forceFill([
                 'pdf_status'       => 'ready',
                 'pdf_generated_at' => now(),
                 'pdf_error'        => null,
+				'csv_path'			=> $csvPath
             ])->save();
         } catch (\Throwable $e) {
             $invoice->forceFill([
