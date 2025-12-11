@@ -32,7 +32,7 @@ class InvoiceController extends Controller
      */
     public function index(Request $request, InvoiceContracts $repo)
     {
-		 $this->authorize('viewAny', Invoices::class);
+//		 $this->authorize('viewAny', Invoices::class);
 
 		$dateRange = null;
 		if ($request->start_date && $request->end_date) {
