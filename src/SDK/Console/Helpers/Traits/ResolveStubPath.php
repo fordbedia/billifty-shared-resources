@@ -79,4 +79,15 @@ trait ResolveStubPath
 		{
 			return base_path(StubsPathEnum::JOB->getFullPath() . $stub);
 		}
+
+		public function resolveMiddlewareStubPath(string $stub): string
+		{
+			return base_path(StubsPathEnum::MIDDLEWARE->getFullPath() . $stub);
+		}
+
+		public function resolvePolicyStubPath(string $stub): string
+		{
+			return base_path(StubsPathEnum::POLICY->getFullPath() . $stub);
+		}
+
 }

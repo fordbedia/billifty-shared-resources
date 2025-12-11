@@ -2,6 +2,8 @@
 
 namespace BilliftySDK\SharedResources\Modules\Invoicing\Enums;
 
+use BilliftySDK\SharedResources\Modules\User\Models\Plan;
+
 enum PlanCode: string
 {
     case FREE = 'free';
@@ -9,62 +11,101 @@ enum PlanCode: string
     case PREMIUM = 'premium';
 
     /**
-     * Human readable name
+     * Resolve the backing Plan model (with capabilities), using a per-request static cache.
+     */
+    protected function planModel(): ?Plan
+    {
+        // Static local cache — allowed in enums
+        static $cache = [];
+
+        $code = $this->value;
+
+        if (! array_key_exists($code, $cache)) {
+            $cache[$code] = Plan::with('capabilities')
+                ->where('code', $code)
+                ->first();
+        }
+
+        return $cache[$code];
+    }
+
+    /**
+     * Human readable name.
      */
     public function label(): string
     {
-        return match($this) {
-            self::FREE => 'Free',
-            self::PRO => 'Pro',
+        if ($plan = $this->planModel()) {
+            return $plan->name ?? ucfirst($this->value);
+        }
+
+        // Fallback (original)
+        return match ($this) {
+            self::FREE    => 'Free',
+            self::PRO     => 'Pro',
             self::PREMIUM => 'Premium',
         };
     }
 
     /**
-     * Monthly price (USD)
+     * Monthly price (USD).
      */
     public function priceMonthly(): float
     {
-        return match($this) {
-            self::FREE => 0.00,
-            self::PRO => 4.99,
+        if ($plan = $this->planModel()) {
+            return (float) $plan->price_monthly;
+        }
+
+        // Fallback (original)
+        return match ($this) {
+            self::FREE    => 0.00,
+            self::PRO     => 4.99,
             self::PREMIUM => 9.99,
         };
     }
 
     /**
-     * Yearly price (USD) with 20% discount applied.
-     * You may round or adjust based on marketing preference.
+     * Yearly price (USD).
      */
     public function priceYearly(): float
     {
-        return match($this) {
-            self::FREE => 0.00,
+        if ($plan = $this->planModel()) {
+            return (float) ($plan->price_yearly ?? 0.00);
+        }
 
-            // Rounded pricing for better marketing psychology
-            self::PRO => 49.99,        // Originally 47.88
-            self::PREMIUM => 99.99,    // Originally 95.88
+        // Fallback (original)
+        return match ($this) {
+            self::FREE    => 0.00,
+            self::PRO     => 49.99,
+            self::PREMIUM => 99.99,
         };
     }
 
     /**
-     * Usage limits per plan
+     * Usage limits per plan.
      */
     public function limits(): array
     {
-        return match($this) {
+        if ($plan = $this->planModel()) {
+            // assumes Plan has capabilityInt() helper
+            return [
+                'business_profiles'  => $plan->capabilityInt('max_business_profiles', null),
+                'clients'            => $plan->capabilityInt('max_clients', null),
+                'invoices_per_month' => $plan->capabilityInt('max_invoices_per_month', null),
+            ];
+        }
+
+        // Fallback (original hardcoded structure)
+        return match ($this) {
             self::FREE => [
                 'business_profiles'  => 1,
                 'clients'            => 5,
                 'invoices_per_month' => 5,
             ],
-
             self::PRO => [
                 'business_profiles'  => 3,
                 'clients'            => null,
                 'invoices_per_month' => 10,
             ],
-
             self::PREMIUM => [
                 'business_profiles'  => null,
                 'clients'            => null,
@@ -74,37 +115,61 @@ enum PlanCode: string
     }
 
     /**
-     * Feature flags for each plan
-     *
-     * These values are now rich enough to drive:
-     * - pricing cards
-     * - the "Compare all features" table
+     * Feature flags for each plan.
+     * DB-driven if possible, otherwise falls back to original enum data.
      */
     public function features(): array
     {
-        return match($this) {
+        if ($plan = $this->planModel()) {
+            // assumes Plan::capabilitiesArray() → [key => typed_value]
+            $caps = $plan->capabilitiesArray();
+
+            return [
+                // Core
+                'pdf_export'      => true,
+
+                // Flags derived from capabilities
+                'pdf_watermark'   => (bool) ($caps['pdf_watermark']   ?? true),
+                'email_watermark' => (bool) ($caps['email_watermark'] ?? true),
+                'custom_prefix'   => (bool) ($caps['custom_prefix']   ?? false),
+                'custom_branding' => (bool) ($caps['custom_branding'] ?? false),
+                'automation'      => (bool) ($caps['automation']      ?? false),
+                'analytics'       => (string) ($caps['analytics_tier'] ?? 'basic'),
+                'multi_templates' => (bool) ($caps['multi_templates'] ?? false),
+
+                'email_branding'      => (string) ($caps['email_branding']   ?? 'billifty_footer'),
+                'templates'           => (string) ($caps['templates_tier']   ?? 'basic'),
+                'logo_upload'         => (bool) ($caps['logo_upload']        ?? false),
+                'automated_reminders' => (string) ($caps['automated_reminders'] ?? 'none'),
+                'online_payments'     => (bool) ($caps['online_payments']    ?? false),
+                'multi_currency'      => (bool) ($caps['multi_currency']     ?? false),
+                'support'             => (string) ($caps['support_level']    ?? 'email'),
+
+                // Expose raw capabilities for future / debugging
+                'raw'                 => $caps,
+            ];
+        }
+
+        // Fallback (exactly your original enum data)
+        return match ($this) {
             self::FREE => [
-                // existing flags
                 'pdf_export'      => true,
                 'pdf_watermark'   => true,
                 'email_watermark' => true,
                 'custom_prefix'   => false,
                 'custom_branding' => false,
                 'automation'      => false,
-                'analytics'       => 'basic',     // basic | standard | advanced
-//                'attachments'     => 0,
+                'analytics'       => 'basic',
                 'multi_templates' => false,
 
-                // NEW: values used by comparison table
-                'email_branding'        => 'billifty_footer',  // billifty_footer | small_footer | none
-                'templates'             => 'basic',            // basic | multiple | all_advanced
+                'email_branding'        => 'billifty_footer',
+                'templates'             => 'basic',
                 'logo_upload'           => false,
-                'automated_reminders'   => 'none',             // none | manual | automatic
+                'automated_reminders'   => 'none',
                 'online_payments'       => false,
                 'multi_currency'        => false,
-                'support'               => 'email',            // email | priority
+                'support'               => 'email',
             ],
-
             self::PRO => [
                 'pdf_export'      => true,
                 'pdf_watermark'   => false,
@@ -113,10 +178,8 @@ enum PlanCode: string
                 'custom_branding' => true,
                 'automation'      => false,
                 'analytics'       => 'standard',
-//                'attachments'     => 1,
                 'multi_templates' => true,
 
-                // comparison table values
                 'email_branding'        => 'small_footer',
                 'templates'             => 'multiple',
                 'logo_upload'           => true,
@@ -125,7 +188,6 @@ enum PlanCode: string
                 'multi_currency'        => false,
                 'support'               => 'email',
             ],
-
             self::PREMIUM => [
                 'pdf_export'      => true,
                 'pdf_watermark'   => false,
@@ -134,10 +196,8 @@ enum PlanCode: string
                 'custom_branding' => true,
                 'automation'      => true,
                 'analytics'       => 'advanced',
-//                'attachments'     => 'unlimited',
                 'multi_templates' => true,
 
-                // comparison table values
                 'email_branding'        => 'none',
                 'templates'             => 'all_advanced',
                 'logo_upload'           => true,
@@ -149,9 +209,12 @@ enum PlanCode: string
         };
     }
 
+    /**
+     * CTA / marketing copy – unchanged from your original.
+     */
     public function actions(): array
     {
-        return match($this) {
+        return match ($this) {
             self::FREE => [
                 'text1'      => 'Perfect for trying out Billifty.',
                 'btn'        => 'Get started free',
@@ -173,9 +236,12 @@ enum PlanCode: string
         };
     }
 
+    /**
+     * Short bullet list for pricing cards – unchanged.
+     */
     public function featuresText(): array
     {
-        return match($this) {
+        return match ($this) {
             self::FREE => [
                 'Export invoices to PDF',
                 'Basic invoice template',
@@ -209,7 +275,29 @@ enum PlanCode: string
     }
 
     /**
-     * For API response
+     * Monthly + yearly price structure.
+     */
+    public function billingCycles(): array
+    {
+        $monthly = $this->priceMonthly();
+        $yearly  = $this->priceYearly();
+
+        return [
+            'monthly' => [
+                'price'    => $monthly,
+                'interval' => 'monthly',
+            ],
+            'yearly' => [
+                'price'             => $yearly,
+                'interval'          => 'yearly',
+                'discount_applied'  => $yearly > 0,
+                'discount_percent'  => 20,
+            ],
+        ];
+    }
+
+    /**
+     * For API response – this is what your pricing page is using.
      */
     public function toArray(): array
     {
@@ -227,32 +315,13 @@ enum PlanCode: string
     }
 
     /**
-     * Return monthly + yearly price structure
-     */
-    public function billingCycles(): array
-    {
-        return [
-            'monthly' => [
-                'price'    => $this->priceMonthly(),
-                'interval' => 'monthly',
-            ],
-            'yearly' => [
-                'price'             => $this->priceYearly(),
-                'interval'          => 'yearly',
-                'discount_applied'  => true,
-                'discount_percent'  => 20,
-            ],
-        ];
-    }
-
-    /**
-     * Return all plans as array
+     * Return all plans as an array of pricing-card-friendly data.
      */
     public static function all(): array
     {
         return array_map(
             fn (self $p) => $p->toArray(),
-            self::cases()
+            self::cases(),
         );
     }
 }

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Route;
 Route::group(['prefix' => 'v1', 'middleware' => ['auth:api']], function () {
 	Route::post('user/logout', [AuthController::class, 'logout'])
 		->name('user.logout');
+	Route::get('user/me', [UserController::class, 'me']);
 });
 
 Route::prefix('v1')->group(function () {

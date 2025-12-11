@@ -38,14 +38,15 @@ Route::prefix('v1')->group(function () {
 		Route::get('client/paginate', [ClientsController::class, 'paginate']);
 		Route::apiResource('invoice', InvoiceController::class);
 		Route::get('template/category/{id}', [TemplateController::class, 'getTemplate']);
-		Route::apiResource('business-profile', BusinessProfileController::class);
+		Route::middleware(['plan.limit:max_business_profiles'])
+			->apiResource('business-profile', BusinessProfileController::class);
 		Route::apiResource('client', ClientsController::class);
 		Route::apiResource('currency', CurrencyController::class);
 		Route::apiResource('template-category', TemplateCategoryController::class);
 		Route::apiResource('template', TemplateController::class);
 		Route::apiResource('color-scheme', ColorSchemeController::class);
-		Route::apiResource('plan', PlansController::class);
 	});
+	Route::apiResource('plan', PlansController::class);
 });
 
 Route::middleware(['auth:api'])->group(function () {

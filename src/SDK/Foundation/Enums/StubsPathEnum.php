@@ -20,6 +20,10 @@ enum StubsPathEnum: string
 
 	case REQUEST = 'request.';
 
+	case MIDDLEWARE = 'middleware.';
+
+	case POLICY = 'policy.';
+
     public function getFullPath()
     {
         return '/vendor/billifty/shared-resources/src/SDK/Foundation/stubs/' . $this->value;
