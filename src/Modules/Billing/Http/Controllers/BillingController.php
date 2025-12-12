@@ -258,6 +258,7 @@ class BillingController extends Controller
                 'status'        => 'ok',
                 'plan_code'     => $planCode,
                 'billing_cycle' => $data['billing_cycle'],
+				'subscription' => $subscriptionModel,
             ]);
         });
     }

@@ -20,8 +20,10 @@ class User extends Authenticatable
     use HasFactory, Notifiable, HasApiTokens;
 
 	protected $appends = [
-        'plan_capabilities',
+        'plan_capabilities'
     ];
+
+	protected $with = ['subscription'];
 
     /**
      * The attributes that are mass assignable.
