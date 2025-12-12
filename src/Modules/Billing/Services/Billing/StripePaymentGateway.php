@@ -6,55 +6,92 @@ use BilliftySDK\SharedResources\Modules\Billing\Contracts\PaymentGateway;
 use BilliftySDK\SharedResources\Modules\Billing\Contracts\SubscriptionResult;
 use BilliftySDK\SharedResources\Modules\User\Models\User;
 use Illuminate\Support\Arr;
+use Stripe\Customer;
 use Stripe\StripeClient;
-use Stripe\Subscription as StripeSubscription;
+use Stripe\Subscription;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 
 class StripePaymentGateway implements PaymentGateway
 {
+    /**
+     * Stripe PHP SDK client.
+     */
     public function __construct(
-        protected StripeClient $stripe,
-    ) {}
+        protected StripeClient $client,
+    ) {
+    }
 
+    /**
+     * Ensure the given user has a Stripe Customer and return the customer_id.
+     */
     public function ensureCustomer(AuthenticatableContract $user): string
     {
         if (! empty($user->stripe_customer_id)) {
             return $user->stripe_customer_id;
         }
 
-        $customer = $this->stripe->customers->create([
-            'email' => $user->email,
-            'name'  => $user->name,
+        /** @var Customer $customer */
+        $customer = $this->client->customers->create([
+            'email'    => $user->email,
+            'name'     => $user->name ?? null,
+            'metadata' => [
+                'app_user_id' => $user->id,
+            ],
         ]);
 
-        $user->stripe_customer_id = $customer->id;
-        $user->save();
+        $user->forceFill([
+            'stripe_customer_id' => $customer->id,
+        ])->save();
 
         return $customer->id;
     }
 
+    /**
+     * Resolve a Stripe Price ID from plan_code + billing_cycle.
+     *
+     * Backed by config/services.php (or DB if you prefer).
+     */
     public function resolvePriceId(string $planCode, string $billingCycle): string
     {
-        return match ([$planCode, $billingCycle]) {
-            ['pro', 'monthly']     => config('services.stripe.prices.pro_monthly'),
-            ['pro', 'yearly']      => config('services.stripe.prices.pro_yearly'),
-            ['premium', 'monthly'] => config('services.stripe.prices.premium_monthly'),
-            ['premium', 'yearly']  => config('services.stripe.prices.premium_yearly'),
-            default                => throw new \InvalidArgumentException('Invalid plan / billing cycle'),
-        };
+        $priceId = config("services.stripe.prices.{$planCode}.{$billingCycle}");
+
+        if (! $priceId) {
+            throw new \RuntimeException("Stripe price not configured for {$planCode}.{$billingCycle}");
+        }
+
+        return $priceId;
     }
 
-    public function createIncompleteSubscription(string $customerId, string $priceId): StripeSubscription
+    /**
+     * Create a default_incomplete subscription and expand latest_invoice.payment_intent.
+     *
+     * This lets the Payment Element confirm THAT payment intent.
+     */
+    public function createIncompleteSubscription(string $customerId, string $priceId): Subscription
     {
-        return $this->stripe->subscriptions->create([
+        /** @var Subscription $subscription */
+        $subscription = $this->client->subscriptions->create([
             'customer' => $customerId,
-            'items' => [
+            'items'    => [
                 ['price' => $priceId],
             ],
-            'payment_behavior' => 'default_incomplete',
-            'payment_settings' => [
-                'save_default_payment_method' => 'on_subscription', // always save – low maintenance
+
+            // Create subscription but leave it incomplete until we confirm the PaymentIntent
+            'payment_behavior'  => 'default_incomplete',
+
+            // Make sure Stripe knows it's an auto-charge subscription
+            'collection_method' => 'charge_automatically',
+
+            // 🔑 Tell Stripe which payment method types to support AND to save the card
+            'payment_settings'  => [
+                'payment_method_types'        => ['card'],       // <-- ensures card is allowed
+                'save_default_payment_method' => 'on_subscription',
             ],
+
+            // We want the first invoice + its PaymentIntent expanded in the response
+            'expand' => ['latest_invoice.payment_intent'],
         ]);
+
+        return $subscription;
     }
 }

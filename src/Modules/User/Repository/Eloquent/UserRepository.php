@@ -6,6 +6,7 @@ use BilliftySDK\SharedResources\Modules\User\Models\User;
 use BilliftySDK\SharedResources\Modules\User\Repository\UserBaseRepository;
 use BilliftySDK\SharedResources\Modules\User\Repository\Contract\UserInterface;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 class UserRepository extends UserBaseRepository implements UserInterface
 {
@@ -33,13 +34,18 @@ class UserRepository extends UserBaseRepository implements UserInterface
 
 	public function provider(): ?Model
 	{
-		return $this->getByUser()->pluck('provider')->first() ?? null;
+		return $this->getModelByAuthUser()->pluck('provider')->first() ?? null;
 	}
 
 	public function isProviderGoogle(): bool
 	{
-		return $this->getByUser()
+		return $this->getModelByAuthUser()
 			->where('provider', 'google')
 			->exists();
+	}
+
+	public function authUser(): ?Model
+	{
+		return $this->getModelByAuthUser()->first();
 	}
 }

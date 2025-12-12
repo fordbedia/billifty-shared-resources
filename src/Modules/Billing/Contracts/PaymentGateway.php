@@ -4,7 +4,7 @@ namespace BilliftySDK\SharedResources\Modules\Billing\Contracts;
 
 use BilliftySDK\SharedResources\Modules\User\Models\User;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
-use Stripe\Subscription as StripeSubscription;
+use Stripe\Subscription;
 
 interface PaymentGateway
 {
@@ -12,5 +12,5 @@ interface PaymentGateway
 
     public function resolvePriceId(string $planCode, string $billingCycle): string;
 
-    public function createIncompleteSubscription(string $customerId, string $priceId): StripeSubscription;
+    public function createIncompleteSubscription(string $customerId, string $priceId): Subscription;
 }

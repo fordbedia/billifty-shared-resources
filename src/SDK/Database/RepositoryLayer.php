@@ -3,7 +3,6 @@
 namespace BilliftySDK\SharedResources\SDK\Database;
 
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\ClientsContract;
-use http\Exception\RuntimeException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -38,7 +37,7 @@ abstract class RepositoryLayer
 
 	public function destroy(int $id)
 	{
-		return $this->getByUser()->whereKey($id)->delete();
+		return $this->getModelByAuthUser()->whereKey($id)->delete();
 	}
 
     public function findBy(string $field, string $value): self
@@ -78,7 +77,19 @@ abstract class RepositoryLayer
         return $this->model->where($field, $value)->exists();
     }
 
+	/**
+	 * @deprecated 
+	 * @return Builder
+	 */
 	public function getByUser(): Builder
+	{
+		return $this->model->where('user_id', auth()->id());
+	}
+
+	/**
+	 * @return Builder
+	 */
+	public function getModelByAuthUser(): Builder
 	{
 		return $this->model->where('user_id', auth()->id());
 	}
