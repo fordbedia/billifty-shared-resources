@@ -13,7 +13,7 @@ class ClientsRepository extends BaseRepository implements ClientsContract
 {
 	public function all()
 	{
-		return $this->getByUser()->get();
+		return $this->getModelByAuthUser()->get();
 	}
 
 	public function makeModel(): string
@@ -23,14 +23,14 @@ class ClientsRepository extends BaseRepository implements ClientsContract
 
 	public function findById(int $id): Model
 	{
-		return $this->getByUser()->whereKey($id)->firstOrFail();
+		return $this->getModelByAuthUser()->whereKey($id)->firstOrFail();
 	}
 
 	public function save(array $data, int $id = null): Model
 	{
 		DB::beginTransaction();
 		if ($id && $id === (int)$data['id']) {
-			$model = $this->getByUser()->findOrFail($id);
+			$model = $this->getModelByAuthUser()->findOrFail($id);
 		} else {
 			$model = new Clients($data);
 		}
@@ -56,7 +56,7 @@ class ClientsRepository extends BaseRepository implements ClientsContract
 		$search = null,
     ) {
         // Add custom condition(s)
-        $query = $this->getByUser();
+        $query = $this->getModelByAuthUser();
 
 		if ($search) {
 			$query->where(function ($q1) use ($search) {

@@ -14,12 +14,12 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
 {
 	public function get()
 	{
-		return $this->getByUser()->get();
+		return $this->getModelByAuthUser()->get();
 	}
 
 	public function findById(int $id)
 	{
-		return $this->getByUser()->findOrFail($id);
+		return $this->getModelByAuthUser()->findOrFail($id);
 	}
 
 	public function makeModel(): string
@@ -56,7 +56,7 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
         $data['payment_information_id'] = $paymentInfo?->id;
 
 		 /** @var BusinessProfiles $profile */
-        $profile = $this->getByUser()->create($data);
+        $profile = $this->getModelByAuthUser()->create($data);
 
         return $profile->fresh(['paymentInformation']);
 	}
@@ -121,7 +121,7 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
 
 	public function archive(int $id)
 	{
-		return $this->getByUser()->whereKey($id)->delete();
+		return $this->getModelByAuthUser()->whereKey($id)->delete();
 	}
 
 	public function paginate(
@@ -134,7 +134,7 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
 		$search = null,
     ) {
         // Add custom condition(s)
-        $query = $this->getByUser()->with(['paymentInformation']);
+        $query = $this->getModelByAuthUser()->with(['paymentInformation']);
 
 		if ($search) {
 			$query->where(function ($query) use ($search) {

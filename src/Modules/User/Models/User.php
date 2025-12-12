@@ -3,6 +3,7 @@
 namespace BilliftySDK\SharedResources\Modules\User\Models;
 
 
+use BilliftySDK\SharedResources\Modules\Billing\Models\UserSubscription;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\BusinessProfiles;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use BilliftySDK\SharedResources\Modules\User\Support\PlanCapabilities;
@@ -89,6 +90,11 @@ class User extends Authenticatable
     {
         return $this->hasMany(BusinessProfiles::class);
     }
+
+	public function subscription()
+	{
+		return $this->hasOne(UserSubscription::class, 'user_id', 'id');
+	}
 
 	public function getPlanCapabilitiesAttribute(): array
     {

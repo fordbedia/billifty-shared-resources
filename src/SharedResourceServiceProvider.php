@@ -2,6 +2,7 @@
 
 namespace BilliftySDK\SharedResources;
 
+use BilliftySDK\SharedResources\Modules\Billing\BillingProvider;
 use BilliftySDK\SharedResources\Modules\Invoicing\InvoicingProvider;
 use BilliftySDK\SharedResources\Modules\User\UserProvider;
 use BilliftySDK\SharedResources\SDK\Console\Config\Make;
@@ -14,7 +15,8 @@ class SharedResourceServiceProvider extends ServiceProvider
 {
     protected array $providers = [
 		InvoicingProvider::class,
-		UserProvider::class
+		UserProvider::class,
+		BillingProvider::class,
     ];
 
     public function boot()

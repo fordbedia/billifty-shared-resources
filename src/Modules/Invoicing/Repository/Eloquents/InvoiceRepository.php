@@ -18,7 +18,7 @@ class InvoiceRepository extends BaseRepository implements InvoiceContracts
 {
 	public function autoInvoiceNumber(): ?string
 	{
-		$lastInvoice = $this->getByUser()->latest()->pluck('invoice_number')->first();
+		$lastInvoice = $this->getModelByAuthUser()->latest()->pluck('invoice_number')->first();
 		if ($lastInvoice) {
 			return InvoiceHelpers::incrementInvoiceNumber($lastInvoice);
 		}
@@ -86,14 +86,14 @@ class InvoiceRepository extends BaseRepository implements InvoiceContracts
 
 	public function duplicateInvoice($invoiceNumber): ?Model
 	{
-		return $this->getByUser()
+		return $this->getModelByAuthUser()
 			->where('invoice_number', $invoiceNumber)
 			->first();
 	}
 
 	public function deleteInvoice(int $id)
 	{
-		return $this->getByUser()->whereKey($id)->delete();
+		return $this->getModelByAuthUser()->whereKey($id)->delete();
 	}
 
 	public function paginate(
@@ -106,7 +106,7 @@ class InvoiceRepository extends BaseRepository implements InvoiceContracts
 		$search = null,
     ) {
         // Add custom condition(s)
-        $query = $this->getByUser()->with(Invoices::relationships());
+        $query = $this->getModelByAuthUser()->with(Invoices::relationships());
 
 		if ($dateRange) {
 			$query->whereBetween('issued_on', [$dateRange['start'], $dateRange['end']]);
