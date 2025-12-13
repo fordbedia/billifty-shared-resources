@@ -32,6 +32,8 @@ return new class extends Migration
             // optional JSON meta
             $table->json('meta')->nullable();
 
+			$table->string('model_relationship')->nullable();
+
             $table->timestamps();
 
             $table->unique(['plan_id', 'key']);

@@ -5,6 +5,7 @@ namespace BilliftySDK\SharedResources\Modules\User\Models;
 
 use BilliftySDK\SharedResources\Modules\Billing\Models\UserSubscription;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\BusinessProfiles;
+use BilliftySDK\SharedResources\Modules\Invoicing\Models\Clients;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use BilliftySDK\SharedResources\Modules\User\Support\PlanCapabilities;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -92,6 +93,11 @@ class User extends Authenticatable
     {
         return $this->hasMany(BusinessProfiles::class);
     }
+
+	public function clients()
+	{
+		return $this->hasMany(Clients::class, 'user_id', 'id');
+	}
 
 	public function subscription()
 	{

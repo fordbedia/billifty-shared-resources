@@ -3,6 +3,8 @@
 namespace BilliftySDK\SharedResources\Modules\Billing\Http\Controllers;
 
 use BilliftySDK\SharedResources\Modules\Billing\Models\UserSubscription;
+use BilliftySDK\SharedResources\Modules\Billing\Services\Billing\ConfirmSubscriptionService;
+use BilliftySDK\SharedResources\Modules\Billing\Services\Billing\StripePaymentGateway;
 use BilliftySDK\SharedResources\Modules\User\Models\Plan;
 use Illuminate\Routing\Controller;
 use BilliftySDK\SharedResources\Modules\Billing\Contracts\PaymentGateway;
@@ -129,137 +131,26 @@ class BillingController extends Controller
         ]);
     }
 
-    public function confirmSubscription(Request $request, StripeClient $stripe)
-    {
-        $user = $request->user();
+    public function confirmSubscription(Request $request, ConfirmSubscriptionService $service)
+	{
+		$user = $request->user();
 
-        $data = $request->validate([
-            'subscription_id'   => ['required', 'string'],
-            'plan_code'         => ['required', 'string', Rule::in(['pro', 'premium'])],
-            'billing_cycle'     => ['required', 'string', Rule::in(['monthly', 'yearly'])],
-            // 👇 NEW: allow payment_intent_id from frontend as a fallback
-            'payment_intent_id' => ['nullable', 'string'],
-        ]);
+		$data = $request->validate([
+			'subscription_id'   => ['required', 'string'],
+			'plan_code'         => ['required', 'string', Rule::in(['pro', 'premium'])],
+			'billing_cycle'     => ['required', 'string', Rule::in(['monthly', 'yearly'])],
+			'payment_intent_id' => ['nullable', 'string'],
+		]);
 
-        return DB::transaction(function () use ($data, $user, $stripe) {
-            Log::info('BillingController.confirmSubscription.start', [
-                'user_id'           => $user->id,
-                'subscription_id'   => $data['subscription_id'],
-                'plan_code'         => $data['plan_code'],
-                'billing_cycle'     => $data['billing_cycle'],
-                'payment_intent_id' => $data['payment_intent_id'] ?? null,
-            ]);
+		// Controller does not save anything now:
+		$result = $service->handle(
+			$user,
+			$data['subscription_id'],
+			$data['plan_code'],
+			$data['billing_cycle'],
+			$data['payment_intent_id'] ?? null
+		);
 
-            // 1) Load subscription, including the invoice + payment_intent if available
-            $subscription = $stripe->subscriptions->retrieve($data['subscription_id'], [
-                'expand' => [
-                    'items.data.price',
-                    'latest_invoice.payment_intent',
-                ],
-            ]);
-
-            $latestInvoice = $subscription->latest_invoice ?? null;
-            $paymentIntent = $latestInvoice?->payment_intent ?? null;
-
-            // 👇 NEW: if Stripe did not attach a payment_intent to the invoice,
-            // but frontend told us which PaymentIntent was confirmed,
-            // we retrieve it directly from Stripe.
-            if (! $paymentIntent && ! empty($data['payment_intent_id'])) {
-                try {
-                    $paymentIntent = $stripe->paymentIntents->retrieve($data['payment_intent_id']);
-                } catch (\Throwable $e) {
-                    Log::error('confirmSubscription: failed to retrieve payment_intent by id', [
-                        'payment_intent_id' => $data['payment_intent_id'],
-                        'exception'         => $e->getMessage(),
-                    ]);
-                }
-            }
-
-            // 2) Guard: make sure payment actually succeeded
-            if (! $paymentIntent || $paymentIntent->status !== 'succeeded') {
-                Log::warning('confirmSubscription: payment not succeeded', [
-                    'subscription_id'       => $subscription->id ?? null,
-                    'subscription_status'   => $subscription->status ?? null,
-                    'invoice_id'            => $latestInvoice->id ?? null,
-                    'payment_intent_id'     => $paymentIntent->id ?? null,
-                    'payment_intent_status' => $paymentIntent->status ?? null,
-                ]);
-
-                return response()->json([
-                    'message'               => 'Payment for this subscription is not completed.',
-                    'subscription_status'   => $subscription->status ?? null,
-                    'payment_intent_status' => $paymentIntent->status ?? null,
-                ], 422);
-            }
-
-            // (Optional) log status
-            Log::info('confirmSubscription: payment succeeded', [
-                'subscription_id'     => $subscription->id,
-                'subscription_status' => $subscription->status,
-                'payment_intent_id'   => $paymentIntent->id,
-            ]);
-
-            // 3) Resolve plan_id from plan_code
-            $planCode = strtolower($data['plan_code']);
-            $planId   = Plan::where('code', $planCode)->value('id');
-
-            if (! $planId) {
-                Log::error('confirmSubscription: plan not found', [
-                    'plan_code' => $planCode,
-                ]);
-
-                return response()->json([
-                    'message' => 'Plan not found for this subscription.',
-                ], 500);
-            }
-
-            // 4) Update users.plan_id
-            $user->forceFill([
-                'plan_id' => $planId,
-            ])->save();
-
-            Log::info('confirmSubscription: user.plan_id updated', [
-                'user_id' => $user->id,
-                'plan_id' => $planId,
-            ]);
-
-            // 5) Persist user_subscriptions row
-            $stripeItem  = $subscription->items->data[0] ?? null;
-            $stripePrice = $stripeItem?->price ?? null;
-
-            $subscriptionModel = UserSubscription::updateOrCreate(
-                [
-                    'user_id'                => $user->id,
-                    'stripe_subscription_id' => $subscription->id,
-                ],
-                [
-                    'plan_id'            => $planId,
-                    'plan_code'          => $planCode,
-                    'billing_cycle'      => $data['billing_cycle'],
-                    'stripe_customer_id' => $subscription->customer,
-                    'currency'           => $stripePrice->currency ?? 'usd',
-                    'unit_amount'        => $stripePrice->unit_amount ?? 0,
-                    'status'             => $subscription->status,
-                    'starts_at'          => isset($subscription->current_period_start)
-                        ? now()->createFromTimestamp($subscription->current_period_start)
-                        : null,
-                    'renews_at'          => isset($subscription->current_period_end)
-                        ? now()->createFromTimestamp($subscription->current_period_end)
-                        : null,
-                    'raw_payload'        => $subscription->toArray(),
-                ]
-            );
-
-            Log::info('confirmSubscription: subscription persisted', [
-                'user_subscription_id' => $subscriptionModel->id,
-            ]);
-
-            return response()->json([
-                'status'        => 'ok',
-                'plan_code'     => $planCode,
-                'billing_cycle' => $data['billing_cycle'],
-				'subscription' => $subscriptionModel,
-            ]);
-        });
-    }
+		return response()->json($result);
+	}
 }

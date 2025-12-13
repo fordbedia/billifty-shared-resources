@@ -38,8 +38,7 @@ Route::prefix('v1')->group(function () {
 		Route::get('client/paginate', [ClientsController::class, 'paginate']);
 		Route::apiResource('invoice', InvoiceController::class);
 		Route::get('template/category/{id}', [TemplateController::class, 'getTemplate']);
-		Route::middleware(['plan.limit:max_business_profiles'])
-			->apiResource('business-profile', BusinessProfileController::class);
+		Route::apiResource('business-profile', BusinessProfileController::class);
 		Route::apiResource('client', ClientsController::class);
 		Route::apiResource('currency', CurrencyController::class);
 		Route::apiResource('template-category', TemplateCategoryController::class);

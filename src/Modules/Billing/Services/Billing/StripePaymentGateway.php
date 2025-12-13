@@ -3,13 +3,13 @@
 namespace BilliftySDK\SharedResources\Modules\Billing\Services\Billing;
 
 use BilliftySDK\SharedResources\Modules\Billing\Contracts\PaymentGateway;
-use BilliftySDK\SharedResources\Modules\Billing\Contracts\SubscriptionResult;
-use BilliftySDK\SharedResources\Modules\User\Models\User;
-use Illuminate\Support\Arr;
+use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
+use Illuminate\Support\Facades\Log;
 use Stripe\Customer;
+use Stripe\Exception\ApiErrorException;
+use Stripe\PaymentIntent;
 use Stripe\StripeClient;
 use Stripe\Subscription;
-use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 
 class StripePaymentGateway implements PaymentGateway
 {
@@ -93,5 +93,53 @@ class StripePaymentGateway implements PaymentGateway
         ]);
 
         return $subscription;
+    }
+
+	/**
+	 * Helper used during confirmation:
+	 * - Retrieves subscription with expanded latest_invoice.payment_intent
+	 * - If no payment_intent is attached, optionally falls back to a given payment_intent_id
+	 *
+	 * @return array{
+	 *     subscription: \Stripe\Subscription,
+	 *     latestInvoice: mixed,
+	 *     paymentIntent: \Stripe\PaymentIntent|null
+	 * }
+	 * @throws ApiErrorException
+	 */
+    public function getSubscriptionWithPaymentIntent(
+        string $subscriptionId,
+        ?string $fallbackPaymentIntentId = null
+    ): array {
+        /** @var Subscription $subscription */
+        $subscription = $this->client->subscriptions->retrieve($subscriptionId, [
+            'expand' => [
+                'items.data.price',
+                'latest_invoice.payment_intent',
+            ],
+        ]);
+
+        $latestInvoice = $subscription->latest_invoice ?? null;
+        /** @var PaymentIntent|null $paymentIntent */
+        $paymentIntent = $latestInvoice?->payment_intent ?? null;
+
+        // If Stripe did not attach a payment_intent, but frontend gave us one,
+        // try to retrieve it directly from Stripe.
+        if (! $paymentIntent && ! empty($fallbackPaymentIntentId)) {
+            try {
+                $paymentIntent = $this->client->paymentIntents->retrieve($fallbackPaymentIntentId);
+            } catch (\Throwable $e) {
+                Log::error('StripePaymentGateway.getSubscriptionWithPaymentIntent: failed to retrieve payment_intent by id', [
+                    'payment_intent_id' => $fallbackPaymentIntentId,
+                    'exception'         => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return [
+            'subscription'   => $subscription,
+            'latestInvoice'  => $latestInvoice,
+            'paymentIntent'  => $paymentIntent,
+        ];
     }
 }

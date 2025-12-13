@@ -3,12 +3,15 @@
 namespace BilliftySDK\SharedResources\Modules\User\Http\Middleware;
 
 use BilliftySDK\SharedResources\Modules\User\Service\PlanCapabilityService;
+use BilliftySDK\SharedResources\Modules\User\Traits\Capabilities;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class EnsurePlanLimit
 {
+	use Capabilities;
+
     public function __construct(
         protected PlanCapabilityService $planCaps
     ) {}
@@ -43,10 +46,7 @@ class EnsurePlanLimit
             null
         );
 
-        if (! $relationName) {
-            // default relation name if not provided
-            $relationName = 'businessProfiles';
-        }
+		$relationName = $this->relationships($limitKey);
 
         if (! method_exists($user, $relationName)) {
             return response()->json([

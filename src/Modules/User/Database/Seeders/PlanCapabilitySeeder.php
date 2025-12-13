@@ -33,6 +33,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'int',
             'value'      => '1',
             'meta'       => null,
+			'model_relationship' => 'businessProfiles',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -43,6 +44,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'int',
             'value'      => '5',
             'meta'       => null,
+			'model_relationship' => 'clients',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -53,6 +55,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'int',
             'value'      => '5',
             'meta'       => null,
+			'model_relationship' => 'invoices',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -65,6 +68,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'bool',
             'value'      => 'true',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -75,6 +79,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'bool',
             'value'      => 'true',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -87,6 +92,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'bool',
             'value'      => 'false',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -97,6 +103,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'bool',
             'value'      => 'false',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -107,6 +114,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'bool',
             'value'      => 'false',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -117,6 +125,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'string',
             'value'      => 'basic',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -127,6 +136,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'bool',
             'value'      => 'false',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -139,6 +149,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'string',
             'value'      => 'billifty_footer', // billifty_footer | small_footer | none
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -149,6 +160,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'string',
             'value'      => 'basic', // basic | multiple | all_advanced
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -159,6 +171,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'bool',
             'value'      => 'false',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -169,6 +182,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'string',
             'value'      => 'none', // none | manual | automatic
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -179,6 +193,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'bool',
             'value'      => 'false',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -189,6 +204,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'bool',
             'value'      => 'false',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -199,6 +215,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'string',
             'value'      => 'email',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -213,6 +230,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'int',
             'value'      => '3',
             'meta'       => null,
+			'model_relationship' => 'businessProfiles',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -223,6 +241,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'int',
             'value'      => '0', // 0 + meta[unlimited] = unlimited
             'meta'       => json_encode(['unlimited' => true]),
+			'model_relationship' => 'clients',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -233,6 +252,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'int',
             'value'      => '10',
             'meta'       => null,
+			'model_relationship' => 'invoices',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -245,6 +265,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'bool',
             'value'      => 'false',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -255,6 +276,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'bool',
             'value'      => 'true',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -266,6 +288,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'bool',
             'value'      => 'true',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -276,6 +299,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'bool',
             'value'      => 'true',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -286,6 +310,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'bool',
             'value'      => 'false',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -296,6 +321,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'string',
             'value'      => 'standard',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -306,6 +332,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'bool',
             'value'      => 'true',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -317,6 +344,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'string',
             'value'      => 'small_footer',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -327,6 +355,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'string',
             'value'      => 'multiple',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -337,6 +366,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'bool',
             'value'      => 'true',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -347,6 +377,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'string',
             'value'      => 'manual',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -357,6 +388,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'bool',
             'value'      => 'false',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -367,6 +399,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'bool',
             'value'      => 'false',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -377,6 +410,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'string',
             'value'      => 'email',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -391,6 +425,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'int',
             'value'      => '0', // unlimited
             'meta'       => json_encode(['unlimited' => true]),
+			'model_relationship' => 'businessProfiles',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -401,6 +436,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'int',
             'value'      => '0', // unlimited
             'meta'       => json_encode(['unlimited' => true]),
+			'model_relationship' => 'clients',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -411,6 +447,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'int',
             'value'      => '0', // unlimited
             'meta'       => json_encode(['unlimited' => true]),
+			'model_relationship' => 'invoices',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -423,6 +460,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'bool',
             'value'      => 'false',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -433,6 +471,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'bool',
             'value'      => 'false',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -444,6 +483,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'bool',
             'value'      => 'true',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -454,6 +494,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'bool',
             'value'      => 'true',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -464,6 +505,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'bool',
             'value'      => 'true',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -474,6 +516,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'string',
             'value'      => 'advanced',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -484,6 +527,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'bool',
             'value'      => 'true',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -495,6 +539,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'string',
             'value'      => 'none',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -505,6 +550,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'string',
             'value'      => 'all_advanced',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -515,6 +561,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'bool',
             'value'      => 'true',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -525,6 +572,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'string',
             'value'      => 'automatic',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -535,6 +583,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'bool',
             'value'      => 'true',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -545,6 +594,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'bool',
             'value'      => 'true',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -555,6 +605,7 @@ class PlanCapabilitySeeder extends MakeSeeder
             'type'       => 'string',
             'value'      => 'priority',
             'meta'       => null,
+			'model_relationship' => 'plan.capabilities',
             'created_at' => now(),
             'updated_at' => now(),
         ];
