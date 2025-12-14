@@ -53,6 +53,7 @@ abstract class ModularMakeCommand extends ModularCommand
 			'job'		=> $this->makeJob(),
 			'middleware' => $this->makeMiddleware(),
 			'policy' 	=> $this->makePolicy(),
+			'scope'		=> $this->makeScope(),
             default      => $this->error('Invalid make option: ' . $this->what),
         };
     }
@@ -164,6 +165,13 @@ abstract class ModularMakeCommand extends ModularCommand
         ]);
 	}
 
+	public function makeScope(): int
+	{
+		return $this->artisanCallOrCustom('make:scope', [
+            'name' => $this->className
+        ]);
+	}
+
     /**
      * @param $what
      */
@@ -235,6 +243,10 @@ abstract class ModularMakeCommand extends ModularCommand
 			case 'policy':
 				$this->fileName = $this->className;
 				$this->stubPath = $this->resolvePolicyStubPath('stub');
+				break;
+			case 'scope':
+				$this->fileName = $this->className;
+				$this->stubPath = $this->resolveScopeStubPath('stub');
 				break;
         }
     }

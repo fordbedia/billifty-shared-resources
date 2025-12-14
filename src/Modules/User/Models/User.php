@@ -105,107 +105,95 @@ class User extends Authenticatable
 	}
 
 	public function getPlanCapabilitiesAttribute(): array
-    {
-        $plan = $this->plan;
+	{
+		$plan = $this->plan;
+		if (! $plan) return [];
 
-        if (! $plan) {
-            return [];
-        }
+		if (! $plan->relationLoaded('capabilities')) {
+			$plan->load('capabilities'); // ActiveScope applies (is_active=1)
+		}
 
-        // Fetch capabilities: ['key' => PlanCapability]
-        $capabilities = $plan->capabilities()
-            ->get()
-            ->keyBy('key');
+		$capsByGroup = $plan->capabilities->groupBy('group');
 
-        // Helpers to read typed values from capabilities:
-        $getInt = function (string $key, ?int $default = null) use ($capabilities) {
-            /** @var PlanCapability|null $cap */
-            $cap = $capabilities[$key] ?? null;
-            if (! $cap) return $default;
-            $val = $cap->cast_value;
-            // convention: 0 + meta['unlimited'] = unlimited
-            if (is_int($val) && $val === 0 && ($cap->meta['unlimited'] ?? false)) {
-                return null; // treat as unlimited
-            }
-            return is_int($val) ? $val : $default;
-        };
+		$limitsCaps   = $capsByGroup->get('limits', collect());
+		$featuresCaps = $capsByGroup->get('features', collect());
 
-        $getBool = function (string $key, bool $default = false) use ($capabilities) {
-            /** @var PlanCapability|null $cap */
-            $cap = $capabilities[$key] ?? null;
-            if (! $cap) return $default;
-            return (bool) $cap->cast_value;
-        };
+		// Build limits dynamically: key => value
+		$limits = $limitsCaps->mapWithKeys(function ($cap) use ($plan) {
+			$val = match ($cap->type) {
+				'int'    => $plan->capabilityInt($cap->key, null),
+				'bool'   => $plan->capabilityBool($cap->key, false),
+				'string' => $plan->capabilityString($cap->key, null),
+				'json'   => $plan->capabilityValue($cap->key, null),
+				default  => $plan->capabilityValue($cap->key, null),
+			};
 
-        $getString = function (string $key, ?string $default = null) use ($capabilities) {
-            /** @var PlanCapability|null $cap */
-            $cap = $capabilities[$key] ?? null;
-            if (! $cap) return $default;
-            return (string) $cap->cast_value;
-        };
+			return [$cap->key => $val];
+		})->toArray();
 
-        // Limits
-        $maxBusinessProfiles   = $getInt('max_business_profiles', null);
-        $maxClients            = $getInt('max_clients', null);
-        $maxInvoicesPerMonth   = $getInt('max_invoices_per_month', null);
+		// Build flags dynamically: key => value
+		$flags = $featuresCaps->mapWithKeys(function ($cap) use ($plan) {
+			$val = match ($cap->type) {
+				'int'    => $plan->capabilityInt($cap->key, null),
+				'bool'   => $plan->capabilityBool($cap->key, false),
+				'string' => $plan->capabilityString($cap->key, null),
+				'json'   => $plan->capabilityValue($cap->key, null),
+				default  => $plan->capabilityValue($cap->key, null),
+			};
 
-        // Flags
-        $pdfWatermark          = $getBool('pdf_watermark', true);
-        $emailWatermark        = $getBool('email_watermark', true);
-        $onlinePayments        = $getBool('online_payments', false);
-        $automatedReminders    = $getBool('automated_reminders', false);
+			return [$cap->key => $val];
+		})->toArray();
 
-        // Optional: support level, logo upload, etc.
-        $supportLevel          = $getString('support_level', 'none');
-        $logoUpload            = $getBool('logo_upload', false);
+		// Allowed: compute automatically for anything that has model_relationship (limits)
+		$allowed = [];
+		foreach ($limitsCaps as $cap) {
+			if (! $cap->model_relationship) continue;
+			if (! method_exists($this, $cap->model_relationship)) continue;
 
-        // Get current usage for allowed checks
-        $currentBusinessProfiles = $this->businessProfiles()->count();
-        $currentInvoicesThisMonth = $this->invoices()
-            ->whereBetween('created_at', [
-                now()->startOfMonth(),
-                now()->endOfMonth(),
-            ])->count();
+			$max = $limits[$cap->key] ?? null;
 
-        $canCreateBusinessProfile =
-            is_null($maxBusinessProfiles) || $currentBusinessProfiles < $maxBusinessProfiles;
+			// usage mode from meta
+			$usageMode = $cap->meta['usage'] ?? null;
 
-        $canCreateInvoice =
-            is_null($maxInvoicesPerMonth) || $currentInvoicesThisMonth < $maxInvoicesPerMonth;
+			if ($usageMode === 'monthly') {
+				$current = $this->{$cap->model_relationship}()
+					->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])
+					->count();
+			} else {
+				$current = $this->{$cap->model_relationship}()->count();
+			}
 
-        $allowed = [
-            'create_business_profile' => $canCreateBusinessProfile,
-            'create_invoice'          => $canCreateInvoice,
-            'online_payments'         => $onlinePayments,
-            'automated_reminders'     => $automatedReminders,
-            'logo_upload'             => $logoUpload,
-        ];
+			$allowed['create:' . $cap->model_relationship] = is_null($max) ? true : ($current < $max);
 
-        $notAllowed = [];
-        foreach ($allowed as $key => $val) {
-            $notAllowed[$key] = ! $val;
-        }
+			// expose current usage dynamically too
+			$limits['current:' . $cap->model_relationship] = $current;
+		}
 
-        return [
-            'plan' => [
-                'id'   => $plan->id,
-                'code' => $plan->code,
-                'name' => $plan->name,
-            ],
-            'limits' => [
-                'max_business_profiles'      => $maxBusinessProfiles,
-                'max_clients'                => $maxClients,
-                'max_invoices_per_month'     => $maxInvoicesPerMonth,
-                'current_business_profiles'  => $currentBusinessProfiles,
-                'current_invoices_this_month'=> $currentInvoicesThisMonth,
-            ],
-            'flags' => [
-                'pdf_watermark'     => $pdfWatermark,
-                'email_watermark'   => $emailWatermark,
-                'support_level'     => $supportLevel,
-            ],
-            'allowed'     => $allowed,
-            'not_allowed' => $notAllowed,
-        ];
-    }
+		// Allowed for features: bool => itself, string => not none/empty, int => >0/unlimited
+		foreach ($featuresCaps as $cap) {
+			$val = $flags[$cap->key] ?? null;
+
+			$allowed[$cap->key] = match ($cap->type) {
+				'bool'   => (bool) $val,
+				'string' => ! empty($val) && strtolower((string) $val) !== 'none',
+				'int'    => is_null($val) ? true : ((int) $val > 0),
+				default  => (bool) $val,
+			};
+		}
+
+		$notAllowed = [];
+		foreach ($allowed as $k => $v) $notAllowed[$k] = ! $v;
+
+		return [
+			'plan' => [
+				'id'   => $plan->id,
+				'code' => $plan->code,
+				'name' => $plan->name,
+			],
+			'limits'      => $limits,   // dynamic keys
+			'flags'       => $flags,    // dynamic keys
+			'allowed'     => $allowed,  // dynamic keys
+			'not_allowed' => $notAllowed,
+		];
+	}
 }

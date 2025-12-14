@@ -34,6 +34,13 @@ return new class extends Migration
 
 			$table->string('model_relationship')->nullable();
 
+			$table->text('description')->nullable();
+
+			$table->string('group');
+
+			// Used in the global scope
+			$table->boolean('is_active')->default(true)->index();
+
             $table->timestamps();
 
             $table->unique(['plan_id', 'key']);

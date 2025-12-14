@@ -4,6 +4,7 @@ namespace BilliftySDK\SharedResources\Modules\User;
 
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use BilliftySDK\SharedResources\Modules\Invoicing\Policies\InvoicePolicy;
+use BilliftySDK\SharedResources\Modules\User\Providers\ModuleServiceProvider;
 use BilliftySDK\SharedResources\Modules\User\Providers\UserServiceProvider;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -12,6 +13,7 @@ class UserProvider extends ServiceProvider
 {
 	protected array $providers = [
 		UserServiceProvider::class,
+		ModuleServiceProvider::class,
 	];
 
 	protected array $policies = [

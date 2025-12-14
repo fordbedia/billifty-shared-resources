@@ -10,12 +10,8 @@ enum PlanCode: string
     case PRO = 'pro';
     case PREMIUM = 'premium';
 
-    /**
-     * Resolve the backing Plan model (with capabilities), using a per-request static cache.
-     */
     protected function planModel(): ?Plan
     {
-        // Static local cache — allowed in enums
         static $cache = [];
 
         $code = $this->value;
@@ -29,254 +25,135 @@ enum PlanCode: string
         return $cache[$code];
     }
 
-    /**
-     * Human readable name.
-     */
     public function label(): string
     {
-        if ($plan = $this->planModel()) {
-            return $plan->name ?? ucfirst($this->value);
-        }
-
-        // Fallback (original)
-        return match ($this) {
-            self::FREE    => 'Free',
-            self::PRO     => 'Pro',
-            self::PREMIUM => 'Premium',
-        };
+        return $this->planModel()?->name ?? ucfirst($this->value);
     }
 
-    /**
-     * Monthly price (USD).
-     */
     public function priceMonthly(): float
     {
-        if ($plan = $this->planModel()) {
-            return (float) $plan->price_monthly;
-        }
-
-        // Fallback (original)
-        return match ($this) {
-            self::FREE    => 0.00,
-            self::PRO     => 4.99,
-            self::PREMIUM => 9.99,
-        };
+        return (float) ($this->planModel()?->price_monthly ?? 0.00);
     }
 
-    /**
-     * Yearly price (USD).
-     */
     public function priceYearly(): float
     {
-        if ($plan = $this->planModel()) {
-            return (float) ($plan->price_yearly ?? 0.00);
-        }
-
-        // Fallback (original)
-        return match ($this) {
-            self::FREE    => 0.00,
-            self::PRO     => 49.99,
-            self::PREMIUM => 99.99,
-        };
+        return (float) ($this->planModel()?->price_yearly ?? 0.00);
     }
 
-    /**
-     * Usage limits per plan.
-     */
     public function limits(): array
     {
-        if ($plan = $this->planModel()) {
-            // assumes Plan has capabilityInt() helper
-            return [
-                'business_profiles'  => $plan->capabilityInt('max_business_profiles', null),
-                'clients'            => $plan->capabilityInt('max_clients', null),
-                'invoices_per_month' => $plan->capabilityInt('max_invoices_per_month', null),
-            ];
-        }
+        $plan = $this->planModel();
 
-        // Fallback (original hardcoded structure)
-        return match ($this) {
-            self::FREE => [
-                'business_profiles'  => 1,
-                'clients'            => 5,
-                'invoices_per_month' => 5,
-            ],
-            self::PRO => [
-                'business_profiles'  => 3,
-                'clients'            => null,
-                'invoices_per_month' => 10,
-            ],
-            self::PREMIUM => [
-                'business_profiles'  => null,
-                'clients'            => null,
-                'invoices_per_month' => null,
-            ],
-        };
+        if (! $plan) return [
+            'business_profiles'  => null,
+            'clients'            => null,
+            'invoices_per_month' => null,
+        ];
+
+        return [
+            'business_profiles'  => $plan->capabilityInt('max_business_profiles', null),
+            'clients'            => $plan->capabilityInt('max_clients', null),
+            'invoices_per_month' => $plan->capabilityInt('max_invoices_per_month', null),
+        ];
     }
 
-    /**
-     * Feature flags for each plan.
-     * DB-driven if possible, otherwise falls back to original enum data.
-     */
     public function features(): array
     {
-        if ($plan = $this->planModel()) {
-            // assumes Plan::capabilitiesArray() → [key => typed_value]
-            $caps = $plan->capabilitiesArray();
+        $plan = $this->planModel();
+        $caps = $plan?->capabilitiesArray() ?? [];
 
+        // IMPORTANT:
+        // If a capability is inactive, it won't exist in $caps at all (global scope),
+        // so we should NOT default it to "advanced" / "basic" — use null if missing.
+        return [
+            'pdf_export'      => true,
+
+            'pdf_watermark'   => (bool) ($caps['pdf_watermark']   ?? true),
+            'email_watermark' => (bool) ($caps['email_watermark'] ?? true),
+
+            'custom_prefix'   => (bool) ($caps['custom_prefix']   ?? false),
+            'custom_branding' => (bool) ($caps['custom_branding'] ?? false),
+
+            // templates
+            'templates'       => (string) ($caps['templates_tier'] ?? 'basic'),
+
+            'logo_upload'     => (bool) ($caps['logo_upload'] ?? false),
+
+            // reminders
+            'automated_reminders' => $caps['automated_reminders'] ?? 'none',
+
+            // payments/currency
+            'online_payments' => (bool) ($caps['online_payments'] ?? false),
+            'multi_currency'  => (bool) ($caps['multi_currency']  ?? false),
+
+            // branding/support
+            'email_branding'  => $caps['email_branding'] ?? 'billifty_footer',
+            'support'         => $caps['support_level'] ?? 'email',
+
+            // analytics: if row is inactive it should be absent => return null
+            'analytics'       => $caps['analytics_tier'] ?? null,
+
+            // raw for debugging
+            'raw'             => $caps,
+        ];
+    }
+
+    public function actions(): array
+    {
+        $plan = $this->planModel();
+
+        if (! $plan || ! $plan->relationLoaded('capabilities')) {
             return [
-                // Core
-                'pdf_export'      => true,
-
-                // Flags derived from capabilities
-                'pdf_watermark'   => (bool) ($caps['pdf_watermark']   ?? true),
-                'email_watermark' => (bool) ($caps['email_watermark'] ?? true),
-                'custom_prefix'   => (bool) ($caps['custom_prefix']   ?? false),
-                'custom_branding' => (bool) ($caps['custom_branding'] ?? false),
-                'automation'      => (bool) ($caps['automation']      ?? false),
-                'analytics'       => (string) ($caps['analytics_tier'] ?? 'basic'),
-                'multi_templates' => (bool) ($caps['multi_templates'] ?? false),
-
-                'email_branding'      => (string) ($caps['email_branding']   ?? 'billifty_footer'),
-                'templates'           => (string) ($caps['templates_tier']   ?? 'basic'),
-                'logo_upload'         => (bool) ($caps['logo_upload']        ?? false),
-                'automated_reminders' => (string) ($caps['automated_reminders'] ?? 'none'),
-                'online_payments'     => (bool) ($caps['online_payments']    ?? false),
-                'multi_currency'      => (bool) ($caps['multi_currency']     ?? false),
-                'support'             => (string) ($caps['support_level']    ?? 'email'),
-
-                // Expose raw capabilities for future / debugging
-                'raw'                 => $caps,
+                'text1'      => null,
+                'btn'        => null,
+                'upper_text' => null,
+                'card_label' => null,
             ];
         }
 
-        // Fallback (exactly your original enum data)
-        return match ($this) {
-            self::FREE => [
-                'pdf_export'      => true,
-                'pdf_watermark'   => true,
-                'email_watermark' => true,
-                'custom_prefix'   => false,
-                'custom_branding' => false,
-                'automation'      => false,
-                'analytics'       => 'basic',
-                'multi_templates' => false,
+        $marketing = $plan->capabilities
+            ->where('group', 'marketing')
+            ->mapWithKeys(fn ($cap) => [$cap->key => $cap->cast_value]);
 
-                'email_branding'        => 'billifty_footer',
-                'templates'             => 'basic',
-                'logo_upload'           => false,
-                'automated_reminders'   => 'none',
-                'online_payments'       => false,
-                'multi_currency'        => false,
-                'support'               => 'email',
-            ],
-            self::PRO => [
-                'pdf_export'      => true,
-                'pdf_watermark'   => false,
-                'email_watermark' => true,
-                'custom_prefix'   => true,
-                'custom_branding' => true,
-                'automation'      => false,
-                'analytics'       => 'standard',
-                'multi_templates' => true,
-
-                'email_branding'        => 'small_footer',
-                'templates'             => 'multiple',
-                'logo_upload'           => true,
-                'automated_reminders'   => 'manual',
-                'online_payments'       => false,
-                'multi_currency'        => false,
-                'support'               => 'email',
-            ],
-            self::PREMIUM => [
-                'pdf_export'      => true,
-                'pdf_watermark'   => false,
-                'email_watermark' => false,
-                'custom_prefix'   => true,
-                'custom_branding' => true,
-                'automation'      => true,
-                'analytics'       => 'advanced',
-                'multi_templates' => true,
-
-                'email_branding'        => 'none',
-                'templates'             => 'all_advanced',
-                'logo_upload'           => true,
-                'automated_reminders'   => 'automatic',
-                'online_payments'       => true,
-                'multi_currency'        => true,
-                'support'               => 'priority',
-            ],
-        };
+        return [
+            'text1'      => $marketing['cta_text1'] ?? null,
+            'btn'        => $marketing['cta_btn'] ?? null,
+            'upper_text' => $marketing['cta_upper_text'] ?? null,
+            'card_label' => $marketing['cta_card_label'] ?? null,
+        ];
     }
 
     /**
-     * CTA / marketing copy – unchanged from your original.
-     */
-    public function actions(): array
-    {
-        return match ($this) {
-            self::FREE => [
-                'text1'      => 'Perfect for trying out Billifty.',
-                'btn'        => 'Get started free',
-                'upper_text' => 'Start here',
-                'card_label' => null,
-            ],
-            self::PRO => [
-                'text1'      => 'Everything you need to invoice clients professionally.',
-                'btn'        => 'Upgrade to Pro',
-                'upper_text' => null,
-                'card_label' => 'BEST FOR FREELANCERS',
-            ],
-            self::PREMIUM => [
-                'text1'      => 'Unlimited invoicing with advanced automation.',
-                'btn'        => 'Go Premium',
-                'upper_text' => 'For growing teams',
-                'card_label' => null,
-            ],
-        };
-    }
-
-    /**
-     * Short bullet list for pricing cards – unchanged.
+     * Pricing bullets — from capabilities.description (features group only)
+     * Only active rows appear due to global scope.
      */
     public function featuresText(): array
-    {
-        return match ($this) {
-            self::FREE => [
-                'Export invoices to PDF',
-                'Basic invoice template',
-                'Auto-calculated totals',
-                'Save as Draft',
-                '"Powered by Billifty" watermark',
-            ],
-            self::PRO => [
-                'All Free features',
-                'No PDF watermark',
-                'Multiple invoice templates',
-                'Custom brand colors',
-                'Upload business logo',
-                'Custom invoice numbering',
-                'Payment status tracking',
-                'Export to CSV',
-                '1 attachment per invoice',
-            ],
-            self::PREMIUM => [
-                'All Pro features',
-                'No branding on emails',
-                'Automated invoice reminders',
-                'Online payment links',
-                'Multi-currency support',
-                'Advanced analytics dashboard',
-                'Estimate to invoice conversion',
-                'Unlimited attachments',
-                'Priority support',
-            ],
-        };
-    }
+	{
+		$plan = $this->planModel();
 
-    /**
-     * Monthly + yearly price structure.
-     */
+		if (! $plan || ! $plan->relationLoaded('capabilities')) {
+			return [];
+		}
+
+		// Add a single "included from previous plan" line (once)
+		$additional = match ($plan->code) {
+			self::PRO->value     => ['All Free features'],
+			self::PREMIUM->value => ['All Pro features'],
+			default              => [],
+		};
+
+		$bullets = $plan->capabilities
+			->where('group', 'features')
+			->filter(fn ($cap) => (string) ($cap->description ?? '') !== '')
+			->sortBy(fn ($cap) => (int) (($cap->meta['sort'] ?? 9999)))
+			->map(fn ($cap) => (string) $cap->description)
+			->values()
+			->all();
+
+		// Merge + ensure unique (optional, but nice)
+		return array_values(array_unique(array_merge($additional, $bullets)));
+	}
+
     public function billingCycles(): array
     {
         $monthly = $this->priceMonthly();
@@ -296,9 +173,6 @@ enum PlanCode: string
         ];
     }
 
-    /**
-     * For API response – this is what your pricing page is using.
-     */
     public function toArray(): array
     {
         return [
@@ -314,9 +188,6 @@ enum PlanCode: string
         ];
     }
 
-    /**
-     * Return all plans as an array of pricing-card-friendly data.
-     */
     public static function all(): array
     {
         return array_map(
