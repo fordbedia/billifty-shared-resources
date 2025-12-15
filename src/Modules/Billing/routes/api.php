@@ -1,6 +1,7 @@
 <?php
 
 use BilliftySDK\SharedResources\Modules\Billing\Http\Controllers\BillingController;
+use BilliftySDK\SharedResources\Modules\Billing\Http\Controllers\StripeWebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:api')->group(function () {
@@ -13,4 +14,8 @@ Route::middleware('auth:api')->group(function () {
 			Route::post('/billing/confirm-subscription', [BillingController::class, 'confirmSubscription']);
 		});
 	});
+});
+
+Route::prefix('v1')->group(function () {
+	Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
 });

@@ -5,6 +5,7 @@ namespace BilliftySDK\SharedResources\Modules\Billing\Services\Billing;
 use BilliftySDK\SharedResources\Modules\Billing\Models\UserSubscription;
 use BilliftySDK\SharedResources\Modules\User\Models\Plan;
 use BilliftySDK\SharedResources\Modules\User\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -36,14 +37,12 @@ final class ConfirmSubscriptionService
                 'payment_intent_id' => $paymentIntentId,
             ]);
 
-            // 1) Stripe retrieval + PI fallback (Stripe-only logic lives in gateway)
             $stripeData = $this->gateway->getSubscriptionWithPaymentIntent($subscriptionId, $paymentIntentId);
 
             $subscription  = $stripeData['subscription'];
             $latestInvoice = $stripeData['latestInvoice'];
             $paymentIntent = $stripeData['paymentIntent'];
 
-            // 2) Guard: must be succeeded
             if (! $paymentIntent || $paymentIntent->status !== 'succeeded') {
                 Log::warning('ConfirmSubscriptionService.payment_not_succeeded', [
                     'subscription_id'       => $subscription->id ?? null,
@@ -53,7 +52,6 @@ final class ConfirmSubscriptionService
                     'payment_intent_status' => $paymentIntent->status ?? null,
                 ]);
 
-                // Throwing keeps controller clean; Laravel will return 422 with our message
                 throw new \Illuminate\Validation\ValidationException(
                     validator: validator([], []),
                     response: response()->json([
@@ -64,7 +62,6 @@ final class ConfirmSubscriptionService
                 );
             }
 
-            // 3) Resolve plan_id
             $planCodeNormalized = strtolower($planCode);
             $planId = Plan::where('code', $planCodeNormalized)->value('id');
 
@@ -76,12 +73,30 @@ final class ConfirmSubscriptionService
                 throw new \RuntimeException('Plan not found for this subscription.');
             }
 
-            // 4) Persist: user.plan_id
             $user->forceFill(['plan_id' => $planId])->save();
 
-            // 5) Persist: user_subscriptions
             $stripeItem  = $subscription->items->data[0] ?? null;
             $stripePrice = $stripeItem?->price ?? null;
+
+			// Compute period start/end safely
+			$subPeriodStart = $subscription->current_period_start ?? null;
+			$subPeriodEnd   = $subscription->current_period_end ?? null;
+
+			// Fallback: invoice line period (very reliable for first charge)
+			$invPeriodStart = null;
+			$invPeriodEnd   = null;
+
+			if (is_object($latestInvoice) && isset($latestInvoice->lines) && isset($latestInvoice->lines->data[0]->period)) {
+				$invPeriodStart = $latestInvoice->lines->data[0]->period->start ?? null;
+				$invPeriodEnd   = $latestInvoice->lines->data[0]->period->end ?? null;
+			}
+
+			$periodStart = $subPeriodStart ?? $invPeriodStart;
+			$periodEnd   = $subPeriodEnd ?? $invPeriodEnd;
+
+			$startsAt = $periodStart ? Carbon::createFromTimestamp((int) $periodStart) : null;
+			$renewsAt = $periodEnd   ? Carbon::createFromTimestamp((int) $periodEnd)   : null;
+
 
             $subscriptionModel = UserSubscription::updateOrCreate(
                 [
@@ -96,12 +111,8 @@ final class ConfirmSubscriptionService
                     'currency'           => $stripePrice->currency ?? 'usd',
                     'unit_amount'        => $stripePrice->unit_amount ?? 0,
                     'status'             => $subscription->status,
-                    'starts_at'          => isset($subscription->current_period_start)
-                        ? now()->createFromTimestamp($subscription->current_period_start)
-                        : null,
-                    'renews_at'          => isset($subscription->current_period_end)
-                        ? now()->createFromTimestamp($subscription->current_period_end)
-                        : null,
+                    'starts_at'          => $startsAt,
+                    'renews_at'          => $renewsAt,
                     'raw_payload'        => $subscription->toArray(),
                 ]
             );

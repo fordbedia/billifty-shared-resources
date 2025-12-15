@@ -13,20 +13,11 @@ use Stripe\Subscription;
 
 class StripePaymentGateway implements PaymentGateway
 {
-    /**
-     * Stripe PHP SDK client.
-     */
-    public function __construct(
-        protected StripeClient $client,
-    ) {
-    }
+    public function __construct(protected StripeClient $client) {}
 
-    /**
-     * Ensure the given user has a Stripe Customer and return the customer_id.
-     */
     public function ensureCustomer(AuthenticatableContract $user): string
     {
-        if (! empty($user->stripe_customer_id)) {
+        if ($user->stripe_customer_id) {
             return $user->stripe_customer_id;
         }
 
@@ -35,7 +26,7 @@ class StripePaymentGateway implements PaymentGateway
             'email'    => $user->email,
             'name'     => $user->name ?? null,
             'metadata' => [
-                'app_user_id' => $user->id,
+                'billifty_user_id' => (string) $user->id,
             ],
         ]);
 
@@ -46,11 +37,6 @@ class StripePaymentGateway implements PaymentGateway
         return $customer->id;
     }
 
-    /**
-     * Resolve a Stripe Price ID from plan_code + billing_cycle.
-     *
-     * Backed by config/services.php (or DB if you prefer).
-     */
     public function resolvePriceId(string $planCode, string $billingCycle): string
     {
         $priceId = config("services.stripe.prices.{$planCode}.{$billingCycle}");
@@ -63,83 +49,159 @@ class StripePaymentGateway implements PaymentGateway
     }
 
     /**
-     * Create a default_incomplete subscription and expand latest_invoice.payment_intent.
+     * Create (or recover) an incomplete subscription using Stripe idempotency.
      *
-     * This lets the Payment Element confirm THAT payment intent.
+     * @throws ApiErrorException
      */
-    public function createIncompleteSubscription(string $customerId, string $priceId): Subscription
-    {
-        /** @var Subscription $subscription */
-        $subscription = $this->client->subscriptions->create([
+    public function createIncompleteSubscription(
+        string $customerId,
+        string $priceId,
+        array $metadata = []
+    ): Subscription {
+        $params = [
             'customer' => $customerId,
-            'items'    => [
-                ['price' => $priceId],
-            ],
-
-            // Create subscription but leave it incomplete until we confirm the PaymentIntent
+            'items'    => [['price' => $priceId]],
             'payment_behavior'  => 'default_incomplete',
-
-            // Make sure Stripe knows it's an auto-charge subscription
             'collection_method' => 'charge_automatically',
-
-            // 🔑 Tell Stripe which payment method types to support AND to save the card
             'payment_settings'  => [
-                'payment_method_types'        => ['card'],       // <-- ensures card is allowed
+                'payment_method_types'        => ['card'],
                 'save_default_payment_method' => 'on_subscription',
             ],
+            'metadata' => $metadata,
+            'expand'   => ['latest_invoice.payment_intent'],
+        ];
 
-            // We want the first invoice + its PaymentIntent expanded in the response
-            'expand' => ['latest_invoice.payment_intent'],
+        // ✅ deterministic + stable per (customer, price, plan, cycle)
+        $rawKey = implode('|', [
+            'sub_intent:v2',
+            $customerId,
+            $priceId,
+            (string) ($metadata['plan_code'] ?? ''),
+            (string) ($metadata['billing_cycle'] ?? ''),
         ]);
 
-        return $subscription;
+        $idempotencyKey = 'sub_intent:' . hash('sha256', $rawKey);
+
+        try {
+            return $this->client->subscriptions->create(
+                $params,
+                ['idempotency_key' => $idempotencyKey]
+            );
+        } catch (ApiErrorException $e) {
+            // Stripe sometimes returns 409 with wording like "in-progress request using this Idempotent Key"
+            $isInProgress = ($e->getHttpStatus() === 409) && str_contains($e->getMessage(), 'Idempotent Key');
+
+            if (! $isInProgress) {
+                throw $e;
+            }
+
+            Log::warning('Stripe idempotency in progress — attempting recovery', [
+                'customer' => $customerId,
+                'price'    => $priceId,
+                'key'      => $idempotencyKey,
+            ]);
+
+            // ✅ Quick retries to allow Stripe to finish creating the subscription
+            $attempts = 6;                 // ~ (0.15 + 0.25 + 0.35 + 0.5 + 0.7 + 0.9) seconds total
+            $delaysMs = [150, 250, 350, 500, 700, 900];
+
+            for ($i = 0; $i < $attempts; $i++) {
+                usleep($delaysMs[$i] * 1000);
+
+                $found = $this->findLatestSubscriptionForCustomerAndPrice($customerId, $priceId);
+
+                if ($found) {
+                    Log::info('Stripe recovery succeeded', [
+                        'subscription_id' => $found->id,
+                        'customer'        => $customerId,
+                        'price'           => $priceId,
+                    ]);
+
+                    // Make sure invoice/pi is expanded like the normal create call
+                    return $this->client->subscriptions->retrieve($found->id, [
+                        'expand' => ['latest_invoice.payment_intent'],
+                    ]);
+                }
+            }
+
+            // If we get here, it truly wasn't visible yet (or created with a different price)
+            throw new \RuntimeException('Idempotent subscription recovery failed (not found after retries).');
+        }
     }
 
-	/**
-	 * Helper used during confirmation:
-	 * - Retrieves subscription with expanded latest_invoice.payment_intent
-	 * - If no payment_intent is attached, optionally falls back to a given payment_intent_id
-	 *
-	 * @return array{
-	 *     subscription: \Stripe\Subscription,
-	 *     latestInvoice: mixed,
-	 *     paymentIntent: \Stripe\PaymentIntent|null
-	 * }
-	 * @throws ApiErrorException
-	 */
+    /**
+     * Try to locate an existing subscription for the same customer + price.
+     * Returns null if not found.
+     */
+    private function findLatestSubscriptionForCustomerAndPrice(string $customerId, string $priceId): ?Subscription
+    {
+        // We search across "open-ish" statuses because Stripe can briefly transition.
+        $statuses = ['incomplete', 'trialing', 'active', 'past_due', 'unpaid'];
+
+        foreach ($statuses as $status) {
+            $subs = $this->client->subscriptions->all([
+                'customer' => $customerId,
+                'status'   => $status,
+                'limit'    => 10,
+                'expand'   => [
+                    'data.items.data.price',
+                    'data.latest_invoice.payment_intent',
+                ],
+            ]);
+
+            foreach ($subs->data as $sub) {
+                if (!isset($sub->items->data)) {
+                    continue;
+                }
+
+                foreach ($sub->items->data as $item) {
+                    // price can be object (expanded) or string
+                    $itemPriceId = is_object($item->price) ? ($item->price->id ?? null) : $item->price;
+
+                    if ($itemPriceId === $priceId) {
+                        return $sub;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Used by ConfirmSubscriptionService
+     *
+     * @return array{
+     *   subscription: \Stripe\Subscription,
+     *   latestInvoice: mixed,
+     *   paymentIntent: \Stripe\PaymentIntent|null
+     * }
+     */
     public function getSubscriptionWithPaymentIntent(
         string $subscriptionId,
         ?string $fallbackPaymentIntentId = null
     ): array {
-        /** @var Subscription $subscription */
         $subscription = $this->client->subscriptions->retrieve($subscriptionId, [
-            'expand' => [
-                'items.data.price',
-                'latest_invoice.payment_intent',
-            ],
+            'expand' => ['latest_invoice.payment_intent'],
         ]);
 
         $latestInvoice = $subscription->latest_invoice ?? null;
-        /** @var PaymentIntent|null $paymentIntent */
-        $paymentIntent = $latestInvoice?->payment_intent ?? null;
+        $paymentIntent = null;
 
-        // If Stripe did not attach a payment_intent, but frontend gave us one,
-        // try to retrieve it directly from Stripe.
-        if (! $paymentIntent && ! empty($fallbackPaymentIntentId)) {
-            try {
-                $paymentIntent = $this->client->paymentIntents->retrieve($fallbackPaymentIntentId);
-            } catch (\Throwable $e) {
-                Log::error('StripePaymentGateway.getSubscriptionWithPaymentIntent: failed to retrieve payment_intent by id', [
-                    'payment_intent_id' => $fallbackPaymentIntentId,
-                    'exception'         => $e->getMessage(),
-                ]);
+        if (is_object($latestInvoice)) {
+            $paymentIntent = $latestInvoice->payment_intent ?? null;
+
+            if (is_string($paymentIntent)) {
+                $paymentIntent = $this->client->paymentIntents->retrieve($paymentIntent);
             }
         }
 
-        return [
-            'subscription'   => $subscription,
-            'latestInvoice'  => $latestInvoice,
-            'paymentIntent'  => $paymentIntent,
-        ];
+        if (! $paymentIntent && $fallbackPaymentIntentId) {
+            /** @var PaymentIntent $pi */
+            $pi = $this->client->paymentIntents->retrieve($fallbackPaymentIntentId);
+            $paymentIntent = $pi;
+        }
+
+        return compact('subscription', 'latestInvoice', 'paymentIntent');
     }
 }

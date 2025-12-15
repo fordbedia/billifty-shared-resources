@@ -12,5 +12,9 @@ interface PaymentGateway
 
     public function resolvePriceId(string $planCode, string $billingCycle): string;
 
-    public function createIncompleteSubscription(string $customerId, string $priceId): Subscription;
+    public function createIncompleteSubscription(
+		string $customerId,
+		string $priceId,
+		array $metadata
+	): Subscription;
 }

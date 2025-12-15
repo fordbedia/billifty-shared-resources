@@ -5,6 +5,7 @@ namespace BilliftySDK\SharedResources\Modules\Billing\Models;
 
 use BilliftySDK\SharedResources\Modules\User\Models\Plan;
 use BilliftySDK\SharedResources\Modules\User\Models\User;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -35,6 +36,10 @@ class UserSubscription extends Model
         'raw_payload' => 'array',
     ];
 
+	protected $appends = [
+		'unit_amount_dollars'
+	];
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -44,4 +49,13 @@ class UserSubscription extends Model
     {
         return $this->belongsTo(Plan::class);
     }
+
+	public function unitAmountDollars(): Attribute
+	{
+		return Attribute::make(
+			get: fn () => $this->unit_amount !== null
+				? round($this->unit_amount / 100, 2)
+				: null,
+		);
+	}
 }
