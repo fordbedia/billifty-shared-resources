@@ -46,7 +46,7 @@ class BillingController extends Controller
             'billing_cycle'    => $data['billing_cycle'],
         ];
 
-        // ✅ Idempotency + recovery is handled inside StripePaymentGateway
+        // Idempotency + recovery is handled inside StripePaymentGateway
         $subscription = $gateway->createIncompleteSubscription($customerId, $priceId, $metadata);
 
         $latestInvoice = $subscription->latest_invoice ?? null;
@@ -277,4 +277,32 @@ class BillingController extends Controller
             'message' => 'Payment method updated.',
         ]);
     }
+
+	/**
+	 * Stripe Billing Portal session (low maintenance manage cards).
+	 */
+	public function createPortalSession(Request $request, PaymentGateway $gateway)
+	{
+		$user = $request->user();
+
+		// Make sure Stripe customer exists
+		$customerId = $gateway->ensureCustomer($user);
+
+		// Where Stripe should send them back after managing billing
+		$data = $request->validate([
+			'return_url' => ['nullable', 'string'],
+		]);
+
+		// fallback return url (frontend should pass a full URL ideally)
+		$defaultReturnUrl = config('app.url') . '/app/account/manage-subscription';
+
+		$returnUrl = $data['return_url'] ?? $defaultReturnUrl;
+
+		$url = $gateway->createBillingPortalSession($customerId, $returnUrl);
+
+		return response()->json([
+			'url' => $url,
+		]);
+	}
+
 }

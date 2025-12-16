@@ -52,4 +52,6 @@ interface PaymentGateway
         ?string $subscriptionId,
         string $paymentMethodId
     ): void;
+
+	public function createBillingPortalSession(string $customerId, string $returnUrl): string;
 }

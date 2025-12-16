@@ -310,4 +310,15 @@ class StripePaymentGateway implements PaymentGateway
             'payment_method_id'=> $paymentMethodId,
         ]);
     }
+
+	public function createBillingPortalSession(string $customerId, string $returnUrl): string
+	{
+		/** @var BillingPortalSession $session */
+		$session = $this->client->billingPortal->sessions->create([
+			'customer'   => $customerId,
+			'return_url' => $returnUrl,
+		]);
+
+		return $session->url;
+	}
 }
