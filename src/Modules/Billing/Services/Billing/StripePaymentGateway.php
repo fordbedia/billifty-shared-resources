@@ -204,4 +204,110 @@ class StripePaymentGateway implements PaymentGateway
 
         return compact('subscription', 'latestInvoice', 'paymentIntent');
     }
+
+	public function changeSubscriptionPrice(
+        string $subscriptionId,
+        string $priceId,
+        string $prorationBehavior = 'create_prorations'
+    ): Subscription {
+        /** @var Subscription $subscription */
+        $subscription = $this->client->subscriptions->retrieve($subscriptionId, [
+            'expand' => ['items.data.price'],
+        ]);
+
+        $firstItem = $subscription->items->data[0] ?? null;
+
+        if (! $firstItem) {
+            throw new \RuntimeException('Subscription has no items to update.');
+        }
+
+        /** @var Subscription $updated */
+        $updated = $this->client->subscriptions->update($subscriptionId, [
+            'items' => [
+                [
+                    'id'    => $firstItem->id,
+                    'price' => $priceId,
+                ],
+            ],
+            'proration_behavior' => $prorationBehavior, // 'create_prorations' or 'none'
+            'expand' => ['latest_invoice.payment_intent'],
+        ]);
+
+        Log::info('StripePaymentGateway.changeSubscriptionPrice', [
+            'subscription_id' => $subscriptionId,
+            'new_price_id'    => $priceId,
+            'proration'       => $prorationBehavior,
+        ]);
+
+        return $updated;
+    }
+
+    public function cancelSubscription(
+        string $subscriptionId,
+        bool $atPeriodEnd = true
+    ): Subscription {
+        /** @var Subscription $updated */
+        $updated = $this->client->subscriptions->update($subscriptionId, [
+            'cancel_at_period_end' => $atPeriodEnd,
+        ]);
+
+        Log::info('StripePaymentGateway.cancelSubscription', [
+            'subscription_id' => $subscriptionId,
+            'at_period_end'   => $atPeriodEnd,
+        ]);
+
+        return $updated;
+    }
+
+    public function createCustomerSetupIntent(
+        string $customerId,
+        array $metadata = []
+    ): \Stripe\SetupIntent
+	{
+        /** @var SetupIntent $setupIntent */
+        $setupIntent = $this->client->setupIntents->create([
+            'customer' => $customerId,
+            // Let Stripe show card, wallets, etc.
+            'automatic_payment_methods' => ['enabled' => true],
+            'metadata'                  => $metadata,
+        ]);
+
+        Log::info('StripePaymentGateway.createCustomerSetupIntent', [
+            'customer_id'    => $customerId,
+            'setup_intent_id'=> $setupIntent->id,
+        ]);
+
+        return $setupIntent;
+    }
+
+    public function updateDefaultPaymentMethodForCustomerAndSubscription(
+        string $customerId,
+        ?string $subscriptionId,
+        string $paymentMethodId
+    ): void {
+        // 1) Attach to customer (if not already)
+        $this->client->paymentMethods->attach($paymentMethodId, [
+            'customer' => $customerId,
+        ]);
+
+        // 2) Set as default for invoice settings
+        $this->client->customers->update($customerId, [
+            'invoice_settings' => [
+                'default_payment_method' => $paymentMethodId,
+            ],
+        ]);
+
+        // 3) Optionally set as default for subscription
+        if ($subscriptionId) {
+            $this->client->subscriptions->update($subscriptionId, [
+                'default_payment_method' => $paymentMethodId,
+            ]);
+        }
+
+        Log::info('StripePaymentGateway.updateDefaultPaymentMethodForCustomerAndSubscription', [
+            'customer_id'      => $customerId,
+            'subscription_id'  => $subscriptionId,
+            'payment_method_id'=> $paymentMethodId,
+        ]);
+    }
 }

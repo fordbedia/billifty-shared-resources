@@ -13,6 +13,14 @@ Route::middleware('auth:api')->group(function () {
 			Route::post('billing/portal-session', [BillingController::class, 'createPortalSession']);
 			Route::post('/billing/confirm-subscription', [BillingController::class, 'confirmSubscription']);
 		});
+
+		Route::prefix('/billing')->group(function () {
+			Route::post('/subscription/change-plan', [BillingController::class, 'changePlan']);
+			Route::post('/subscription/cancel', [BillingController::class, 'cancelSubscription']);
+
+			Route::post('/payment-method/setup-intent', [BillingController::class, 'createPaymentMethodSetupIntent']);
+			Route::post('/payment-method/update', [BillingController::class, 'updatePaymentMethod']);
+		});
 	});
 });
 

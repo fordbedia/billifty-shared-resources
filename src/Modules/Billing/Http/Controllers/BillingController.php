@@ -3,7 +3,9 @@
 namespace BilliftySDK\SharedResources\Modules\Billing\Http\Controllers;
 
 use BilliftySDK\SharedResources\Modules\Billing\Contracts\PaymentGateway;
+use BilliftySDK\SharedResources\Modules\Billing\Models\UserSubscription;
 use BilliftySDK\SharedResources\Modules\Billing\Services\Billing\ConfirmSubscriptionService;
+use BilliftySDK\SharedResources\Modules\User\Models\Plan;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Log;
@@ -113,5 +115,166 @@ class BillingController extends Controller
                 $data['payment_intent_id'] ?? null
             )
         );
+    }
+
+	/**
+     * Change plan for an EXISTING paid subscription (upgrade/downgrade).
+     */
+    public function changePlan(
+        Request $request,
+        PaymentGateway $gateway,
+        StripeClient $stripe
+    ) {
+        $user = $request->user();
+
+        $data = $request->validate([
+            'plan_code'     => ['required', Rule::in(['pro', 'premium'])],
+            'billing_cycle' => ['required', Rule::in(['monthly', 'yearly'])],
+            'proration_behavior' => ['nullable', Rule::in(['create_prorations', 'none'])],
+        ]);
+
+        /** @var UserSubscription|null $currentSub */
+        $currentSub = UserSubscription::query()
+            ->where('user_id', $user->id)
+            ->whereIn('status', ['active', 'trialing', 'past_due', 'incomplete'])
+            ->orderByDesc('id')
+            ->first();
+
+        if (! $currentSub || ! $currentSub->stripe_subscription_id) {
+            return response()->json([
+                'message' => 'No active subscription to change.',
+            ], 422);
+        }
+
+        $priceId = $gateway->resolvePriceId($data['plan_code'], $data['billing_cycle']);
+
+        $prorationBehavior = $data['proration_behavior'] ?? 'create_prorations';
+
+        $subscription = $gateway->changeSubscriptionPrice(
+            $currentSub->stripe_subscription_id,
+            $priceId,
+            $prorationBehavior
+        );
+
+        // Update local DB
+        $planCodeNormalized = strtolower($data['plan_code']);
+        $planId = Plan::where('code', $planCodeNormalized)->value('id');
+
+        if ($planId) {
+            $stripeItem  = $subscription->items->data[0] ?? null;
+            $stripePrice = $stripeItem?->price ?? null;
+
+            $currentSub->update([
+                'plan_id'       => $planId,
+                'plan_code'     => $planCodeNormalized,
+                'billing_cycle' => $data['billing_cycle'],
+                'currency'      => $stripePrice->currency ?? 'usd',
+                'unit_amount'   => $stripePrice->unit_amount ?? 0,
+                'status'        => $subscription->status,
+                'raw_payload'   => $subscription->toArray(),
+            ]);
+        }
+
+        return response()->json([
+            'message'       => 'Subscription updated.',
+            'subscription'  => $currentSub->fresh(),
+        ]);
+    }
+
+    /**
+     * Cancel subscription (usually at period end).
+     */
+    public function cancelSubscription(
+        Request $request,
+        PaymentGateway $gateway
+    ) {
+        $user = $request->user();
+
+        $data = $request->validate([
+            'at_period_end' => ['nullable', 'boolean'],
+        ]);
+
+        /** @var UserSubscription|null $currentSub */
+        $currentSub = UserSubscription::query()
+            ->where('user_id', $user->id)
+            ->whereIn('status', ['active', 'trialing', 'past_due', 'incomplete'])
+            ->orderByDesc('id')
+            ->first();
+
+        if (! $currentSub || ! $currentSub->stripe_subscription_id) {
+            return response()->json([
+                'message' => 'No active subscription to cancel.',
+            ], 422);
+        }
+
+        $atPeriodEnd = $data['at_period_end'] ?? true;
+
+        $subscription = $gateway->cancelSubscription(
+            $currentSub->stripe_subscription_id,
+            $atPeriodEnd
+        );
+
+        $currentSub->update([
+            'status'      => $subscription->status,
+            'raw_payload' => $subscription->toArray(),
+        ]);
+
+        return response()->json([
+            'message'      => $atPeriodEnd
+                ? 'Subscription will cancel at period end.'
+                : 'Subscription canceled immediately.',
+            'subscription' => $currentSub->fresh(),
+        ]);
+    }
+
+    /**
+     * Create a SetupIntent for updating payment method with Stripe Payment Element.
+     */
+    public function createPaymentMethodSetupIntent(
+        Request $request,
+        PaymentGateway $gateway
+    ) {
+        $user = $request->user();
+
+        $customerId = $gateway->ensureCustomer($user);
+
+        $setupIntent = $gateway->createCustomerSetupIntent($customerId, [
+            'billifty_user_id' => (string) $user->id,
+        ]);
+
+        return response()->json([
+            'client_secret' => $setupIntent->client_secret,
+        ]);
+    }
+
+    /**
+     * After Payment Element (setup mode) succeeds, update default payment method.
+     */
+    public function updatePaymentMethod(
+        Request $request,
+        PaymentGateway $gateway
+    ) {
+        $user = $request->user();
+
+        $data = $request->validate([
+            'payment_method_id' => ['required', 'string'],
+        ]);
+
+        /** @var UserSubscription|null $currentSub */
+        $currentSub = UserSubscription::query()
+            ->where('user_id', $user->id)
+            ->whereIn('status', ['active', 'trialing', 'past_due', 'incomplete'])
+            ->orderByDesc('id')
+            ->first();
+
+        $gateway->updateDefaultPaymentMethodForCustomerAndSubscription(
+            $user->stripe_customer_id,
+            $currentSub?->stripe_subscription_id,
+            $data['payment_method_id']
+        );
+
+        return response()->json([
+            'message' => 'Payment method updated.',
+        ]);
     }
 }

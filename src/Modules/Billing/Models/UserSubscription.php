@@ -29,8 +29,8 @@ class UserSubscription extends Model
     ];
 
     protected $casts = [
-        'starts_at'   => 'datetime',
-        'renews_at'   => 'datetime',
+        'starts_at'   => 'datetime: F j, Y',
+        'renews_at'   => 'datetime:F j, Y',
         'cancels_at'  => 'datetime',
         'canceled_at' => 'datetime',
         'raw_payload' => 'array',
