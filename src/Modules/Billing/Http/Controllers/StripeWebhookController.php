@@ -5,6 +5,9 @@ namespace BilliftySDK\SharedResources\Modules\Billing\Http\Controllers;
 use App\Http\Controllers\Controller;
 use BilliftySDK\SharedResources\Modules\Billing\Models\StripeWebhookEvents;
 use BilliftySDK\SharedResources\Modules\Billing\Models\UserSubscription;
+use BilliftySDK\SharedResources\Modules\User\Models\Plan;
+use BilliftySDK\SharedResources\Modules\User\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -18,28 +21,59 @@ class StripeWebhookController extends Controller
 
     public function handle(Request $request)
     {
-        $payload   = $request->getContent(); // raw body (string)
+		// ----------------------------------------------------------------------------
+		// Start test
+		// ----------------------------------------------------------------------------
+		Log::info('StripeWebhookController.hit', [
+			'path' => $request->path(),
+			'host' => $request->getHost(),
+			'scheme' => $request->getScheme(),
+			'has_sig' => $request->hasHeader('Stripe-Signature'),
+		]);
+
+		$payload   = $request->getContent();
+		$sigHeader = $request->header('Stripe-Signature');
+		$secret    = config('services.stripe.webhook_secret');
+
+		if (! $secret) {
+			Log::error('StripeWebhookController.missing_webhook_secret');
+			return response('Webhook secret missing', 500);
+		}
+
+		try {
+			$event = Webhook::constructEvent($payload, $sigHeader, $secret);
+		} catch (\UnexpectedValueException $e) {
+			Log::warning('StripeWebhookController.invalid_payload', ['err' => $e->getMessage()]);
+			return response('Invalid payload', 400);
+		} catch (SignatureVerificationException $e) {
+			Log::warning('StripeWebhookController.invalid_signature', [
+				'err' => $e->getMessage(),
+				'secret_prefix' => substr($secret, 0, 10) . '...',
+			]);
+			return response('Invalid signature', 400);
+		}
+
+		Log::info('StripeWebhookController.event_ok', [
+			'id' => $event->id,
+			'type' => $event->type,
+			'livemode' => (bool) ($event->livemode ?? false),
+		]);
+		// ----------------------------------------------------------------------------
+		// End test
+		// ----------------------------------------------------------------------------
+
+        $payload   = $request->getContent();
         $sigHeader = $request->header('Stripe-Signature');
         $secret    = config('services.stripe.webhook_secret');
-
-        Log::info('StripeWebhookController.hit', [
-            'path'    => $request->path(),
-            'ip'      => $request->ip(),
-            'has_sig' => (bool) $sigHeader,
-            'len'     => strlen($payload),
-        ]);
 
         try {
             $event = Webhook::constructEvent($payload, $sigHeader, $secret);
         } catch (\UnexpectedValueException $e) {
-            Log::warning('StripeWebhookController.invalid_payload', ['err' => $e->getMessage()]);
             return response('Invalid payload', 400);
         } catch (SignatureVerificationException $e) {
-            Log::warning('StripeWebhookController.invalid_signature', ['err' => $e->getMessage()]);
             return response('Invalid signature', 400);
         }
 
-        // Store payload string (json) in stripe_webhook_events
         $payloadArray = json_decode($payload, true);
         $payloadJson  = is_array($payloadArray)
             ? json_encode($payloadArray, JSON_UNESCAPED_SLASHES)
@@ -47,8 +81,8 @@ class StripeWebhookController extends Controller
 
         $object = $event->data->object ?? null;
 
-        $stripeCustomerId     = $object->customer ?? ($object->customer_id ?? null);
-        $stripeSubscriptionId = $object->subscription ?? null;
+        $stripeCustomerId     = $object->customer ?? null;
+        $stripeSubscriptionId = $object->subscription ?? ($object->id ?? null);
 
         $userId = $this->resolveUserIdFromEvent($event, $stripeCustomerId, $stripeSubscriptionId);
 
@@ -61,89 +95,171 @@ class StripeWebhookController extends Controller
                 'livemode'               => (bool) ($event->livemode ?? false),
                 'stripe_customer_id'     => $stripeCustomerId,
                 'stripe_subscription_id' => $stripeSubscriptionId,
-                'payload'                => $payloadJson, // string
+                'payload'                => $payloadJson,
                 'received_at'            => now(),
             ]
         );
 
-        // Example handler: invoice paid -> update subscription raw payload
-        if ($event->type === 'invoice.payment_succeeded') {
-			$invoice = $event->data->object;
+        // Only sync on the important events
+        $shouldSync = in_array($event->type, [
+            'checkout.session.completed',
+            'customer.subscription.created',
+            'customer.subscription.updated',
+            'customer.subscription.deleted',
+            'invoice.payment_succeeded',
+            'invoice.payment_failed',
+        ], true);
 
-			$subId = $invoice->subscription ?? null;
+        if (! $shouldSync) return response('OK', 200);
 
-			if ($subId) {
-				try {
-					$sub = $this->stripe->subscriptions->retrieve($subId, []);
+        // Determine the subscription ID for the event
+        $subId = null;
+        $sessionMeta = [];
 
-					UserSubscription::query()
-						->where('stripe_subscription_id', $subId)
-						->orWhere('stripe_customer_id', $stripeCustomerId)
-						->update([
-							'status'      => $sub->status,
-							'starts_at'   => \Carbon\Carbon::createFromTimestamp($sub->current_period_start),
-							'renews_at'   => \Carbon\Carbon::createFromTimestamp($sub->current_period_end),
-							'raw_payload' => is_array($payloadArray) ? $payloadArray : ['raw' => $payload],
-							'updated_at'  => now(),
-						]);
-				} catch (\Throwable $e) {
-					Log::error('StripeWebhookController.subscription_retrieve_failed', [
-						'subscription_id' => $subId,
-						'err' => $e->getMessage(),
-					]);
-				}
-			} else {
-				Log::warning('StripeWebhookController.invoice_payment_succeeded_missing_subscription', [
-					'invoice_id' => $invoice->id ?? null,
-				]);
-			}
-		}
+        if ($event->type === 'checkout.session.completed') {
+            $session = $event->data->object;
+            $subId = $session->subscription ?? null;
+            $stripeCustomerId = $session->customer ?? $stripeCustomerId;
 
+            // metadata is often on the session
+            $sessionMeta = (array) ($session->metadata ?? []);
+        } elseif (str_starts_with($event->type, 'customer.subscription.')) {
+            $sub = $event->data->object;
+            $subId = $sub->id ?? null;
+            $stripeCustomerId = $sub->customer ?? $stripeCustomerId;
+        } elseif (str_starts_with($event->type, 'invoice.')) {
+            $invoice = $event->data->object;
+            $subId = $invoice->subscription ?? null;
+            $stripeCustomerId = $invoice->customer ?? $stripeCustomerId;
+        }
+
+        if (! $subId) {
+            Log::warning('StripeWebhookController.no_subscription_id_to_sync', ['event_type' => $event->type]);
+            return response('OK', 200);
+        }
+
+        try {
+            $subscription = $this->stripe->subscriptions->retrieve($subId, [
+                'expand' => ['items.data.price'],
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('StripeWebhookController.subscription_retrieve_failed', [
+                'subscription_id' => $subId,
+                'err' => $e->getMessage(),
+            ]);
+            return response('OK', 200);
+        }
+
+        // Resolve user id fallback
+        if (! $userId && $stripeCustomerId) {
+            $userId = DB::table('users')->where('stripe_customer_id', $stripeCustomerId)->value('id');
+        }
+
+        if (! $userId) {
+            Log::warning('StripeWebhookController.cannot_resolve_user', [
+                'subscription_id' => $subId,
+                'customer' => $stripeCustomerId,
+            ]);
+            return response('OK', 200);
+        }
+
+        // Determine plan + cycle:
+        // 1) subscription metadata
+        // 2) checkout.session metadata
+        // 3) infer from Stripe price ID (most reliable)
+        $subMeta = (array) ($subscription->metadata ?? []);
+        $planCode = strtolower((string) ($subMeta['plan_code'] ?? $sessionMeta['plan_code'] ?? ''));
+        $billingCycle = strtolower((string) ($subMeta['billing_cycle'] ?? $sessionMeta['billing_cycle'] ?? ''));
+
+        $stripeItem  = $subscription->items->data[0] ?? null;
+        $stripePrice = $stripeItem?->price ?? null;
+        $priceId     = $stripePrice->id ?? null;
+
+        if ((!$planCode || !$billingCycle) && $priceId) {
+            $map = $this->priceIdToPlanAndCycle($priceId);
+            if ($map) {
+                $planCode     = $planCode ?: $map['plan_code'];
+                $billingCycle = $billingCycle ?: $map['billing_cycle'];
+            }
+        }
+
+        // Plan lookup
+        $planId = $planCode ? Plan::where('code', $planCode)->value('id') : null;
+        $freeId = Plan::where('code', 'free')->value('id');
+
+        $startsAt = isset($subscription->current_period_start)
+            ? Carbon::createFromTimestamp((int) $subscription->current_period_start)
+            : null;
+
+        $renewsAt = isset($subscription->current_period_end)
+            ? Carbon::createFromTimestamp((int) $subscription->current_period_end)
+            : null;
+
+        UserSubscription::updateOrCreate(
+            ['stripe_subscription_id' => $subscription->id],
+            [
+                'user_id'            => (int) $userId,
+                'plan_id'            => $planId ?? $freeId,
+                'plan_code'          => $planCode ?: 'free',
+                'billing_cycle'      => $billingCycle ?: 'monthly',
+                'stripe_customer_id' => (string) $stripeCustomerId,
+                'currency'           => $stripePrice->currency ?? 'usd',
+                'unit_amount'        => $stripePrice->unit_amount ?? 0,
+                'status'             => $subscription->status ?? 'incomplete',
+                'starts_at'          => $startsAt,
+                'renews_at'          => $renewsAt,
+                'raw_payload'        => $subscription->toArray(),
+            ]
+        );
+
+        // Only grant paid access if active/trialing
+        $isPaid = in_array((string) $subscription->status, ['active', 'trialing'], true);
+
+        $user = User::find($userId);
+        if ($user) {
+            $user->forceFill([
+                'plan_id' => $isPaid && $planId ? $planId : $freeId,
+            ])->save();
+        }
 
         return response('OK', 200);
+    }
+
+    private function priceIdToPlanAndCycle(string $priceId): ?array
+    {
+        // config('services.stripe.prices.pro.monthly') etc.
+        $prices = config('services.stripe.prices', []);
+
+        foreach (['pro', 'premium'] as $plan) {
+            foreach (['monthly', 'yearly'] as $cycle) {
+                $cfg = $prices[$plan][$cycle] ?? null;
+                if ($cfg && $cfg === $priceId) {
+                    return ['plan_code' => $plan, 'billing_cycle' => $cycle];
+                }
+            }
+        }
+        return null;
     }
 
     private function resolveUserIdFromEvent($event, ?string $stripeCustomerId, ?string $stripeSubscriptionId): ?int
     {
         $object = $event->data->object ?? null;
 
-        // 1) Best: metadata on object itself
         $metaUserId = $object->metadata->billifty_user_id ?? null;
-        if ($metaUserId) {
-            return (int) $metaUserId;
-        }
+        if ($metaUserId) return (int) $metaUserId;
 
-        // 2) subscription lookup
         if ($stripeSubscriptionId) {
             $id = DB::table('user_subscriptions')
                 ->where('stripe_subscription_id', $stripeSubscriptionId)
                 ->value('user_id');
-
             if ($id) return (int) $id;
         }
 
-        // 3) customer lookup (users table)
         if ($stripeCustomerId) {
             $id = DB::table('users')
                 ->where('stripe_customer_id', $stripeCustomerId)
                 ->value('id');
-
             if ($id) return (int) $id;
-        }
-
-        // 4) fallback: retrieve customer metadata from Stripe
-        if ($stripeCustomerId) {
-            try {
-                $customer   = $this->stripe->customers->retrieve($stripeCustomerId);
-                $metaUserId = $customer->metadata->billifty_user_id ?? null;
-
-                if ($metaUserId) return (int) $metaUserId;
-            } catch (\Throwable $e) {
-                Log::warning('StripeWebhookController.customer_lookup_failed', [
-                    'customer' => $stripeCustomerId,
-                    'err'      => $e->getMessage(),
-                ]);
-            }
         }
 
         return null;
