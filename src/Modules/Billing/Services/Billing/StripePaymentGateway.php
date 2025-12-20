@@ -33,6 +33,10 @@ class StripePaymentGateway implements PaymentGateway
 
     public function resolvePriceId(string $planCode, string $billingCycle): string
     {
+		if ($planCode === 'free') {
+			return '0';
+		}
+
         $priceId = config("services.stripe.prices.{$planCode}.{$billingCycle}");
 
         if (! $priceId) {

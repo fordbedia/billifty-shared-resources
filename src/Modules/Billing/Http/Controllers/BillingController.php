@@ -4,6 +4,7 @@ namespace BilliftySDK\SharedResources\Modules\Billing\Http\Controllers;
 
 use BilliftySDK\SharedResources\Modules\Billing\Contracts\PaymentGateway;
 use BilliftySDK\SharedResources\Modules\Billing\Models\UserSubscription;
+use BilliftySDK\SharedResources\Modules\Billing\Services\Billing\SubscriptionService;
 use BilliftySDK\SharedResources\Modules\User\Models\Plan;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -23,12 +24,15 @@ class BillingController extends Controller
      * Create a Stripe Checkout session (subscription).
      * Frontend will redirect user to returned `url`.
      */
-    public function createCheckoutSession(Request $request, PaymentGateway $gateway)
-    {
+    public function createCheckoutSession(
+		Request $request,
+		PaymentGateway $gateway,
+		SubscriptionService $subscriptionService
+	) {
         $user = $request->user();
 
         $data = $request->validate([
-            'plan_code'     => ['required', Rule::in(['pro', 'premium'])],
+            'plan_code'     => ['required', Rule::in(['free', 'pro', 'premium'])],
             'billing_cycle' => ['required', Rule::in(['monthly', 'yearly'])],
             'success_url'   => ['required', 'string'],
             'cancel_url'    => ['required', 'string'],
@@ -51,15 +55,22 @@ class BillingController extends Controller
             'billing_cycle'    => $data['billing_cycle'],
         ];
 
-        $url = $gateway->createCheckoutSessionUrl(
-            $customerId,
-            $priceId,
-            $data['success_url'],
-            $data['cancel_url'],
-            $metadata
-        );
+		if ($request->has('plan_code') && $request->plan_code === 'free') {
+			// Check if user has auth, if not proceed to login/sign up
+			// Otherwise, subscribed to free plan
+			$url = config('urls.invoices_url');
+			['url' => $nextUrl] = $subscriptionService->handleSubscription();
+		} else {
+			$nextUrl = $gateway->createCheckoutSessionUrl(
+				$customerId,
+				$priceId,
+				$data['success_url'],
+				$data['cancel_url'],
+				$metadata
+			);
+		}
 
-        return response()->json(['url' => $url]);
+        return response()->json(['url' => $nextUrl]);
     }
 
     /**
@@ -131,20 +142,24 @@ class BillingController extends Controller
 			'session_id' => ['required', 'string'],
 		]);
 
-		// Retrieve session + subscription
 		$session = $stripe->checkout->sessions->retrieve($data['session_id'], [
-			'expand' => ['subscription', 'subscription.items.data.price'],
+			// Expand customer so we can compare
+			'expand' => ['customer'],
 		]);
 
-		// Safety: ensure this session belongs to this customer
-		if (($session->customer ?? null) !== $user->stripe_customer_id) {
+		if (($session->customer->id ?? null) !== $user->stripe_customer_id) {
 			return response()->json(['message' => 'Session does not belong to this user.'], 403);
 		}
 
-		$subscription = $session->subscription ?? null;
-		if (! $subscription || empty($subscription->id)) {
+		$subId = $session->subscription ?? null;
+		if (! $subId) {
 			return response()->json(['message' => 'No subscription found on checkout session.'], 422);
 		}
+
+		// Always retrieve the full subscription (guarantees current_period_* and items)
+		$subscription = $stripe->subscriptions->retrieve($subId, [
+			'expand' => ['items.data.price'],
+		]);
 
 		// Determine plan + cycle from metadata (fallback to priceId map)
 		$sessionMeta = (array) ($session->metadata ?? []);
@@ -168,15 +183,15 @@ class BillingController extends Controller
 		$planId = $planCode ? Plan::where('code', $planCode)->value('id') : null;
 		$freeId = Plan::where('code', 'free')->value('id');
 
+		// Use Carbon::createFromTimestampUTC to avoid TZ weirdness
 		$startsAt = isset($subscription->current_period_start)
-			? Carbon::createFromTimestamp((int) $subscription->current_period_start)
+			? Carbon::createFromTimestampUTC((int) $subscription->current_period_start)
 			: null;
 
 		$renewsAt = isset($subscription->current_period_end)
-			? Carbon::createFromTimestamp((int) $subscription->current_period_end)
+			? Carbon::createFromTimestampUTC((int) $subscription->current_period_end)
 			: null;
 
-		// Upsert user_subscriptions
 		UserSubscription::updateOrCreate(
 			['stripe_subscription_id' => $subscription->id],
 			[
@@ -184,17 +199,16 @@ class BillingController extends Controller
 				'plan_id'            => $planId ?? $freeId,
 				'plan_code'          => $planCode ?: 'free',
 				'billing_cycle'      => $billingCycle ?: 'monthly',
-				'stripe_customer_id' => (string) ($session->customer ?? $user->stripe_customer_id),
+				'stripe_customer_id' => (string) ($session->customer->id ?? $user->stripe_customer_id),
 				'currency'           => $stripePrice->currency ?? 'usd',
 				'unit_amount'        => $stripePrice->unit_amount ?? 0,
 				'status'             => $subscription->status ?? 'incomplete',
 				'starts_at'          => $startsAt,
 				'renews_at'          => $renewsAt,
-				'raw_payload'        => method_exists($subscription, 'toArray') ? $subscription->toArray() : [],
+				'raw_payload'        => $subscription->toArray(),
 			]
 		);
 
-		// Only set plan_id when active/trialing
 		$isPaid = in_array((string) ($subscription->status ?? ''), ['active', 'trialing'], true);
 
 		$user->forceFill([
@@ -206,8 +220,11 @@ class BillingController extends Controller
 			'status'  => $subscription->status ?? null,
 			'plan_code' => $planCode,
 			'billing_cycle' => $billingCycle,
+			'starts_at' => optional($startsAt)->toDateTimeString(),
+			'renews_at' => optional($renewsAt)->toDateTimeString(),
 		]);
 	}
+
 
 	// same helper as your webhook controller (you can DRY into a service later)
 	private function priceIdToPlanAndCycle(string $priceId): ?array

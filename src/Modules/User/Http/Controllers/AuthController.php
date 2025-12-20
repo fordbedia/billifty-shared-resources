@@ -3,6 +3,7 @@
 namespace BilliftySDK\SharedResources\Modules\User\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use BilliftySDK\SharedResources\Modules\Billing\Services\Billing\SubscriptionService;
 use BilliftySDK\SharedResources\Modules\User\Auth\GoogleAuthService;
 use BilliftySDK\SharedResources\Modules\User\AuthTypes\PasswordAuthServiceInterface;
 use BilliftySDK\SharedResources\SDK\Exception\ApiException;
@@ -14,6 +15,7 @@ class AuthController extends Controller
 	public function __construct(
 		protected PasswordAuthServiceInterface $passwordAuth,
 		protected GoogleAuthService            $googleAuth,
+		protected SubscriptionService          $subscriptionService
 	)
 	{}
 
@@ -48,10 +50,14 @@ class AuthController extends Controller
 
         $frontendUrl = config('app.frontend_url');
 
+		$next = $this->subscriptionService->decodeCallback($request);
+		$url =  $frontendUrl . '/app/invoices';
+		$nextUrl = $this->subscriptionService->handle($url, $next);
+
         return response()->view('user::auth.google-bridge', [
             'token'   => $token,
             'user'    => $user,
-            'nextUrl' => $frontendUrl . '/app/invoices',
+            'nextUrl' => $nextUrl,
         ]);
     }
 
