@@ -3,13 +3,14 @@
 namespace BilliftySDK\SharedResources\SDK\Database;
 
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\ClientsContract;
+use BilliftySDK\SharedResources\Modules\User\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 
 abstract class RepositoryLayer
 {
     protected Model $model;
-    
+
     public function __construct()
     {
         $this->resolver();
@@ -78,7 +79,7 @@ abstract class RepositoryLayer
     }
 
 	/**
-	 * @deprecated 
+	 * @deprecated
 	 * @return Builder
 	 */
 	public function getByUser(): Builder
@@ -91,6 +92,9 @@ abstract class RepositoryLayer
 	 */
 	public function getModelByAuthUser(): Builder
 	{
-		return $this->model->where('user_id', auth()->id());
+		if (! $this->model instanceof User) {
+			return $this->model->where('user_id', auth()->id());
+		}
+		return $this->model->whereKey(auth()->id());
 	}
 }

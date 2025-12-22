@@ -32,9 +32,16 @@ class AuthController extends Controller
 
         Auth::login($user, true);
 
+		$frontendUrl = config('services.stripe.return_url');
+
+		$next = $this->subscriptionService->decodeCallback($request);
+		$url =  $frontendUrl;
+		$nextUrl = $this->subscriptionService->handle($url, $next);
+
         return response()->json([
             'user'  => $user,
             'token' => $token,
+			'url' => $nextUrl
         ]);
     }
 
@@ -48,10 +55,10 @@ class AuthController extends Controller
 
         Auth::login($user, true);
 
-        $frontendUrl = config('app.frontend_url');
+        $frontendUrl = config('services.stripe.return_url');
 
 		$next = $this->subscriptionService->decodeCallback($request);
-		$url =  $frontendUrl . '/app/invoices';
+		$url =  $frontendUrl;
 		$nextUrl = $this->subscriptionService->handle($url, $next);
 
         return response()->view('user::auth.google-bridge', [

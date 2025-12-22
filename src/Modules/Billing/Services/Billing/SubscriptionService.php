@@ -6,6 +6,7 @@ use BilliftySDK\SharedResources\Modules\Billing\Models\UserSubscription;
 use BilliftySDK\SharedResources\Modules\Billing\Repositories\Interfaces\UserSubscriptionInterface;
 use BilliftySDK\SharedResources\Modules\User\Models\Plan;
 use BilliftySDK\SharedResources\Modules\User\Models\User;
+use BilliftySDK\SharedResources\Modules\User\Repository\Contract\UserInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -14,7 +15,8 @@ class SubscriptionService
 {
 	public function __construct(
 		protected Request $request,
-		protected UserSubscriptionInterface $userSubscriptionRepository
+		protected UserSubscriptionInterface $userSubscriptionRepository,
+		protected UserInterface $userRepository
 	) {}
 
 	public function confirmSubscription(): bool
@@ -25,7 +27,7 @@ class SubscriptionService
 		return false;
 	}
 
-	public function handleSubscription(?string $plan = null, ?string $cycle = null)
+	public function handleFreeSubscription(?string $plan = null, ?string $cycle = null)
 	{
 		if (! $plan && ! $cycle) {
 			$plan = $this->request->query('plan_code');
@@ -40,9 +42,9 @@ class SubscriptionService
 				];
 			}
 			$user = auth()->user();
-			$this->freePlan($user, $plan, $cycle);
+			$this->freePlan($user);
 			return [
-				'url' => config('services.stripe.manage_subscriptions_url')
+				'url' => config('services.stripe.return_url')
 			];
 		}
 
@@ -58,6 +60,7 @@ class SubscriptionService
 		}
 
 		$freePlanId = Plan::whereCode($planCode)->pluck('id')->first();
+		$this->userRepository->updatePlan($freePlanId);
 
 		$this->userSubscriptionRepository->upsert([
 			'user_id' => $user->id,
@@ -147,7 +150,7 @@ class SubscriptionService
 	{
 		if ($next) {
 			if ($next['plan_code'] === 'free') {
-				$this->handleSubscription($next['plan_code'], $next['billing_cycle']);
+				$this->handleFreeSubscription($next['plan_code'], $next['billing_cycle']);
 			} else {
 				// plan_code is either pro or premium
 				$url = config('urls.pricing_url') . "?plan_code={$next['plan_code']}&billing_cycle={$next['billing_cycle']}&auto_checkout=true";

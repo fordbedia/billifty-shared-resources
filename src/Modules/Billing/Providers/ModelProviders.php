@@ -5,6 +5,7 @@ namespace BilliftySDK\SharedResources\Modules\Billing\Providers;
 use BilliftySDK\SharedResources\Modules\Billing\Repositories\Eloquents\UserSubscriptionRepository;
 use BilliftySDK\SharedResources\Modules\Billing\Repositories\Interfaces\UserSubscriptionInterface;
 use BilliftySDK\SharedResources\Modules\Billing\Services\Billing\SubscriptionService;
+use BilliftySDK\SharedResources\Modules\User\Repository\Eloquent\UserRepository;
 use Illuminate\Support\ServiceProvider;
 
 class ModelProviders extends ServiceProvider
@@ -18,7 +19,7 @@ class ModelProviders extends ServiceProvider
     {
         $this->app->bind(UserSubscriptionInterface::class, UserSubscriptionRepository::class);
 
-		$this->app->bind(SubscriptionService::class, fn() => new SubscriptionService(request(), new UserSubscriptionRepository));
+		$this->app->bind(SubscriptionService::class, fn() => new SubscriptionService(request(), new UserSubscriptionRepository, new UserRepository()));
     }
 
     /**

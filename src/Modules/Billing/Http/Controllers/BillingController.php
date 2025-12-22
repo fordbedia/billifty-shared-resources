@@ -31,6 +31,10 @@ class BillingController extends Controller
 	) {
         $user = $request->user();
 
+		if($user->subscription){
+			throw new \Exception('User already subscribed');
+		}
+
         $data = $request->validate([
             'plan_code'     => ['required', Rule::in(['free', 'pro', 'premium'])],
             'billing_cycle' => ['required', Rule::in(['monthly', 'yearly'])],
@@ -59,7 +63,7 @@ class BillingController extends Controller
 			// Check if user has auth, if not proceed to login/sign up
 			// Otherwise, subscribed to free plan
 			$url = config('urls.invoices_url');
-			['url' => $nextUrl] = $subscriptionService->handleSubscription();
+			['url' => $nextUrl] = $subscriptionService->handleFreeSubscription();
 		} else {
 			$nextUrl = $gateway->createCheckoutSessionUrl(
 				$customerId,
@@ -70,7 +74,7 @@ class BillingController extends Controller
 			);
 		}
 
-        return response()->json(['url' => $nextUrl]);
+        return response()->json(['url' => $nextUrl, 'user' => $user->refresh()]);
     }
 
     /**
@@ -222,6 +226,7 @@ class BillingController extends Controller
 			'billing_cycle' => $billingCycle,
 			'starts_at' => optional($startsAt)->toDateTimeString(),
 			'renews_at' => optional($renewsAt)->toDateTimeString(),
+			'user' => $user->refresh(),
 		]);
 	}
 

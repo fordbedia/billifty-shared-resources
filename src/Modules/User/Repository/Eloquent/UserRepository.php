@@ -44,6 +44,11 @@ class UserRepository extends UserBaseRepository implements UserInterface
 			->exists();
 	}
 
+	public function updatePlan(int $planId): bool
+	{
+		return $this->getModelByAuthUser()->update(['plan_id' => $planId]);
+	}
+
 	public function authUser(): ?Model
 	{
 		return $this->getModelByAuthUser()->first();

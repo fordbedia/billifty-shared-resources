@@ -41,8 +41,7 @@ class UserController extends Controller
 			$accessToken = $this->getAccessToken($user);
 
 			$next = $this->subscriptionService->decodeCallback($request);
-
-			$url =  config('app.frontend_url') . '/app/invoices';
+			$url =  config('services.stripe.return_url');
 			$nextUrl = $this->subscriptionService->handle($url, $next);
 
 			 return response()->json([
