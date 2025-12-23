@@ -3,6 +3,7 @@
 namespace BilliftySDK\SharedResources\Modules\User\Models;
 
 
+use BilliftySDK\SharedResources\Modules\User\Scopes\ActiveScope;
 use Illuminate\Database\Eloquent\Model;
 
 class PlanCapability extends Model
@@ -11,14 +12,22 @@ class PlanCapability extends Model
         'plan_id',
         'key',
         'label',
+		'description',
         'type',
         'value',
         'meta',
+		'model_relationship',
+		'is_active'
     ];
 
     protected $casts = [
         'meta' => 'array',
     ];
+
+	protected static function booted(): void
+	{
+		static::addGlobalScope(new ActiveScope);
+	}
 
     public function plan()
     {

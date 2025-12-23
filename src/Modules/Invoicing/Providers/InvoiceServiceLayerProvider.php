@@ -34,12 +34,12 @@ class InvoiceServiceLayerProvider extends ServiceProvider
 		Invoices::observe(InvoiceObserver::class);
     }
 
-		public function provides(): array
-		{
-			return [
-				BusinessProfileContract::class,
-				ClientsContract::class,
-				InvoiceContracts::class,
-			];
-		}
+	public function provides(): array
+	{
+		return [
+			BusinessProfileContract::class,
+			ClientsContract::class,
+			InvoiceContracts::class,
+		];
+	}
 }

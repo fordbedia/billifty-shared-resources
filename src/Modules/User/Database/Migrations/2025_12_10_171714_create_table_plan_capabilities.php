@@ -32,6 +32,15 @@ return new class extends Migration
             // optional JSON meta
             $table->json('meta')->nullable();
 
+			$table->string('model_relationship')->nullable();
+
+			$table->text('description')->nullable();
+
+			$table->string('group');
+
+			// Used in the global scope
+			$table->boolean('is_active')->default(true)->index();
+
             $table->timestamps();
 
             $table->unique(['plan_id', 'key']);

@@ -2,7 +2,7 @@
 
 namespace BilliftySDK\SharedResources\Modules\Invoicing\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use Illuminate\Routing\Controller;
 use BilliftySDK\SharedResources\Modules\Invoicing\Http\Requests\ClientRequest;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\ClientsContract;
 use Illuminate\Http\Request;
@@ -10,7 +10,12 @@ use Illuminate\Http\Response;
 
 class ClientsController extends Controller
 {
-    /**
+	public function __construct()
+	{
+		$this->middleware(['plan.limit:max_clients'])->only(['store']);
+	}
+
+	/**
      * Display a listing of the resource.
      */
     public function index(

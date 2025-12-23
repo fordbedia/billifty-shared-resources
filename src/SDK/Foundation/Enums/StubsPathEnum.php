@@ -24,6 +24,10 @@ enum StubsPathEnum: string
 
 	case POLICY = 'policy.';
 
+	case SCOPE = 'scope.';
+
+	case COMMAND = 'console.';
+
     public function getFullPath()
     {
         return '/vendor/billifty/shared-resources/src/SDK/Foundation/stubs/' . $this->value;

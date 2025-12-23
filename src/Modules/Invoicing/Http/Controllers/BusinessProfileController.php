@@ -2,17 +2,23 @@
 
 namespace BilliftySDK\SharedResources\Modules\Invoicing\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+
 use BilliftySDK\SharedResources\Modules\Invoicing\Http\Requests\BusinessProfileRequest;
 use BilliftySDK\SharedResources\Modules\Invoicing\Http\Requests\PaymentInformationRequest;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\BusinessProfileContract;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Laravel\Facades\Image;
 
 class BusinessProfileController extends Controller
 {
-    /**
+	public function __construct()
+	{
+		$this->middleware(['plan.limit:max_business_profiles'])->only(['store']);
+	}
+
+	/**
      * Display a listing of the resource.
      */
     public function index(

@@ -39,7 +39,9 @@ class Make extends ModularMakeCommand
 			'make:mail'			=> 'Mail',
 			'make:job'			=> 'Jobs',
 			'make:middleware'	=> 'Http/Middleware',
-			'make:policy'		=> 'Policies'
+			'make:policy'		=> 'Policies',
+			'make:scope'		=> 'Scopes',
+			'make:command'		=> 'Console/Commands'
         ];
 
         $subPath = $paths[$command] ?? 'Misc';
@@ -131,6 +133,10 @@ class Make extends ModularMakeCommand
 				return 'BilliftySDK\\SharedResources\\Modules\\' . $this->module . '\\Http\\Middleware';
 			case 'policy':
 				return 'BilliftySDK\\SharedResources\\Modules\\' . $this->module . '\\Policies';
+			case 'scope':
+				return 'BilliftySDK\\SharedResources\\Modules\\' . $this->module . '\\Scopes';
+			case 'command':
+				return 'BilliftySDK\\SharedResources\\Modules\\' . $this->module . '\\Console\\Commands';
             default:
                 return '';
         }

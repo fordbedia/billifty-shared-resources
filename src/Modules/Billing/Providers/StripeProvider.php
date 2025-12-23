@@ -9,6 +9,8 @@ use Stripe\StripeClient;
 
 class StripeProvider extends ServiceProvider
 {
+	protected bool $defer = true;
+
     /**
      * Register services.
      */
@@ -31,4 +33,12 @@ class StripeProvider extends ServiceProvider
     {
 		//
     }
+
+	public function provides(): array
+	{
+		return [
+			StripeClient::class,
+			PaymentGateway::class,
+		];
+	}
 }

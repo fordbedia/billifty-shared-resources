@@ -19,7 +19,20 @@ class PlanCapabilityService
         $cap = $plan->capabilities
             ->firstWhere('key', $key);
 
-        return $cap ? $cap->cast_value : $default;
+		if($cap) {
+			if (
+				$cap->type === 'int' &&
+				(int)$cap->cast_value === 0 &&
+				isset($cap->meta['unlimited']) &&
+				$cap->meta['unlimited']
+			) {
+				// return null, it means it's unlimited
+				return null;
+			}
+			return $cap->cast_value;
+		}
+
+        return $default;
     }
 
     /**

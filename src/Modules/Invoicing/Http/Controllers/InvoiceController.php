@@ -2,7 +2,7 @@
 
 namespace BilliftySDK\SharedResources\Modules\Invoicing\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use Illuminate\Routing\Controller;
 use BilliftySDK\SharedResources\Modules\Invoicing\Domain\InvoiceAction;
 use BilliftySDK\SharedResources\Modules\Invoicing\Http\Requests\StoreInvoiceRequest;
 use BilliftySDK\SharedResources\Modules\Invoicing\Jobs\GenerateInvoicePdfJob;
@@ -23,6 +23,11 @@ use Illuminate\Support\Facades\Mail;
 
 class InvoiceController extends Controller
 {
+	public function __construct()
+	{
+		$this->middleware(['plan.limit:max_invoices_per_month'])->only(['store', 'generate', 'sendToBusinessProfile', 'sendToClient']);;
+	}
+
 	public function generateInvoiceNumber(InvoiceContracts $invoice)
 	{
 		return $invoice->autoInvoiceNumber();

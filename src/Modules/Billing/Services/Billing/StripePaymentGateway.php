@@ -3,30 +3,22 @@
 namespace BilliftySDK\SharedResources\Modules\Billing\Services\Billing;
 
 use BilliftySDK\SharedResources\Modules\Billing\Contracts\PaymentGateway;
-use BilliftySDK\SharedResources\Modules\Billing\Contracts\SubscriptionResult;
+use BilliftySDK\SharedResources\Modules\Billing\Models\UserSubscription;
+use BilliftySDK\SharedResources\Modules\User\Models\Plan;
 use BilliftySDK\SharedResources\Modules\User\Models\User;
-use Illuminate\Support\Arr;
+use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Stripe\Customer;
 use Stripe\StripeClient;
-use Stripe\Subscription;
-use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 
 class StripePaymentGateway implements PaymentGateway
 {
-    /**
-     * Stripe PHP SDK client.
-     */
-    public function __construct(
-        protected StripeClient $client,
-    ) {
-    }
+    public function __construct(protected StripeClient $client) {}
 
-    /**
-     * Ensure the given user has a Stripe Customer and return the customer_id.
-     */
     public function ensureCustomer(AuthenticatableContract $user): string
     {
-        if (! empty($user->stripe_customer_id)) {
+        if ($user->stripe_customer_id) {
             return $user->stripe_customer_id;
         }
 
@@ -35,24 +27,21 @@ class StripePaymentGateway implements PaymentGateway
             'email'    => $user->email,
             'name'     => $user->name ?? null,
             'metadata' => [
-                'app_user_id' => $user->id,
+                'billifty_user_id' => (string) $user->id,
             ],
         ]);
 
-        $user->forceFill([
-            'stripe_customer_id' => $customer->id,
-        ])->save();
+        $user->forceFill(['stripe_customer_id' => $customer->id])->save();
 
         return $customer->id;
     }
 
-    /**
-     * Resolve a Stripe Price ID from plan_code + billing_cycle.
-     *
-     * Backed by config/services.php (or DB if you prefer).
-     */
     public function resolvePriceId(string $planCode, string $billingCycle): string
     {
+		if ($planCode === 'free') {
+			return '0';
+		}
+
         $priceId = config("services.stripe.prices.{$planCode}.{$billingCycle}");
 
         if (! $priceId) {
@@ -62,36 +51,103 @@ class StripePaymentGateway implements PaymentGateway
         return $priceId;
     }
 
-    /**
-     * Create a default_incomplete subscription and expand latest_invoice.payment_intent.
-     *
-     * This lets the Payment Element confirm THAT payment intent.
-     */
-    public function createIncompleteSubscription(string $customerId, string $priceId): Subscription
-    {
-        /** @var Subscription $subscription */
-        $subscription = $this->client->subscriptions->create([
+    public function createCheckoutSessionUrl(
+        string $customerId,
+        string $priceId,
+        string $successUrl,
+        string $cancelUrl,
+        array $metadata = []
+    ): string {
+		$glue = str_contains($successUrl, '?') ? '&' : '?';
+		$successUrlWithSession = $successUrl . $glue . 'session_id={CHECKOUT_SESSION_ID}';
+        $session = $this->client->checkout->sessions->create([
+            'mode' => 'subscription',
             'customer' => $customerId,
-            'items'    => [
-                ['price' => $priceId],
+            'line_items' => [
+                [
+                    'price' => $priceId,
+                    'quantity' => 1,
+                ],
+            ],
+            'success_url' => $successUrlWithSession,
+            'cancel_url'  => $cancelUrl,
+
+            // CRITICAL: metadata on session
+            'metadata' => $metadata,
+
+            // ALSO critical: metadata on subscription itself (for later subscription.updated events)
+            'subscription_data' => [
+                'metadata' => $metadata,
             ],
 
-            // Create subscription but leave it incomplete until we confirm the PaymentIntent
-            'payment_behavior'  => 'default_incomplete',
-
-            // Make sure Stripe knows it's an auto-charge subscription
-            'collection_method' => 'charge_automatically',
-
-            // 🔑 Tell Stripe which payment method types to support AND to save the card
-            'payment_settings'  => [
-                'payment_method_types'        => ['card'],       // <-- ensures card is allowed
-                'save_default_payment_method' => 'on_subscription',
-            ],
-
-            // We want the first invoice + its PaymentIntent expanded in the response
-            'expand' => ['latest_invoice.payment_intent'],
+            // optional but helpful
+            'allow_promotion_codes' => true,
         ]);
 
-        return $subscription;
+        return $session->url;
     }
+
+    public function createBillingPortalSession(string $customerId, string $returnUrl): string
+    {
+        $session = $this->client->billingPortal->sessions->create([
+            'customer'   => $customerId,
+            'return_url' => $returnUrl,
+        ]);
+
+        return $session->url;
+    }
+
+	public function markUserAsFree(?int $userId, ?string $stripeCustomerId, ?string $stripeSubscriptionId, ?string $payloadJson = null): void
+	{
+		$freeId = Plan::where('code', 'free')->value('id');
+
+		Log::info('markUserAsFree', [
+			'$userId'    => $userId,
+			'$stripeCustomerId'    => $stripeCustomerId,
+			'$stripeSubscriptionId'=> $stripeSubscriptionId
+		]);
+
+		if (!$userId && $stripeCustomerId) {
+			$userId = DB::table('users')->where('stripe_customer_id', $stripeCustomerId)->value('id');
+			$userId = $userId ? (int) $userId : null;
+		}
+
+		if (!$userId) {
+			Log::warning('StripeWebhookController.cancel.cannot_resolve_user', [
+				'customer' => $stripeCustomerId,
+				'subscription_id' => $stripeSubscriptionId,
+			]);
+			return;
+		}
+
+		// Update subscription row: move back to free + clear Stripe ids
+		UserSubscription::updateOrCreate(
+			['user_id' => $userId],
+			[
+				'plan_id'                => $freeId,
+				'plan_code'              => 'free',
+				'billing_cycle'          => 'monthly',
+				'stripe_customer_id'     => null,
+				'stripe_subscription_id' => null,
+				'status'                 => 'canceled',
+				'cancels_at'             => null,
+				'canceled_at'            => now(),
+				'raw_payload'            => $payloadJson ? json_decode($payloadJson, true) : null,
+			]
+		);
+
+		// Update user plan
+		$user = User::find($userId);
+		if ($user) {
+			$user->forceFill(['plan_id' => $freeId])->save();
+		}
+
+		Log::info('StripeWebhookController.cancel.marked_free', [
+			'user_id' => $userId,
+			'customer' => $stripeCustomerId,
+			'subscription_id' => $stripeSubscriptionId,
+		]);
+	}
+
+
 }

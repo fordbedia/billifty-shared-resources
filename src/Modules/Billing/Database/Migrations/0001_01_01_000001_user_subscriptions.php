@@ -19,11 +19,11 @@ return new class extends Migration
             $table->string('plan_code');           // 'pro', 'premium'
             $table->string('billing_cycle');       // 'monthly', 'yearly'
 
-            $table->string('stripe_customer_id');
-            $table->string('stripe_subscription_id')->unique();
+            $table->string('stripe_customer_id')->nullable();
+            $table->string('stripe_subscription_id')->unique()->nullable();
 
             $table->string('currency', 10)->default('usd');
-            $table->integer('unit_amount');        // in cents (e.g. 499)
+            $table->integer('unit_amount')->nullable();        // in cents (e.g. 499)
             $table->string('status')->default('active'); // 'active', 'past_due', etc.
 
             $table->timestamp('starts_at')->nullable();
