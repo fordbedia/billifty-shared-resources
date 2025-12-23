@@ -12,6 +12,7 @@ Route::prefix('v1')->group(function () {
         // auto-cancel when user selects Free
         Route::post('billing/cancel', [BillingController::class, 'cancelMySubscription']);
 		Route::post('billing/confirm-checkout', [BillingController::class, 'confirmCheckout']);
+		Route::post('billing/confirm-subscription', [BillingController::class, 'confirmSubscription']);
     });
 
     Route::post('stripe/webhook', [StripeWebhookController::class, 'handle']);

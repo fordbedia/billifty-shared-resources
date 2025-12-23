@@ -3,7 +3,12 @@
 namespace BilliftySDK\SharedResources\Modules\Billing\Services\Billing;
 
 use BilliftySDK\SharedResources\Modules\Billing\Contracts\PaymentGateway;
+use BilliftySDK\SharedResources\Modules\Billing\Models\UserSubscription;
+use BilliftySDK\SharedResources\Modules\User\Models\Plan;
+use BilliftySDK\SharedResources\Modules\User\Models\User;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Stripe\Customer;
 use Stripe\StripeClient;
 
@@ -91,5 +96,58 @@ class StripePaymentGateway implements PaymentGateway
 
         return $session->url;
     }
+
+	public function markUserAsFree(?int $userId, ?string $stripeCustomerId, ?string $stripeSubscriptionId, ?string $payloadJson = null): void
+	{
+		$freeId = Plan::where('code', 'free')->value('id');
+
+		Log::info('markUserAsFree', [
+			'$userId'    => $userId,
+			'$stripeCustomerId'    => $stripeCustomerId,
+			'$stripeSubscriptionId'=> $stripeSubscriptionId
+		]);
+
+		if (!$userId && $stripeCustomerId) {
+			$userId = DB::table('users')->where('stripe_customer_id', $stripeCustomerId)->value('id');
+			$userId = $userId ? (int) $userId : null;
+		}
+
+		if (!$userId) {
+			Log::warning('StripeWebhookController.cancel.cannot_resolve_user', [
+				'customer' => $stripeCustomerId,
+				'subscription_id' => $stripeSubscriptionId,
+			]);
+			return;
+		}
+
+		// Update subscription row: move back to free + clear Stripe ids
+		UserSubscription::updateOrCreate(
+			['user_id' => $userId],
+			[
+				'plan_id'                => $freeId,
+				'plan_code'              => 'free',
+				'billing_cycle'          => 'monthly',
+				'stripe_customer_id'     => null,
+				'stripe_subscription_id' => null,
+				'status'                 => 'canceled',
+				'cancels_at'             => null,
+				'canceled_at'            => now(),
+				'raw_payload'            => $payloadJson ? json_decode($payloadJson, true) : null,
+			]
+		);
+
+		// Update user plan
+		$user = User::find($userId);
+		if ($user) {
+			$user->forceFill(['plan_id' => $freeId])->save();
+		}
+
+		Log::info('StripeWebhookController.cancel.marked_free', [
+			'user_id' => $userId,
+			'customer' => $stripeCustomerId,
+			'subscription_id' => $stripeSubscriptionId,
+		]);
+	}
+
 
 }

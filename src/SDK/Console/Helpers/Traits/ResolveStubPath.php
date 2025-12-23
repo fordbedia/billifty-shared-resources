@@ -95,4 +95,9 @@ trait ResolveStubPath
 			return base_path(StubsPathEnum::SCOPE->getFullPath() . $stub);
 		}
 
+		public function resolveCommandStubPath(string $stub): string
+		{
+			return base_path(StubsPathEnum::COMMAND->getFullPath() . $stub);
+		}
+
 }

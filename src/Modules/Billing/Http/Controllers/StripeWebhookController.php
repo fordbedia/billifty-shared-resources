@@ -3,6 +3,7 @@
 namespace BilliftySDK\SharedResources\Modules\Billing\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use BilliftySDK\SharedResources\Modules\Billing\Contracts\PaymentGateway;
 use BilliftySDK\SharedResources\Modules\Billing\Models\StripeWebhookEvents;
 use BilliftySDK\SharedResources\Modules\Billing\Models\UserSubscription;
 use BilliftySDK\SharedResources\Modules\User\Models\Plan;
@@ -19,7 +20,7 @@ class StripeWebhookController extends Controller
 {
     public function __construct(private StripeClient $stripe) {}
 
-    public function handle(Request $request)
+    public function handle(Request $request, PaymentGateway $gateway)
     {
         // ---------------------------------------------------------------------
         // Basic hit logging (helps you confirm the request actually reached Laravel)
@@ -127,6 +128,8 @@ class StripeWebhookController extends Controller
             return response('OK', 200);
         }
 
+		$cancelsAt = null;
+		$cancelAtPeriodEnd = null;
         // Retrieve canonical subscription from Stripe (most reliable)
         try {
             $subscription = $this->stripe->subscriptions->retrieve($subId, [
@@ -139,6 +142,26 @@ class StripeWebhookController extends Controller
             ]);
             return response('OK', 200);
         }
+
+		if ($event->type === 'customer.subscription.deleted') {
+			$gateway->markUserAsFree($userId, $stripeCustomerId, $subId, $payloadJson);
+			return response('OK', 200);
+		}
+
+		$cancelAtPeriodEnd = (bool) ($subscription->cancel_at_period_end ?? false);
+		$cancelAtTs = $subscription->cancel_at ?? null;
+		$currentPeriodEndTs = $subscription->current_period_end ?? null;
+
+		// Stripe can schedule cancel either via cancel_at OR cancel_at_period_end+current_period_end
+		if ($cancelAtTs) {
+			$cancelsAt = Carbon::createFromTimestampUTC((int) $cancelAtTs);
+		} elseif ($cancelAtPeriodEnd && $currentPeriodEndTs) {
+			$cancelsAt = Carbon::createFromTimestampUTC((int) $currentPeriodEndTs);
+		} else {
+			// user might have "uncanceled" - clear cancels_at
+			$cancelsAt = null;
+		}
+
 
         // Resolve user fallback by customer
         if (! $userId && $stripeCustomerId) {
@@ -183,9 +206,12 @@ class StripeWebhookController extends Controller
 
         // Upsert subscription
         UserSubscription::updateOrCreate(
-            ['stripe_subscription_id' => $subscription->id],
             [
-                'user_id'            => (int) $userId,
+				// 'stripe_subscription_id' => $subscription->id
+				'user_id'            => (int) $userId,
+			],
+            [
+				'stripe_subscription_id' => $subscription->id,
                 'plan_id'            => $planId ?? $freeId,
                 'plan_code'          => $planCode ?: 'free',
                 'billing_cycle'      => $billingCycle ?: 'monthly',
@@ -196,6 +222,8 @@ class StripeWebhookController extends Controller
                 'starts_at'          => $startsAt,
                 'renews_at'          => $renewsAt,
                 'raw_payload'        => $subscription->toArray(),
+				'cancels_at'		 => $cancelsAt,
+				'canceled_at' 		 => null,
             ]
         );
 

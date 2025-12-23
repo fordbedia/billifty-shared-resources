@@ -31,10 +31,6 @@ class BillingController extends Controller
 	) {
         $user = $request->user();
 
-		if($user->subscription){
-			throw new \Exception('User already subscribed');
-		}
-
         $data = $request->validate([
             'plan_code'     => ['required', Rule::in(['free', 'pro', 'premium'])],
             'billing_cycle' => ['required', Rule::in(['monthly', 'yearly'])],
@@ -119,7 +115,7 @@ class BillingController extends Controller
 			return response()->json(['message' => 'No subscription to cancel.']);
 		}
 
-		// ✅ Cancel immediately (not at period end)
+		// Cancel immediately (not at period end)
 		$sub = $stripe->subscriptions->cancel($currentSub->stripe_subscription_id, []);
 
 		// Set user to Free immediately (webhook will also sync)
@@ -247,4 +243,18 @@ class BillingController extends Controller
 		return null;
 	}
 
+	public function confirmSubscription(Request $request, SubscriptionService $subscriptionService)
+	{
+		if ($subscriptionService->confirmSubscription()) {
+			$user = $request->user();
+
+			return response()->json([
+				'user' => $user->refresh(),
+			]);
+		}
+
+		return response()->json([
+			'user' => null
+		]);
+	}
 }

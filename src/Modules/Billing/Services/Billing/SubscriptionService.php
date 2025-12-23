@@ -43,8 +43,9 @@ class SubscriptionService
 			}
 			$user = auth()->user();
 			$this->freePlan($user);
+			$id = Str::ulid()->toBase32();
 			return [
-				'url' => config('services.stripe.return_url')
+				'url' => config('services.stripe.return_url') . "?session_id={$id}"
 			];
 		}
 

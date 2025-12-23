@@ -26,6 +26,8 @@ enum StubsPathEnum: string
 
 	case SCOPE = 'scope.';
 
+	case COMMAND = 'console.';
+
     public function getFullPath()
     {
         return '/vendor/billifty/shared-resources/src/SDK/Foundation/stubs/' . $this->value;
