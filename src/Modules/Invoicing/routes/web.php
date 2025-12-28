@@ -104,9 +104,11 @@ Route::middleware('web')->group(function () {
 	})->name('preview.invoice.pdf');
 
 	// ----------------------------------------------------------------------------
-	// For testing PDF
+	// Dev-only routes (never load during PHPUnit/Testbench)
 	// ----------------------------------------------------------------------------
-	if (config('app.env') === 'local') {
-		require base_path('../shared-resources/src/Modules/Invoicing/routes/testing.php');
+	$testingRoutes = __DIR__ . '/testing.php';
+
+	if (app()->environment('local') && file_exists($testingRoutes)) {
+		require $testingRoutes;
 	}
 });
