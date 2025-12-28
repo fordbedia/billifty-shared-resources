@@ -3,7 +3,7 @@ use BilliftySDK\SharedResources\Modules\Invoicing\Http\Resources\InvoiceResource
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/dev/invoices/{invoice}/pdf', function (int $invoiceId) {
+Route::get('/dev/invoices/{invoiceId}/pdf', function (int $invoiceId) {
 	/** @var \BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices $invoice */
 	$invoice = Invoices::with(Invoices::relationships())
 		->findOrFail($invoiceId);

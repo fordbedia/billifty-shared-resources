@@ -2,13 +2,12 @@
 
 namespace BilliftySDK\SharedResources\TestCase;
 
-use Illuminate\Support\Facades\DB;
-use Orchestra\Testbench\TestCase as BaseTestCase;
 use BilliftySDK\SharedResources\SharedResourceServiceProvider;
+use Orchestra\Testbench\TestCase as Orchestra;
 
-abstract class BaseTest extends BaseTestCase
+abstract class BaseTest extends Orchestra
 {
-    protected function getPackageProviders($app)
+    protected function getPackageProviders($app): array
     {
         return [
             SharedResourceServiceProvider::class,
@@ -19,56 +18,29 @@ abstract class BaseTest extends BaseTestCase
     {
         parent::setUp();
 
-        // ==============================================================
-        // Only execute if user has used the RefreshDatabase trait
-        // otherwise, ignore this.
-        // ==============================================================
+        // Only execute if the test class uses the RefreshDatabase trait
         if (method_exists($this, 'refreshDatabase')) {
             $this->refreshDatabase();
         }
-
-        $this->resetMysqlSchema();
     }
 
-    protected function getEnvironmentSetUp($app)
+    protected function getEnvironmentSetUp($app): void
     {
         $app['config']->set('database.default', 'testing');
 
+        // Prefer env so you don't hardcode credentials in tests
         $app['config']->set('database.connections.testing', [
-            'driver' => 'mysql',
-            'host' => 'mysql',
-            'port' => '3306',
-            'database' => 'weeworx_test', // ✅ use a separate DB for tests
-            'username' => 'weeworx_user',
-            'password' => 'w33w0rxx123',
-            'charset' => 'utf8mb4',
-            'collation' => 'utf8mb4_unicode_ci',
+            'driver' => 'pgsql',
+            'host' => env('TEST_DB_HOST', env('DB_HOST', 'postgres')),
+            'port' => env('TEST_DB_PORT', env('DB_PORT', '5432')),
+            'database' => env('TEST_DB_DATABASE', env('DB_DATABASE', 'app_db')),
+            'username' => env('TEST_DB_USERNAME', env('DB_USERNAME', 'postgres')),
+            'password' => env('TEST_DB_PASSWORD', env('DB_PASSWORD', '')),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => 'prefer',
         ]);
     }
-
-
-    protected function resetMysqlSchema(): void
-    {
-        $schemaPath = __DIR__ . '/sqldumps/weeworx.sql';
-
-        if (!file_exists($schemaPath)) {
-            throw new \RuntimeException('schema.sql not found at: ' . $schemaPath);
-        }
-
-        // Reconnect to 'testing' DB
-        DB::disconnect('testing');
-        DB::purge('testing');
-
-        config()->set('database.default', 'testing');
-
-        $sql = file_get_contents($schemaPath);
-        foreach (explode(";", $sql) as $statement) {
-            $trimmed = trim($statement);
-            if (!empty($trimmed)) {
-                DB::statement($trimmed);
-            }
-        }
-    }
-
-
 }
