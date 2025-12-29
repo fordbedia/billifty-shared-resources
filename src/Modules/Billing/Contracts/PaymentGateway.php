@@ -16,9 +16,9 @@ interface PaymentGateway
         string $successUrl,
         string $cancelUrl,
         array $metadata = []
-    ): string;
+    ): array;
 
-    public function createBillingPortalSession(string $customerId, string $returnUrl): string;
+    public function createBillingPortalSession(string $customerId, string $returnUrl): array;
 
 	public function markUserAsFree(?int $userId, ?string $stripeCustomerId, ?string $stripeSubscriptionId, ?string $payloadJson = null): void;
 }

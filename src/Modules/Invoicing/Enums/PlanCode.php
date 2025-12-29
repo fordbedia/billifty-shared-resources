@@ -10,6 +10,11 @@ enum PlanCode: string
     case PRO = 'pro';
     case PREMIUM = 'premium';
 
+	public function planId(): ?int
+	{
+		return $this->planModel()?->id;
+	}
+
     protected function planModel(): ?Plan
     {
         static $cache = [];

@@ -1,6 +1,7 @@
 <?php
 
 use BilliftySDK\SharedResources\Modules\Billing\Http\Controllers\BillingController;
+use BilliftySDK\SharedResources\Modules\Billing\Http\Controllers\PlanFlowRedirectionController;
 use BilliftySDK\SharedResources\Modules\Billing\Http\Controllers\StripeWebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -15,5 +16,6 @@ Route::prefix('v1')->group(function () {
 		Route::post('billing/confirm-subscription', [BillingController::class, 'confirmSubscription']);
     });
 
+	Route::post('billing/direction-flow', [PlanFlowRedirectionController::class, 'direction']);
     Route::post('stripe/webhook', [StripeWebhookController::class, 'handle']);
 });

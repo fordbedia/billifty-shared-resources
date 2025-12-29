@@ -3,6 +3,7 @@
 namespace BilliftySDK\SharedResources\Modules\Billing\Http\Controllers;
 
 use BilliftySDK\SharedResources\Modules\Billing\Contracts\PaymentGateway;
+use BilliftySDK\SharedResources\Modules\Billing\Domain\PlanFlowRedirection;
 use BilliftySDK\SharedResources\Modules\Billing\Models\UserSubscription;
 use BilliftySDK\SharedResources\Modules\Billing\Services\Billing\SubscriptionService;
 use BilliftySDK\SharedResources\Modules\User\Models\Plan;
@@ -61,7 +62,7 @@ class BillingController extends Controller
 			$url = config('urls.invoices_url');
 			['url' => $nextUrl] = $subscriptionService->handleFreeSubscription();
 		} else {
-			$nextUrl = $gateway->createCheckoutSessionUrl(
+			['url' => $nextUrl] = $gateway->createCheckoutSessionUrl(
 				$customerId,
 				$priceId,
 				$data['success_url'],
@@ -89,7 +90,7 @@ class BillingController extends Controller
         $defaultReturnUrl = config('services.stripe.return_url');
         $returnUrl = $data['return_url'] ?? $defaultReturnUrl;
 
-        $url = $gateway->createBillingPortalSession($customerId, $returnUrl);
+        ['url' => $url] = $gateway->createBillingPortalSession($customerId, $returnUrl);
 
         return response()->json(['url' => $url]);
     }

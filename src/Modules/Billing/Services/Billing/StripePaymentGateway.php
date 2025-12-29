@@ -3,6 +3,7 @@
 namespace BilliftySDK\SharedResources\Modules\Billing\Services\Billing;
 
 use BilliftySDK\SharedResources\Modules\Billing\Contracts\PaymentGateway;
+use BilliftySDK\SharedResources\Modules\Billing\Domain\FlowRedirectionEnum;
 use BilliftySDK\SharedResources\Modules\Billing\Models\UserSubscription;
 use BilliftySDK\SharedResources\Modules\User\Models\Plan;
 use BilliftySDK\SharedResources\Modules\User\Models\User;
@@ -57,7 +58,7 @@ class StripePaymentGateway implements PaymentGateway
         string $successUrl,
         string $cancelUrl,
         array $metadata = []
-    ): string {
+    ): array {
 		$glue = str_contains($successUrl, '?') ? '&' : '?';
 		$successUrlWithSession = $successUrl . $glue . 'session_id={CHECKOUT_SESSION_ID}';
         $session = $this->client->checkout->sessions->create([
@@ -84,17 +85,20 @@ class StripePaymentGateway implements PaymentGateway
             'allow_promotion_codes' => true,
         ]);
 
-        return $session->url;
+		return ['url' => $session->url, 'kind' => FlowRedirectionEnum::KIND_CHECKOUT];
     }
 
-    public function createBillingPortalSession(string $customerId, string $returnUrl): string
+    public function createBillingPortalSession(string $customerId, string $returnUrl): array
     {
         $session = $this->client->billingPortal->sessions->create([
             'customer'   => $customerId,
             'return_url' => $returnUrl,
         ]);
 
-        return $session->url;
+        return [
+			'url' => $session->url,
+			'kind' => FlowRedirectionEnum::KIND_BILLING_PORTAL
+		];
     }
 
 	public function markUserAsFree(?int $userId, ?string $stripeCustomerId, ?string $stripeSubscriptionId, ?string $payloadJson = null): void
