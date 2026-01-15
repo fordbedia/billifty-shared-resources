@@ -53,4 +53,15 @@ class UserRepository extends UserBaseRepository implements UserInterface
 	{
 		return $this->getModelByAuthUser()->first();
 	}
+
+	public function updateUser($data)
+	{
+		$user = $this->getModelByAuthUser()->first();
+
+		$user->fill($data);
+
+		$user->save();
+
+		return $user;
+	}
 }

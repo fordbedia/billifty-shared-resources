@@ -4,6 +4,7 @@ namespace BilliftySDK\SharedResources\Modules\User\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use BilliftySDK\SharedResources\Modules\Billing\Services\Billing\SubscriptionService;
+use BilliftySDK\SharedResources\Modules\Invoicing\Adapters\Outbound\ProfileImageUploadAdapter;
 use BilliftySDK\SharedResources\Modules\User\Http\Requests\UserRequest;
 use BilliftySDK\SharedResources\Modules\User\Repository\Contract\UserInterface;
 use Illuminate\Http\Request;
@@ -63,9 +64,18 @@ class UserController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
-    {
-        //
+    public function update(
+		Request $request,
+		int $id,
+		UserInterface $userRepo
+	) {
+		$avatar = null;
+		if ($request->has('avatar') && $request->avatar) {
+			$uploader = ProfileImageUploadAdapter::make('public');
+			['logo_path' => $avatar] = $uploader->store($request->file('avatar'));
+		}
+
+        return $userRepo->updateUser(array_merge($request->all(), ['avatar' => $avatar]));
     }
 
     /**
