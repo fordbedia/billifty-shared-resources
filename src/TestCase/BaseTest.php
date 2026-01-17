@@ -24,23 +24,29 @@ abstract class BaseTest extends Orchestra
         }
     }
 
-    protected function getEnvironmentSetUp($app): void
-    {
-        $app['config']->set('database.default', 'testing');
+	protected function getEnvironmentSetUp($app): void
+	{
+		$app['config']->set('database.default', 'testing');
 
-        // Prefer env so you don't hardcode credentials in tests
-        $app['config']->set('database.connections.testing', [
-            'driver' => 'pgsql',
-            'host' => env('TEST_DB_HOST', env('DB_HOST', 'postgres')),
-            'port' => env('TEST_DB_PORT', env('DB_PORT', '5432')),
-            'database' => env('TEST_DB_DATABASE', env('DB_DATABASE', 'app_db')),
-            'username' => env('TEST_DB_USERNAME', env('DB_USERNAME', 'postgres')),
-            'password' => env('TEST_DB_PASSWORD', env('DB_PASSWORD', '')),
-            'charset' => 'utf8',
-            'prefix' => '',
-            'prefix_indexes' => true,
-            'search_path' => 'public',
-            'sslmode' => 'prefer',
-        ]);
-    }
+		$app['config']->set('database.connections.testing', [
+			'driver' => 'mysql',
+			'host' => env('TEST_DB_HOST', env('DB_HOST', 'mysql')),
+			'port' => env('TEST_DB_PORT', env('DB_PORT', '3306')),
+			'database' => env('TEST_DB_DATABASE', env('DB_DATABASE', 'app_db')),
+			'username' => env('TEST_DB_USERNAME', env('DB_USERNAME', 'billifty_u')),
+			'password' => env('TEST_DB_PASSWORD', env('DB_PASSWORD', 'b1ll1iftykamikalara0213')),
+
+			'charset' => 'utf8mb4',
+			'collation' => 'utf8mb4_unicode_ci',
+			'prefix' => '',
+			'prefix_indexes' => true,
+			'strict' => true,
+			'engine' => 'InnoDB',
+			'options' => extension_loaded('pdo_mysql') ? array_filter([
+				// optional, prevents “server has gone away” for some dumps
+				\PDO::MYSQL_ATTR_INIT_COMMAND => "SET sql_mode='STRICT_TRANS_TABLES'",
+			]) : [],
+		]);
+	}
+
 }

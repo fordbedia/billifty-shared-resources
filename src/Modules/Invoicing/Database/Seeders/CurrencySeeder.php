@@ -90,6 +90,6 @@ class CurrencySeeder extends MakeSeeder
      */
     public function revert(): void
     {
-		Currency::truncate();
+		Currency::query()->delete();
     }
 }

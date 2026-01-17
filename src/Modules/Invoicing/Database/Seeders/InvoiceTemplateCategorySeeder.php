@@ -116,8 +116,8 @@ class InvoiceTemplateCategorySeeder extends MakeSeeder
         //     'invoice_template_category_id' => $minimalId,
         //     'updated_at' => $now,
         // ]);
-			ColorScheme::truncate();
-			ColorSchemeColor::truncate();
+			ColorScheme::query()->delete();
+			ColorSchemeColor::query()->delete();
 			$colorScheme = [
 				[
 					'color_scheme_name' => 'Ocean Blue',

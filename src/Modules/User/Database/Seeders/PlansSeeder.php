@@ -55,6 +55,6 @@ class PlansSeeder extends MakeSeeder
      */
     public function revert(): void
     {
-        DB::table('plans')->truncate();
+        DB::table('plans')->delete();
     }
 }
