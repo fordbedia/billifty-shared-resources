@@ -20,7 +20,9 @@ class LogoImageProcessor
     public static function resizeAndStore(
         UploadedFile $file,
         string $disk,
-        string $baseDirectory = 'logo_path'
+        string $baseDirectory = 'logo_path',
+		int $width = 150,
+		int $height = 150
     ): array {
         $year = now()->year;
 		$month = now()->month;
@@ -43,8 +45,8 @@ class LogoImageProcessor
 
         // Resize without stretching (fit inside 300×300, keep aspect ratio)
         $image->scaleDown(
-            width: 150,
-            height: 150
+            width: $width,
+            height: $height
         );
 
         // Encode as PNG (good balance for logos)

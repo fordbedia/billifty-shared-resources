@@ -7,6 +7,7 @@ use BilliftySDK\SharedResources\Modules\Billing\Models\UserSubscription;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\BusinessProfiles;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Clients;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
+use BilliftySDK\SharedResources\Modules\Invoicing\Support\ImageUrlTrait;
 use BilliftySDK\SharedResources\Modules\User\Support\PlanCapabilities;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -18,10 +19,11 @@ use Laravel\Passport\HasApiTokens;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasApiTokens;
+    use HasFactory, Notifiable, HasApiTokens, ImageUrlTrait;
 
 	protected $appends = [
-        'plan_capabilities'
+        'plan_capabilities',
+		'image_url'
     ];
 
 	protected $with = ['subscription'];
@@ -53,13 +55,16 @@ class User extends Authenticatable
         'remember_token',
     ];
 
+	protected function imageAttributeName(): string
+	{
+		return 'avatar';
+	}
+
 	protected static function booted()
 	{
 		static::saving(function ($user) {
-			if (empty($user->name)) {
-				if ($user->fname || $user->lname) {
-					$user->name = trim(($user->fname ?? '') . ' ' . ($user->lname ?? ''));
-				}
+			if ($user->fname || $user->lname) {
+				$user->name = trim(($user->fname ?? '') . ' ' . ($user->lname ?? ''));
 			}
 		});
 	}

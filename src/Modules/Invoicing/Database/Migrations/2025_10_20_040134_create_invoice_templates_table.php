@@ -23,7 +23,9 @@ return new class extends Migration
         });
         Schema::create('invoice_templates', function (Blueprint $table) {
             $table->id();
-			$table->unsignedInteger('invoice_template_category_id')->nullable();
+			$table->foreignId('invoice_template_category_id')
+				->constrained('invoice_template_categories')
+				->cascadeOnDelete();
 			$table->string('slug')->unique();            // e.g., "classic", "modern"
             $table->string('display_name');              // “Classic”, “Modern”
             $table->unsignedInteger('current_version')->default(1);
@@ -32,11 +34,6 @@ return new class extends Migration
             $table->json('metadata')->nullable();        // anything else
 			$table->string('view');
             $table->timestamps();
-
-			$table->foreign('invoice_template_category_id')
-				->references('id')
-				->on('invoice_template_categories')
-				->cascadeOnDelete();
         });
     }
 

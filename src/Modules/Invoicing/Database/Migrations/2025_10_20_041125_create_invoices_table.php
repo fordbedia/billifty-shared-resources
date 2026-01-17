@@ -22,12 +22,12 @@ return new class extends Migration
 
         Schema::create('invoices', function (Blueprint $table) {
             $table->id();
-			$table->unsignedInteger('user_id');
-			$table->unsignedInteger('business_profile_id');
-			$table->unsignedInteger('client_id');
-			$table->unsignedInteger('invoice_template_id');
-			$table->unsignedInteger('color_scheme_id');
-			$table->unsignedInteger('currency_id');
+			$table->unsignedBigInteger('user_id');
+			$table->unsignedBigInteger('business_profile_id');
+			$table->unsignedBigInteger('client_id');
+			$table->unsignedBigInteger('invoice_template_id');
+			$table->unsignedBigInteger('color_scheme_id');
+			$table->unsignedBigInteger('currency_id');
 
 						// BusinessProfile identity
             $table->string('invoice_number'); // e.g., "INV-000123" (unique per user)
