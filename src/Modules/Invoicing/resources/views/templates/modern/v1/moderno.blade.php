@@ -2,10 +2,10 @@
   <div class="page">
 
    <div class="banner">
-	  <table class="dompdf-table">
+	  <table class="pdf-table">
 		<tr>
 			@if($logoSrc)
-				<td class="dompdf-col logo-div">
+				<td class="pdf-col logo-div">
 					<img
 						src="{{ $logoSrc }}"
 						alt="Business Logo"
@@ -13,7 +13,7 @@
 					/>
 				</td>
 			@endif
-			<td class="brand dompdf-col">
+			<td class="brand pdf-col">
 			  <div class="info-div">
 				  <div class="">
 					<h1 class="title">{{ $bp?->name ?? 'Your Business' }}</h1>
@@ -28,7 +28,7 @@
 
 
 		{{-- Right side: Invoice Info --}}
-		<td class="due dompdf-col">
+		<td class="due pdf-col">
 		  <h2 class="text-right">INVOICE</h2>
 		  <div class="due--bg text-right">
 			<div class="muted">
@@ -49,15 +49,15 @@
 	</div>
 
 	  <div class="grid2 clearfix">
-		<table class="dompdf-table">
+		<table class="pdf-table">
 			<tr>
-				@if ($pi)<td class="dompdf-col">
+				@if ($pi)<td class="pdf-col">
 					<div class="tile tile-b">
 						<div class="billto-text">Payment Information:</div>
 						{!! $paymentInfo($pi) !!}
 					</div>
 				</td>@endif
-				<td class="dompdf-col">
+				<td class="pdf-col">
 					<div class="tile tile-b">
 						<div class="billto-text">Bill To:</div>
 					  <div class="strong">{{ $cl?->name ?? 'Client' }}</div>
@@ -181,7 +181,7 @@
 	{!! $watermark() !!}
 
   <style>
-    /* Dompdf-friendly font */
+    /* PDF-friendly font */
     body, .invoice-root, .page {
       font-family: "DejaVu Sans", sans-serif !important;
     }

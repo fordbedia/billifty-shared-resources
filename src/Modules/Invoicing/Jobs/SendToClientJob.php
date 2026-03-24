@@ -65,8 +65,8 @@ class SendToClientJob implements ShouldQueue
         $invoiceNumber = $invoice->invoice_number
             ?? ('invoice-' . $invoice->getKey());
 
-        $contactName = $businessProfile->name
-            ?? $user->name
+        $contactName = $businessProfile?->name
+            ?? $user?->name
             ?? 'your team';
 
         $clientName = $client->name ?? 'your client';

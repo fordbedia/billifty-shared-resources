@@ -71,7 +71,7 @@
 	// Decide which visual template to render (DB-driven or fallback)
 	$template = $invoice->template->view ?? 'modern.v1.aurora';
 	$template = preg_replace('/^templates\./', '', $template); // just in case
-	  // Auto detect image if being load from html or generating via Dompdf
+	  // Auto detect image if being load from html or generating for PDF
 	  $logoSrc = null;
 	  $logoPath = $bp?->logo_path ?? null;
 
@@ -81,7 +81,7 @@
 		  $isS3 = $defaultDisk === 's3';
 
 		  if ($context === 'pdf' && !$isS3) {
-			  // PDF + local/public disk → prefer local file path (Dompdf loves this)
+			  // PDF + local/public disk → prefer local file path
 			  $local = public_path('storage/'.$logoPath); // public/storage/...
 			  if (file_exists($local)) {
 				  $logoSrc = 'file://'.$local;
@@ -255,9 +255,9 @@
 			text-align: center;
 			font-size: 18px;
 		}
-		/**------------------------- Dompdf Safe ------------------------*/
+		/**------------------------- PDF Safe ------------------------*/
 		/* Section Wrapper */
-		.dompdf-section {
+		.pdf-section {
 		  background: #f4f4f4;
 		  padding: 16px 22px;
 		  clear: both;
@@ -266,18 +266,18 @@
 		}
 
 		/* Title */
-		.dompdf-section .section-title {
+		.pdf-section .section-title {
 		  font-size: 14px;
 		  margin: 0 0 10px 0;
 		}
 
 		/* The Table Layout (SUPER SAFE) */
-		.dompdf-table {
+		.pdf-table {
 		  width: 100%;
 		  border-collapse: collapse;
 		}
 
-		.dompdf-col {
+		.pdf-col {
 		  vertical-align: top;
 		  padding: 0;
 		}
@@ -294,7 +294,7 @@
 		}
 
 		/* Each Box/Card */
-		.dompdf-box {
+		.pdf-box {
 		  background: #fff;
 		  padding: 20px;
 		  box-shadow: 0 0 12px rgba(0,0,0,0.15);

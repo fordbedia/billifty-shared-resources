@@ -43,8 +43,8 @@ class SendInvoiceCopyToBusinessProfileJob implements ShouldQueue
         }
 
         // Choose which email to send to (business profile / user)
-        $toEmail = $invoice->businessProfile->email
-            ?? $invoice->user->email
+        $toEmail = $invoice->businessProfile?->email
+            ?? $invoice->user?->email
             ?? null;
 
         if (!$toEmail) {

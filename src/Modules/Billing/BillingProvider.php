@@ -2,6 +2,7 @@
 
 namespace BilliftySDK\SharedResources\Modules\Billing;
 
+use BilliftySDK\SharedResources\Modules\Billing\Console\Commands\DowngradeExpiredCancellations;
 use BilliftySDK\SharedResources\Modules\Billing\Providers\ModelProviders;
 use BilliftySDK\SharedResources\Modules\Billing\Providers\StripeProvider;
 use Illuminate\Support\Facades\Gate;
@@ -27,6 +28,10 @@ class BillingProvider extends ServiceProvider
 
 	public function boot(): void
     {
-        //
+		if ($this->app->runningInConsole()) {
+			$this->commands([
+				DowngradeExpiredCancellations::class,
+			]);
+		}
     }
 }

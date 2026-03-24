@@ -4,6 +4,7 @@ namespace BilliftySDK\SharedResources\Modules\Invoicing\Action;
 
 use BilliftySDK\SharedResources\Modules\Invoicing\Http\Resources\InvoiceResource;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
+use BilliftySDK\SharedResources\Modules\Invoicing\Support\PlaywrightPdfRenderer;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -49,12 +50,13 @@ class GenerateInvoicePdf
 			'renderContext' => 'pdf'
         ])->render();
 
-        // 5) Generate PDF from HTML
-        /** @var \Barryvdh\DomPDF\PDF $pdf */
-        $pdf = app('dompdf.wrapper');
-        $pdf->loadHTML($html)->setPaper('A4', 'portrait');
-		$pdf->set_option('isRemoteEnabled', true);
-        $binary = $pdf->output();
+        // 5) Generate PDF from HTML through Playwright service
+        $binary = app(PlaywrightPdfRenderer::class)->render($html, [
+            'format' => 'A4',
+            'landscape' => false,
+            'printBackground' => true,
+            'preferCSSPageSize' => true,
+        ]);
 
         // 6) Build storage path: invoice_pdfs/{year}/{month}/{invoice#}_{shortUuid}.pdf
 

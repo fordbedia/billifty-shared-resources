@@ -62,7 +62,7 @@ class InvoiceSendMailToBusinessProfile extends Mailable implements ShouldQueue
         }
 
         $number = $invoice->invoice_number ?? ('invoice-' . $invoice->getKey());
-        $client = $invoice->client->name ?? null;
+        $client = $invoice->client?->name ?? null;
         $base   = $client
             ? Str::slug("{$number}_{$client}", '_')
             : Str::slug($number, '_');

@@ -134,7 +134,7 @@ class InvoiceController extends Controller
 		])->save();
 
         // queue PDF generation
-        $invoices->queuePdfGeneration($invoice);
+		GenerateInvoicePdfJob::dispatch($invoice->id, false, (int) Auth::id());
 
         return response()->json([
             'data' => $invoice->fresh(), // or resource
@@ -182,9 +182,10 @@ class InvoiceController extends Controller
 	{
 		$userId = Auth::user()->id;
 		$invoice = $invoices->findById($id, $userId);
+		$hasCsvReport = $request->boolean('hasCsvReport');
 
 		Bus::chain([
-			new GenerateInvoicePdfJob($invoice->id, $request->hasCsvReport, $userId),
+			new GenerateInvoicePdfJob($invoice->id, $hasCsvReport, $userId),
 			new SendInvoiceCopyToBusinessProfileJob($invoice->id, $userId),
 		])->dispatch();
 
@@ -207,7 +208,7 @@ class InvoiceController extends Controller
 		$userMessage = $request->input('message');
 
 		Bus::chain([
-			new GenerateInvoicePdfJob($invoice->id, $userId),
+			new GenerateInvoicePdfJob($invoice->id, false, $userId),
 			new SendToClientJob($invoice->id, $userMessage, $userId)
 		])->dispatch();
 

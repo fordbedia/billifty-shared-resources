@@ -2,7 +2,7 @@
   <div class="canvas header">
     <table class="header-table">
 		<tr>
-      <td class="dompdf-col left-col">
+      <td class="pdf-col left-col">
         <div class="brand">
           <div class="business-profile">
 			@if ($logoSrc)
@@ -86,7 +86,7 @@
           </div>
         </div>
       </td>
-      <td class="dompdf-col right-col">
+      <td class="pdf-col right-col">
         <h2 class="text-right">INVOICE</h2>
 
         <div class="box px-4 py-4">
@@ -280,9 +280,9 @@
     </div>
   </div>
 	@if ($pi)
-		<table class="dompdf-table paymentinfo">
+		<table class="pdf-table paymentinfo">
 			<tr>
-				<td class="dompdf-col">
+				<td class="pdf-col">
 					<div class="paymentinfo-box">
 						{!! $paymentInfo($pi) !!}
 					</div>
@@ -519,7 +519,7 @@
     border-collapse: collapse;
   }
 
-  /* Dompdf-safe: use solid color here instead of gradient */
+  /* PDF-safe: use solid color here instead of gradient */
   table.grid thead {
     background-color: {{ $scheme->main->code }};
     color: #FFFFFF;

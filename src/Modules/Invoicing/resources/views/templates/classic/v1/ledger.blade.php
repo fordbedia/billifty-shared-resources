@@ -14,7 +14,7 @@
 <div class="ledger--theme ledger-root scheme cat">
   <div class="wrap">
     <div class="header clearfix">
-		<table class="dompdf-table">
+		<table class="pdf-table">
 		<tr>
       <td class="side">
         <div class="eyebrow">Business Profile</div>
@@ -24,7 +24,7 @@
           <span class="chip accent">Due {{ $fmtDate($invoice->due_on ?? null) }}</span>
         </div>
       </td>
-      <td class="org dompdf-col">
+      <td class="org pdf-col">
 		  @if($logoSrc)
 			  <div class="clearfix">
 				  <img src="{{ $logoSrc }}" class="logo" alt="logo" />
@@ -42,15 +42,15 @@
 	</table>
     </div>
 
-	<table class="dompdf-table">
+	<table class="pdf-table">
 		<tr>
-		@if ($pi)<td class="dompdf-col to">
+		@if ($pi)<td class="pdf-col to">
 		  <div class="box paymentinfo-box">
 			<div class="label tiny">Payment Information</div>
 			{!! $paymentInfo($pi) !!}
 		  </div>
 		</td>@endif
-		<td class="dompdf-col to">
+		<td class="pdf-col to">
 		  <div class="box billto-box">
 			<div class="label tiny">Bill To</div>
 			  <ul>

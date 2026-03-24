@@ -224,7 +224,7 @@
     width: 7px;
 	  min-height: 20px;
 
-    /* Dompdf prefers the shorthand 'background' */
+    /* PDF renderer prefers the shorthand 'background' */
     background: {{ $scheme->main->code }};
   }
   .business-info {
@@ -281,4 +281,3 @@
 	.payment_info__notes .notes.box h2 {font-size: 16px;color: #111827;font-weight: 600;}
 	.payment_info__notes .notes.box p{color: #4B5563;font-size: 14px;line-height: 20px;font-weight: 300;}
 </style>
-
