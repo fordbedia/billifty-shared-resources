@@ -88,6 +88,15 @@ class InvoiceTemplateCategorySeeder extends MakeSeeder
 			'view' => 'classic.v1.ledger',
 			'preview_url' => '/images/templates/ledger.jpg',
 		]);
+		InvoiceTemplates::updateOrCreate(['slug' => 'simplifi'], [
+			'invoice_template_category_id' => $classicId,
+			'slug' => 'simplifi',
+			'display_name' => 'Simplifi',
+			'current_version' => 1,
+			'is_active' => 1,
+			'view' => 'classic.v1.simplifi',
+			'preview_url' => '/images/templates/ledger.jpg',
+		]);
 		// ----------------------------------------------------------------------------
 		// Minimal
 		// ----------------------------------------------------------------------------
@@ -98,6 +107,15 @@ class InvoiceTemplateCategorySeeder extends MakeSeeder
 			'current_version' => 1,
 			'is_active' => 1,
 			'view' => 'minimal.v1.nexxus',
+			'preview_url' => '/images/templates/nexxus.jpg',
+		]);
+		InvoiceTemplates::updateOrCreate(['slug' => 'pulse'], [
+			'invoice_template_category_id' => $minimalId,
+			'slug' => 'pulse',
+			'display_name' => 'Pulse',
+			'current_version' => 1,
+			'is_active' => 1,
+			'view' => 'minimal.v1.pulse',
 			'preview_url' => '/images/templates/nexxus.jpg',
 		]);
 

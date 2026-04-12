@@ -1,6 +1,7 @@
 {{-- /src/Modules/Invoicing/resources/views/templates/show.blade.php --}}
 @php
 	// === your boilerplate ===
+	use BilliftySDK\SharedResources\Modules\Billing\Support\PlanPermission;
 	use Illuminate\Support\Facades\Storage;
 	$schemeMap = [
 	  'Ocean Blue'    => 'ocean',
@@ -124,10 +125,18 @@
 
 		return $html;
 	};
-	$watermark = function() {
-		  $html = '<div class="watermark">Powered by <strong>Billifty.com</strong></div>';
 
-		  return $html;
+	$getUserModel = function() use ($invoice) {
+		return \BilliftySDK\SharedResources\Modules\User\Models\User::find($invoice->user_id);
+	};
+
+	$watermark = function() use ($getUserModel) {
+		$user = $getUserModel();
+		$hasWatermark = PlanPermission::attempt($user)->can('no pdf watermark');
+		if ($hasWatermark) return;
+		$html = '<div class="watermark">Powered by <strong>Billifty.com</strong></div>';
+
+		return $html;
 	};
 
 @endphp
@@ -182,6 +191,9 @@
 			display: table;
 			clear: both;
 		}
+		.watermark {
+			margin-top: 17px;
+		}
 
 		.row {
 			width: 100%;
@@ -216,7 +228,6 @@
 		@page {
 			/* A4 portrait with normal margins */
 			size: A4 portrait;
-			margin: 15mm;
 		}
 
 		body {
@@ -232,74 +243,77 @@
 			width: 180mm;
 			margin: 0 auto;
 		}
+
 		.row-cols {
-		  width: 100%;
+			width: 100%;
 		}
 
 		/* Shared column style */
 		.col {
-		  float: left;
+			float: left;
 		}
 
 		/* Left column: 50% - gutter */
 		.col-left {
-		  width: 48%;
-		  margin-right: 4%;
+			width: 48%;
+			margin-right: 4%;
 		}
 
 		/* Right column */
 		.col-right {
-		  width: 48%;
+			width: 48%;
 		}
+
 		.watermark {
 			text-align: center;
 			font-size: 18px;
 		}
+
 		/**------------------------- PDF Safe ------------------------*/
 		/* Section Wrapper */
 		.pdf-section {
-		  background: #f4f4f4;
-		  padding: 16px 22px;
-		  clear: both;
-		  overflow: visible;     /* SAFE */
-		  display: block;
+			background: #f4f4f4;
+			padding: 16px 22px;
+			clear: both;
+			overflow: visible; /* SAFE */
+			display: block;
 		}
 
 		/* Title */
 		.pdf-section .section-title {
-		  font-size: 14px;
-		  margin: 0 0 10px 0;
+			font-size: 14px;
+			margin: 0 0 10px 0;
 		}
 
 		/* The Table Layout (SUPER SAFE) */
 		.pdf-table {
-		  width: 100%;
-		  border-collapse: collapse;
+			width: 100%;
+			border-collapse: collapse;
 		}
 
 		.pdf-col {
-		  vertical-align: top;
-		  padding: 0;
+			vertical-align: top;
+			padding: 0;
 		}
 
 		/* Column widths */
 		.left-col {
-		  width: 40%;
-		  padding-right: 12px;
+			width: 40%;
+			padding-right: 12px;
 		}
 
 		.right-col {
-		  width: 60%;
-		  padding-left: 12px;
+			width: 60%;
+			padding-left: 12px;
 		}
 
 		/* Each Box/Card */
 		.pdf-box {
-		  background: #fff;
-		  padding: 20px;
-		  box-shadow: 0 0 12px rgba(0,0,0,0.15);
-		  margin-top: 4px;
-		  border-radius: 6px; /* optional */
+			background: #fff;
+			padding: 20px;
+			box-shadow: 0 0 12px rgba(0, 0, 0, 0.15);
+			margin-top: 4px;
+			border-radius: 6px; /* optional */
 		}
 	</style>
 @endsection

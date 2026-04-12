@@ -88,6 +88,16 @@ class UserController extends Controller
 
 	public function me()
 	{
-		return Auth::user();
+		$user = Auth::user();
+
+		if (! $user) {
+			return response()->json([
+				'message' => 'Unauthenticated.',
+			], 401);
+		}
+
+		$user->loadMissing('plan.capabilities', 'subscription');
+
+		return $user;
 	}
 }

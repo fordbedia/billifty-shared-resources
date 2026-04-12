@@ -1,283 +1,604 @@
 @php
-  // Pick your colors (fallbacks included)
-  $fontFamily = $theme->fontFamily ?? "DejaVu Sans, Arial, sans-serif";
-  $ink        = '#0f172a';
-  $muted      = '#64748b';
-  $bg         = '#ffffff';
-  $card       = '#ffffff';
-  $railColor  = $scheme->main->code;
-  $border     = '#e2e8f0';
-  $stripe     = '#f8fafc';
-  $accentInk  = '#ffffff';
+  $fontFamily = data_get($theme ?? null, 'fontFamily', 'DejaVu Sans, Arial, sans-serif');
+  $accent = data_get($scheme ?? null, 'main.code', '#ff3108') ?: '#ff3108';
+  $accentDark = data_get($scheme ?? null, 'dark.code', $accent) ?: $accent;
+  $currency = $invoice->currency ?? 'USD';
+  $totalDue = $invoice->amount_due_cents ?? $invoice->total_cents ?? 0;
+  $bpAddress = $bp ? $addr($bp) : null;
+  $clAddress = $cl ? $addr($cl) : null;
+  $businessName = $bp?->name ?? 'Your Business';
+  $clientName = $cl?->company ?: ($cl?->name ?? 'Client');
+  $logoInitial = strtoupper(substr(trim((string) $businessName), 0, 1));
+  $hasLineDiscount = ($invoice->discount_mode ?? null) === 'per-line';
+  $firstItem = $items instanceof \Illuminate\Support\Collection ? $items->first() : (is_array($items) ? reset($items) : null);
+  $projectTitle = data_get($firstItem, 'name') ?: 'Project Details';
+  $projectReference = $invoice->reference ?: null;
+  $paymentMethod = $pi?->payment_method instanceof \BackedEnum ? $pi->payment_method->value : ($pi?->payment_method ?? null);
+  $fmtRate = function($value) {
+    $num = (float) ($value ?? 0);
 
-  $logoW = 100;
+    if ($num > 0 && $num < 1) {
+      $num *= 100;
+    }
 
+    $decimals = fmod($num, 1.0) === 0.0 ? 0 : 2;
+
+    return number_format($num, $decimals).'%';
+  };
+  $maskAccount = function($value) {
+    $raw = trim((string) $value);
+    $digits = preg_replace('/\D+/', '', $raw);
+
+    if ($digits === '') {
+      return $raw;
+    }
+
+    return '**** '.substr($digits, -4);
+  };
 @endphp
 
-<div class="nexxus--theme invoice-root scheme">
-  <div class="page">
-    <div class="wall"></div>
+<div class="nexxus--theme invoice-root nexxus-root scheme cat">
+  <div class="nexxus-sheet">
+    <header class="nexxus-header">
+      <section class="brand-cell">
+        <div class="brand-lockup">
+          @if($logoSrc)
+            <img src="{{ $logoSrc }}" alt="Business Logo" class="logo" />
+          @else
+            <span class="logo-placeholder">{{ $logoInitial }}</span>
+          @endif
+          <div class="brand-name">{{ $businessName }}</div>
+        </div>
 
-    <div class="content clearfix">
+        <div class="business-lines">
+          @if($bpAddress)<div>{{ $bpAddress }}</div>@endif
+          @if($bp?->email)<div>{{ $bp->email }}</div>@endif
+          @if($bp?->phone)<div>{{ $bp->phone }}</div>@endif
+          @if($bp?->website)<div>{{ $bp->website }}</div>@endif
+          @if($bp?->tax_id)<div>Tax ID: {{ $bp->tax_id }}</div>@endif
+          @if($bp?->license_no)<div>License No: {{ $bp->license_no }}</div>@endif
+        </div>
+      </section>
 
-			<div class="header clearfix">
-				<div class="left business-info">
-					<div class="logo-div">
-						@if($logoSrc)
-							<img src="{{ $logoSrc }}" alt="Business Logo" class="logo"/>
-						@endif
-					</div>
-					<div class="info-div">
-						<h1 class="title">{{ $bp?->name ?? 'Your Business' }}</h1>
-						@if ($bp->address_line1)<div class="muted">Address: <strong>{{ $bp->address_line1 }}</strong></div>@endif
-						@if ($bp->address_line2 )<div class="muted">Address 2: {{ $bp->address_line2  }}</div>@endif
-						@if ($bp?->email)<div class="muted">Email: <strong>{{ $bp?->email }}</strong></div>@endif
-						@if($bp?->phone)<div class="muted">Phone: <strong>{{ $bp?->phone }}</strong></div>@endif
-					</div>
-				</div>
-				<div class="bill-to right">
-					<h2 class="text-right">Bill To</h2>
-					<div class="box">
-						<span class="tile-b text-right">
-							<div><span class="muted">Name: </span><span class="strong"> {{ $cl?->name ?? 'Client' }}</span></div>
-							@if ($cl?->company)<div><span class="muted">Company: </span><span class="strong">{{ $cl->company }}</span></div>@endif
-							@if ($cl?->email)<div> <span class="muted">Email: <strong>{{ $cl->email }}</strong></span></div>@endif
-							@if ($cl?->phone)<div> <span class="muted">Phone: <strong>{{$cl?->phone}}</strong></span> </div>@endif
-							@if($cl?->tax_id)<div> <span class="muted">Tax ID: <strong>{{ $cl->tax_id }}</strong></span></div>@endif
-							@if($cl?->license_no)<div> <span class="muted">License No.: <strong>{{ $cl->license_no }}</strong></span></div>@endif
-							@if($cl->address_line1)<div><span class="muted">Address: <strong>{{ $cl->address_line1 }}</strong></span></div>@endif
-							@if ($cl->address_line2)<div><span class="muted">Address 2: <strong>{{ $cl->address_line2 }}</strong></span></div>@endif
-						</div>
-					</div>
-				</div>
-			</div>
+      <section class="invoice-cell">
+        <div class="invoice-title">INVOICE</div>
+        <div class="invoice-meta">
+          <div class="meta-row">
+            <span>Invoice No:</span>
+            <strong>{{ $invoice->invoice_number ?? 'INV-XXXXXX' }}</strong>
+          </div>
+          <div class="meta-row">
+            <span>Date:</span>
+            <strong>{{ $fmtDate($invoice->issued_on ?? null) }}</strong>
+          </div>
+          <div class="meta-row">
+            <span>Due Date:</span>
+            <strong>{{ $fmtDate($invoice->due_on ?? null) }}</strong>
+          </div>
+        </div>
+      </section>
+    </header>
 
-		<div class="row-cols">
-			<div class="business-profile-padding col">
-				<div class="label">Invoice #</div>
-				<div class="value"><strong>{{ $invoice->invoice_number ?? 'INV-XXXXXX' }}</strong></div>
-			</div>
-		  <div class="business-profile-padding col">
-			<div class="label">Issue Date</div>
-			  <div class="value">@if ($invoice->issued_on)<div class="muted tiny"><strong>{{ $fmtDate($invoice->issued_on ?? null) }}</strong></div>@else -- @endif</div>
-		  </div>
+    <div class="accent-rule"></div>
 
-			<div class="business-profile-padding col">
-				<div class="label">Due Date</div>
-				<div class="value">@if ($invoice->due_on)<div class="duepill"><strong>{{ $fmtDate($invoice->due_on ?? null) }}</strong></div>@else -- @endif</div>
-		  	</div>
-		  <div class="clearfix"></div>
-		</div>
+    <section class="party-grid">
+      <div class="party-cell party-left">
+        <div class="section-label">Billed To</div>
+        <div class="client-name">{{ $clientName }}</div>
+        @if($cl?->company && $cl?->name && $cl->company !== $cl->name)<div>Attn: {{ $cl->name }}</div>@endif
+        @if($clAddress)<div>{{ $clAddress }}</div>@endif
+        @if($cl?->email)<div>{{ $cl->email }}</div>@endif
+        @if($cl?->phone)<div>{{ $cl->phone }}</div>@endif
+        @if($cl?->tax_id)<div>Tax ID: {{ $cl->tax_id }}</div>@endif
+        @if($cl?->license_no)<div>License No: {{ $cl->license_no }}</div>@endif
+      </div>
 
-			<div class="invoice-table">
-				<table class="items">
-					<thead>
-						<tr>
-							<th>Description</th>
-							<th>Qty</th>
-							<th>Unit Price</th>
-							<th>Tax</th>
-							@if ($invoice->discount_mode === 'per-line')<th>Discount</th>@endif
-							<th>Amount</th>
-						</tr>
-					</thead>
-					<tbody>
-						@forelse($items as $it)
-							<tr>
-								<td>
-									<div class="strong">{{ $it->name ?? 'Item' }}</div>
-									@if(!empty($it->description))<div class="muted small">{{ $it->description }}</div>@endif
-								</td>
-								<td>{{ rtrim(rtrim((string)($it->quantity ?? 0),'0'),'.') }}{{ $it->unit ? ' '.$it->unit : '' }}</td>
-								<td>{{ $fmtMoney($it->unit_price_cents ?? 0, $invoice->currency ?? 'USD') }}</td>
-								<td>{{ $fmtMoney($it->tax_cents ?? 0, $invoice->currency ?? 'USD') }}</td>
-								@if ($invoice->discount_mode === 'per-line')<td><strong>{{ $fmtPercent($it->line_discount_rate) }}</strong></td>@endif
-								<td><strong>{{ $fmtMoney($it->line_total_cents ?? 0, $invoice->currency ?? 'USD') }}</strong></td>
-							</tr>
-						@empty
-							<tr><td colspan="4" class="muted">No items.</td></tr>
-						@endforelse
-					</tbody>
-					<tfoot>
-						<tr>
-							<td></td>
-							<td></td>
-							<td></td>
-							@if ($invoice->discount_mode === 'per-line')<td></td>@endif
-							<td class="label">Subtotal</td>
-							<td class="value">{{ $fmtMoney($invoice->subtotal_cents ?? 0,$invoice->currency ?? 'USD') }}</td>
-						</tr>
-						@if((int)($invoice->discount_cents ?? 0)>0)
-							<tr>
-								<td></td>
-								<td></td>
-								<td></td>
-								@if ($invoice->discount_mode === 'per-line')<td></td>@endif
-								<td class="label">Discount</td>
-								<td class="value">-{{ $fmtMoney($invoice->discount_cents ?? 0,$invoice->currency ?? 'USD') }}</td>
-							</tr>
-						@endif
-						@if((int)($invoice->tax_cents ?? 0)>0)
-							<tr>
-								<td></td>
-								<td></td>
-								<td></td>
-								@if ($invoice->discount_mode === 'per-line')<td></td>@endif
-								<td class="label">Tax</td>
-								<td class="value">{{ $fmtMoney($invoice->tax_cents ?? 0,$invoice->currency ?? 'USD') }}</td>
-							</tr>
-						@endif
-						@if((int)($invoice->shipping_cents ?? 0)>0)
-							<tr>
-								<td></td>
-								<td></td>
-								<td></td>
-								@if ($invoice->discount_mode === 'per-line')<td></td>@endif
-								<td class="label">Shipping</td>
-								<td class="value">{{ $fmtMoney($invoice->shipping_cents ?? 0,$invoice->currency ?? 'USD') }}</td>
-							</tr>
-						@endif
-						<tr>
-							<td></td>
-							<td></td>
-							<td></td>
-							@if ($invoice->discount_mode === 'per-line')<td></td>@endif
-							<td class="line label">Total</td>
-							<td class="line value">{{ $fmtMoney($invoice->total_cents ?? 0,$invoice->currency ?? 'USD') }}</td>
-						</tr>
-					</tfoot>
-      	</table>
-			</div>
+      <div class="party-cell party-right">
+        <div class="section-label">Project Details</div>
+        <div>Project: {{ $projectTitle }}</div>
+        @if($projectReference)<div>PO Number: {{ $projectReference }}</div>@endif
+        @if($invoice->terms)<div>Terms: {{ $invoice->terms }}</div>@endif
+      </div>
+    </section>
 
+    <section class="items-grid{{ $hasLineDiscount ? ' has-line-discount' : '' }}">
+      <div class="item-row item-head">
+        <div class="desc-col">Description</div>
+        <div class="qty-col">Qty</div>
+        <div class="money-col">Unit Price</div>
+        <div class="tax-col">Tax</div>
+        @if($hasLineDiscount)<div class="tax-col">Discount</div>@endif
+        <div class="money-col">Amount</div>
+      </div>
 
-			<div class="payment_info__notes">
-				@if($pi)
-				<div class="left box payment_info">
-					<h2>Payment Information</h2>
-					<ul>
-						@if(($pi->bank_name ?? 0)>0)<li><span class="label">Bank:</span> <span class="value">{{$pi->bank_name}}</span></li>@endif
-						@if(($pi->account_name ?? 0)>0)<li><span class="label">Account Name:</span> <span class=value> {{$pi->account_name}}</span></li>@endif
-						@if(($pi->account_number ?? 0)>0)<li><span class="label">Account:</span> <span class="value"> {{$pi->account_number}}</span></li>@endif
-						@if(($pi->routing_number ?? 0)>0)<li><span class="label">Routing:</span> <span class="value"> {{$pi->routing_number}}</span></li>@endif
-						@if(($pi->swift_code ?? 0) > 0)<li><span class="label">Swift:</span> <span class="value"> {{$pi->swift_code}}</span></li>@endif
-						@if(($pi->iban ?? 0)>0)<li><span class="label">IBAN:</span> <span class="value">{{$pi->iban}}</span></li>@endif
-						@if(($pi->paypal_email ?? 0)>0)<li><span class="label">PayPal:</span> <span class="value"> {{$pi->paypal_email}}</span></li>@endif
-					</ul>
-				</div>
-				@endif
-				<div class="right">
-					<div class="box notes">
-						<h2>Notes</h2>
-						@if ($invoice->notes)<p>{{$invoice->notes}}</p>@else -- @endif
-					</div>
-					<div class="box notes">
-						<h2>Terms</h2>
-						@if ($invoice->terms)<p>{{$invoice->terms}}</p>@else -- @endif
-					</div>
-				</div>
-			</div>
+      @forelse($items as $it)
+        <div class="item-row">
+          <div class="desc-col">
+            <div class="item-title">{{ $it->name ?? 'Item' }}</div>
+            @if(!empty($it->description))<div class="item-description">{{ $it->description }}</div>@endif
+          </div>
+          <div class="qty-col">{{ rtrim(rtrim((string) ($it->quantity ?? 0), '0'), '.') }}{{ ($it->unit ?? null) ? ' '.$it->unit : '' }}</div>
+          <div class="money-col">{{ $fmtMoney($it->unit_price_cents ?? 0, $currency) }}</div>
+          <div class="tax-col">{{ $fmtRate($it->tax_rate ?? 0) }}</div>
+          @if($hasLineDiscount)<div class="tax-col">{{ $fmtPercent($it->line_discount_rate) }}</div>@endif
+          <div class="money-col item-amount">{{ $fmtMoney($it->line_total_cents ?? 0, $currency) }}</div>
+        </div>
+      @empty
+        <div class="empty-cell">No items.</div>
+      @endforelse
+    </section>
 
+    <section class="payment-summary">
+      <div class="payment-cell">
+        <div class="section-label">Payment Information</div>
+        <div class="payment-panel">
+          @if($pi)
+            <div class="payment-details">
+              @if($paymentMethod === 'bank_transfer')
+                @if($pi->bank_name)<div class="payment-row"><span>Bank:</span><strong>{{ $pi->bank_name }}</strong></div>@endif
+                @if($pi->account_name)<div class="payment-row"><span>Account Name:</span><strong>{{ $pi->account_name }}</strong></div>@endif
+                @if($pi->account_number)<div class="payment-row"><span>Account No:</span><strong>{{ $maskAccount($pi->account_number) }}</strong></div>@endif
+                @if($pi->routing_number)<div class="payment-row"><span>Routing:</span><strong>{{ $pi->routing_number }}</strong></div>@endif
+                @if($pi->iban)<div class="payment-row"><span>IBAN:</span><strong>{{ $pi->iban }}</strong></div>@endif
+                @if($pi->swift_code)<div class="payment-row"><span>Swift:</span><strong>{{ $pi->swift_code }}</strong></div>@endif
+              @elseif($paymentMethod === 'paypal' && $pi->paypal_email)
+                <div class="payment-row"><span>PayPal:</span><strong>{{ $pi->paypal_email }}</strong></div>
+              @elseif($paymentMethod === 'stripe' && $pi->stripe_payment_link)
+                <div class="payment-row"><span>Stripe:</span><strong>{{ $pi->stripe_payment_link }}</strong></div>
+              @elseif($paymentMethod === 'cash_app' && $pi->cash_app)
+                <div class="payment-row"><span>Cash App:</span><strong>{{ $pi->cash_app }}</strong></div>
+              @else
+                {!! $paymentInfo($pi, 'nexxus-payment-list') !!}
+              @endif
+            </div>
+            @if($pi->notes)<div class="payment-note">{{ $pi->notes }}</div>@endif
+          @else
+            <div class="muted-line">&mdash;</div>
+          @endif
+          <div class="reference-line">Please include invoice number <strong>{{ $invoice->invoice_number ?? 'INV-XXXXXX' }}</strong> in your payment reference.</div>
+        </div>
+      </div>
 
-    </div>
+      <div class="summary-cell">
+        <div class="summary-list">
+          <div class="summary-row">
+            <span>Subtotal</span>
+            <strong>{{ $fmtMoney($invoice->subtotal_cents ?? 0, $currency) }}</strong>
+          </div>
+          <div class="summary-row">
+            <span>Discount</span>
+            <strong>-{{ $fmtMoney($invoice->discount_cents ?? 0, $currency) }}</strong>
+          </div>
+          <div class="summary-row">
+            <span>Tax</span>
+            <strong>{{ $fmtMoney($invoice->tax_cents ?? 0, $currency) }}</strong>
+          </div>
+          @if((int)($invoice->shipping_cents ?? 0) > 0)
+            <div class="summary-row">
+              <span>Shipping</span>
+              <strong>{{ $fmtMoney($invoice->shipping_cents ?? 0, $currency) }}</strong>
+            </div>
+          @endif
+          <div class="summary-row total-row">
+            <span>Total Due</span>
+            <strong>{{ $fmtMoney($totalDue, $currency) }}</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer-band">
+      <section class="footer-section">
+        <div class="footer-label">Notes</div>
+        <div class="footer-copy">@if($invoice->notes){!! nl2br(e($invoice->notes)) !!}@else &mdash; @endif</div>
+      </section>
+
+      <section class="footer-section">
+        <div class="footer-label">Terms &amp; Conditions</div>
+        <div class="footer-copy">@if($invoice->terms){!! nl2br(e($invoice->terms)) !!}@else &mdash; @endif</div>
+      </section>
+    </footer>
+
+    {!! $watermark() !!}
   </div>
 </div>
 
-<div class="clearfix"></div>
-{!! $watermark() !!}
-
 <style>
-	.watermark {margin-top: 22px;}
-	.bg-light {
-		margin-top: 0;
-	}
-	.business-profile-padding {
-		padding-top: 20px;
-		padding-bottom: 20px;
-		padding-right: 30px;
-	}
-	.business-profile-padding .label {font-size: 15px;}
-	.business-profile-padding .value {font-size: 15px;}
-  .page {
-    position: relative;         /* anchor for abs. children */
-    /* optional if you want spacing so text doesn't sit under the wall */
-    padding-left: 20px;
-		padding-top: 30px;
-		padding-bottom: 30px;
-		font-family:{{ $theme->fontFamily ?? "Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif" }};
-		 width: 100%;              /* 👈 fill the .invoice-page container */
-    max-width: 100%;          /* 👈 don't overflow horizontally */
+  .nexxus-root,
+  .nexxus-root * {
     box-sizing: border-box;
-		background: linear-gradient({{$scheme->gradient_bg_1_light->code}});
   }
-	.content {
-		 width: 100%;              /* 👈 fill the .invoice-page container */
-    max-width: 100%;          /* 👈 don't overflow horizontally */
-    box-sizing: border-box;
-		margin: 0 auto;
-	}
 
-  .wall {
-    position: absolute;
-    top: 0;
-    bottom: 0;                  /* <-- stretches to parent's full height */
-    left: 0;
-    width: 7px;
-	  min-height: 20px;
+  .nexxus-root {
+    width: 100%;
+    color: #242932;
+    font-family: {{ $fontFamily }};
+    font-size: 10px;
+    line-height: 1.38;
+    background: #ffffff;
+  }
 
-    /* PDF renderer prefers the shorthand 'background' */
-    background: {{ $scheme->main->code }};
+  .nexxus-root .nexxus-sheet {
+    width: 100%;
+    max-width: 100%;
+    min-height: 100%;
+    padding: 38px 40px 0;
+    background: #ffffff;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(22, 27, 34, 0.08);
   }
-  .business-info {
-	  width:380px;
-  }
-  .logo-div {
-  }
-  .info-div {
-	  width: 250px;
-	  max-width: 250px;
-  }
-  .info-div .muted {font-size: 15px;}
-  .bill-to {
-	  width: 250px;
-  }
-	.logo{width:{{$logoW}}px;border-radius:10px;background:rgba(255,255,255,.15);object-fit:contain}
-	.logo.placeholder{display:grid;place-items:center;font-weight:800}
-	.box {border: 1px solid #E0E7FF; border-radius: 12px;background-color: #fff;padding: 14px 16px;}
-	.header .right h2 {font-size: 14px;padding-bottom: 10px;padding-right: 7px;}
-	.header .right .strong{font-weight: bold;font-size: 16px;}
-	.header .right .muted {font-size: 14px;line-height: 22px;}
-	.invoice-info {padding: 30px 0;}
-	.invoice-info .section {padding-left: 30px;padding-top: 30px;}
-	.invoice-info .section .label {font-size: 14px; color:#6B7280;}
-	.invoice-info .section .value {font-size: 14px;color: #111827;font-weight: bold;}
 
-	table.items{width:100%;border-collapse:collapse;margin-top:6px;border:1px solid #F3F4F6;}
-	.items thead{background:#EEF2FF;color:#374151;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.06em;text-align:left;border-radius: 12px;}
-	table.items thead th {padding:17px 12px;}
-	table.items thead th:first-child {border-top-left-radius: 12px;}
-	table.items thead th:last-child {border-top-right-radius: 12px;}
-	.items tbody td{padding:12px 16px;border-top:1px solid var(--border)}
-	/*.items tbody tr:nth-child(odd){background:#fafafa}*/
-	.items tbody tr {border-bottom: 1px solid #F3F4F6;}
-	.items tbody td .strong{font-size: 16px;color: #111827;font-weight: bold;}
-	.items tbody td .muted {font-size: 14px;color:#4B5563;padding-top: 6px;}
-	table.items tfoot {background-color: {{$scheme->extra_light->code}};}
-	table.items tfoot td{padding: 15px 0;}
-	table.items tfoot td.line{border-top: 1px solid #E5E7EB;}
-	table.items tfoot td.label{color: #374151;font-size: 16px;}
-	table.items tfoot td.value{color: #374151;font-size: 16px;font-weight: 600;}
-	table.items tfoot td.label.line {font-size: 18px;font-weight: bold;}
-	table.items tfoot td.value.line {font-size: 18px;font-weight: bold;color: {{$scheme->main->code}};}
-	table.items tfoot tr:last-child td:first-child{border-bottom-left-radius: 12px;}
-	table.items tfoot tr:last-child td:last-child{border-bottom-right-radius: 12px;}
-	.payment_info__notes{margin-top:25px;}
-	.payment_info__notes .payment_info.box {width: 250px;}
-	.payment_info__notes .payment_info.box h2 {font-size: 16px;color: #111827; font-weight: 600;}
-	.payment_info__notes .payment_info.box ul {list-style: none;padding-left: 0;}
-	.payment_info__notes .payment_info.box ul li {line-height: 20px;}
-	.payment_info__notes .payment_info.box ul li span.label {font-size: 14px;color:#4B5563;font-weight: 600;}
-	.payment_info__notes .payment_info.box ul li span.value {font-size: 14px;color:#4B5563;font-weight: 300;}
-	.payment_info__notes .notes.box {width: 250px;}
-	.payment_info__notes .notes.box h2 {font-size: 16px;color: #111827;font-weight: 600;}
-	.payment_info__notes .notes.box p{color: #4B5563;font-size: 14px;line-height: 20px;font-weight: 300;}
+  .nexxus-root .nexxus-header {
+    display: grid;
+    grid-template-columns: 58% 42%;
+    align-items: start;
+  }
+
+  .nexxus-root .brand-cell {
+    padding-right: 28px;
+  }
+
+  .nexxus-root .invoice-cell {
+    text-align: right;
+  }
+
+  .nexxus-root .brand-lockup {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 22px;
+  }
+
+  .nexxus-root .logo,
+  .nexxus-root .logo-placeholder {
+    display: block;
+    flex: 0 0 25px;
+    width: 25px;
+    height: 25px;
+    border-radius: 3px;
+  }
+
+  .nexxus-root .logo {
+    object-fit: contain;
+    background: #ffffff;
+  }
+
+  .nexxus-root .logo-placeholder {
+    background: {{ $accent }};
+    color: #ffffff;
+    font-size: 13px;
+    line-height: 25px;
+    text-align: center;
+    font-weight: 800;
+  }
+
+  .nexxus-root .brand-name {
+    color: #1e232b;
+    font-size: 16px;
+    line-height: 20px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .nexxus-root .business-lines {
+    color: #6f7782;
+    font-size: 9px;
+    line-height: 14px;
+  }
+
+  .nexxus-root .invoice-title {
+    margin: 0 0 17px;
+    color: #20242c;
+    font-size: 21px;
+    line-height: 25px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+  }
+
+  .nexxus-root .invoice-meta {
+    display: grid;
+    gap: 7px;
+    width: 205px;
+    margin-left: auto;
+    color: #656d78;
+    font-size: 9px;
+    line-height: 13px;
+  }
+
+  .nexxus-root .meta-row {
+    display: grid;
+    grid-template-columns: 92px 1fr;
+    gap: 12px;
+    align-items: start;
+  }
+
+  .nexxus-root .meta-row span,
+  .nexxus-root .meta-row strong {
+    text-align: right;
+  }
+
+  .nexxus-root .meta-row strong {
+    color: #232832;
+    font-weight: 700;
+  }
+
+  .nexxus-root .accent-rule {
+    height: 2px;
+    margin: 31px -40px 33px;
+    background: {{ $accent }};
+  }
+
+  .nexxus-root .party-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-bottom: 44px;
+  }
+
+  .nexxus-root .party-cell {
+    color: #626b76;
+    font-size: 9px;
+    line-height: 15px;
+  }
+
+  .nexxus-root .party-left {
+    padding-left: 39px;
+    padding-right: 35px;
+  }
+
+  .nexxus-root .party-right {
+    padding-left: 43px;
+    padding-right: 28px;
+  }
+
+  .nexxus-root .section-label,
+  .nexxus-root .footer-label {
+    margin: 0 0 12px;
+    color: {{ $accentDark }};
+    font-size: 9px;
+    line-height: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .nexxus-root .client-name {
+    margin-bottom: 7px;
+    color: #242932;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 800;
+  }
+
+  .nexxus-root .items-grid {
+    display: grid;
+    width: 100%;
+    margin-bottom: 29px;
+  }
+
+  .nexxus-root .item-row {
+    display: grid;
+    grid-template-columns: minmax(0, 47%) 10% 16% 11% 16%;
+    align-items: start;
+    border-bottom: 1px solid #e8ebef;
+  }
+
+  .nexxus-root .items-grid.has-line-discount .item-row {
+    grid-template-columns: minmax(0, 40%) 8% 14% 10% 10% 14%;
+  }
+
+  .nexxus-root .item-head {
+    color: #68717d;
+    border-bottom: 1px solid #242932;
+    font-size: 8px;
+    line-height: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .nexxus-root .item-row > div {
+    min-width: 0;
+    padding: 15px 0 16px;
+    color: #5f6874;
+    font-size: 9px;
+    line-height: 13px;
+  }
+
+  .nexxus-root .item-head > div {
+    padding: 0 0 13px;
+  }
+
+  .nexxus-root .desc-col {
+    padding-left: 39px !important;
+    padding-right: 18px !important;
+    text-align: left;
+  }
+
+  .nexxus-root .qty-col,
+  .nexxus-root .tax-col {
+    text-align: center;
+  }
+
+  .nexxus-root .money-col {
+    padding-right: 30px !important;
+    text-align: right;
+  }
+
+  .nexxus-root .item-title {
+    margin-bottom: 5px;
+    color: #252a33;
+    font-size: 10px;
+    line-height: 13px;
+    font-weight: 800;
+  }
+
+  .nexxus-root .item-description {
+    color: #6f7782;
+    font-size: 8px;
+    line-height: 11px;
+  }
+
+  .nexxus-root .item-amount {
+    color: #252a33 !important;
+    font-weight: 800;
+  }
+
+  .nexxus-root .empty-cell {
+    padding: 15px 0 16px 39px;
+    border-bottom: 1px solid #e8ebef;
+    color: #7a828c;
+    font-size: 9px;
+  }
+
+  .nexxus-root .payment-summary {
+    display: grid;
+    grid-template-columns: 55% 45%;
+    margin-bottom: 50px;
+  }
+
+  .nexxus-root .payment-cell {
+    padding-left: 39px;
+    padding-right: 50px;
+  }
+
+  .nexxus-root .summary-cell {
+    padding-left: 8px;
+    padding-right: 30px;
+  }
+
+  .nexxus-root .payment-panel {
+    width: 245px;
+    min-height: 112px;
+    padding: 17px 20px 14px;
+    background: #f6f7f9;
+    color: #5f6874;
+    font-size: 9px;
+    line-height: 14px;
+  }
+
+  .nexxus-root .payment-details {
+    display: grid;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .nexxus-root .payment-row {
+    display: grid;
+    grid-template-columns: 76px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .nexxus-root .payment-row span {
+    color: #545c67;
+    font-weight: 700;
+  }
+
+  .nexxus-root .payment-row strong {
+    min-width: 0;
+    color: #252a33;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+
+  .nexxus-root .nexxus-payment-list {
+    margin: 0 0 12px;
+    padding: 0;
+    list-style: none;
+  }
+
+  .nexxus-root .nexxus-payment-list li {
+    margin: 0 0 6px;
+  }
+
+  .nexxus-root .nexxus-payment-list .label {
+    color: #545c67;
+    font-weight: 700;
+  }
+
+  .nexxus-root .nexxus-payment-list .value {
+    color: #252a33;
+    font-weight: 700;
+  }
+
+  .nexxus-root .payment-note {
+    margin: 0 0 9px;
+    color: #5f6874;
+  }
+
+  .nexxus-root .reference-line {
+    padding-top: 4px;
+    color: #6f7782;
+    font-size: 8px;
+    line-height: 12px;
+  }
+
+  .nexxus-root .reference-line strong {
+    color: #252a33;
+  }
+
+  .nexxus-root .summary-list {
+    display: grid;
+    gap: 16px;
+    color: #5d6672;
+    font-size: 10px;
+    line-height: 14px;
+  }
+
+  .nexxus-root .summary-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 20px;
+  }
+
+  .nexxus-root .summary-row strong {
+    color: #252a33;
+    font-weight: 800;
+    text-align: right;
+  }
+
+  .nexxus-root .summary-row.total-row {
+    padding-top: 12px;
+    color: #252a33;
+    font-size: 12px;
+    line-height: 18px;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .nexxus-root .summary-row.total-row strong {
+    color: {{ $accent }};
+    font-size: 21px;
+    line-height: 24px;
+    text-transform: none;
+  }
+
+  .nexxus-root .footer-band {
+    margin: 0 -40px;
+    padding: 30px 40px 31px;
+    background: #f7f8fa;
+  }
+
+  .nexxus-root .footer-section {
+    margin: 0 0 18px;
+    padding: 0 39px;
+  }
+
+  .nexxus-root .footer-copy {
+    color: #6c7480;
+    font-size: 9px;
+    line-height: 14px;
+  }
+
+  .nexxus-root .muted-line {
+    color: #8a919b;
+  }
+
+  .nexxus-root .watermark {
+    margin: 18px 0 0;
+    color: #8a919b;
+    font-size: 9px;
+    text-align: center;
+  }
 </style>

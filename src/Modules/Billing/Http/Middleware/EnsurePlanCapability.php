@@ -1,8 +1,8 @@
 <?php
 
-namespace BilliftySDK\SharedResources\Modules\User\Http\Middleware;
+namespace BilliftySDK\SharedResources\Modules\Billing\Http\Middleware;
 
-use BilliftySDK\SharedResources\Modules\User\Service\PlanCapabilityService;
+use BilliftySDK\SharedResources\Modules\Billing\Support\PlanPermission;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -10,7 +10,7 @@ use Symfony\Component\HttpFoundation\Response;
 class EnsurePlanCapability
 {
     public function __construct(
-        protected PlanCapabilityService $planCaps
+        protected PlanPermission $planPermission
     ) {}
 
     /**
@@ -32,7 +32,7 @@ class EnsurePlanCapability
             return redirect()->guest(route('login')); // adjust to your auth route
         }
 
-        if (! $this->planCaps->has($user, $capabilityKey)) {
+        if (! $this->planPermission->forUser($user)->has($capabilityKey)) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'message' => 'Your current plan does not allow this action. Please upgrade.',

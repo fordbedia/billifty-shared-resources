@@ -10,6 +10,7 @@ use BilliftySDK\SharedResources\Modules\Invoicing\Models\InvoicePaymentInformati
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\InvoiceTemplates;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\PaymentInformation;
+use BilliftySDK\SharedResources\Modules\Invoicing\Models\Workspace;
 use BilliftySDK\SharedResources\Modules\User\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use BilliftySDK\SharedResources\SDK\Database\MakeSeeder;
@@ -83,6 +84,7 @@ class TestInvoiceSeeder extends MakeSeeder
     public function run(): void
     {
 			$user = User::where('email', 'fordbedia@billifty.com')->first();
+			$workspace = Workspace::ensureDefaultForUser($user);
 
 			foreach($this->clients as $client) {
 				Clients::updateOrCreate(array_merge($client, ['user_id' => $user->id]));
@@ -111,7 +113,7 @@ class TestInvoiceSeeder extends MakeSeeder
 				'business_profile_id' => $businessProfile->id,
 				'client_id' => $client->id,
 			],[
-				'user_id' => $user->id,
+				'workspace_id' => $workspace->id,
 				'invoice_template_id' => $invoiceTemplate->id,
 				'color_scheme_id' => $colorScheme->id,
 				'invoice_number' => 'INV-0001',

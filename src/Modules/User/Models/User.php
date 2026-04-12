@@ -7,11 +7,10 @@ use BilliftySDK\SharedResources\Modules\Billing\Models\UserSubscription;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\BusinessProfiles;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Clients;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
+use BilliftySDK\SharedResources\Modules\Invoicing\Models\Workspace;
 use BilliftySDK\SharedResources\Modules\Invoicing\Support\ImageUrlTrait;
-use BilliftySDK\SharedResources\Modules\User\Support\PlanCapabilities;
+use BilliftySDK\SharedResources\Modules\Billing\Support\PlanPermission;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Passport\HasApiTokens;
@@ -67,6 +66,10 @@ class User extends Authenticatable
 				$user->name = trim(($user->fname ?? '') . ' ' . ($user->lname ?? ''));
 			}
 		});
+
+		static::created(function (self $user) {
+			Workspace::ensureDefaultForUser($user);
+		});
 	}
 
 
@@ -83,9 +86,32 @@ class User extends Authenticatable
         ];
     }
 
-	public function invoices(): HasMany
+	public function workspaces()
 	{
-		return $this->hasMany(Invoices::class, 'user_id', 'id');
+		return $this->hasMany(Workspace::class, 'user_id', 'id');
+	}
+
+	public function defaultWorkspace()
+	{
+		return $this->hasOne(Workspace::class, 'user_id', 'id')
+			->where('is_default', 1);
+	}
+
+	public function resolveDefaultWorkspace(): Workspace
+	{
+		return Workspace::ensureDefaultForUser($this);
+	}
+
+	public function invoices()
+	{
+		return $this->hasManyThrough(
+			Invoices::class,
+			Workspace::class,
+			'user_id',
+			'workspace_id',
+			'id',
+			'id'
+		);
 	}
 
 	public function plan()
@@ -111,94 +137,6 @@ class User extends Authenticatable
 
 	public function getPlanCapabilitiesAttribute(): array
 	{
-		$plan = $this->plan;
-		if (! $plan) return [];
-
-		if (! $plan->relationLoaded('capabilities')) {
-			$plan->load('capabilities'); // ActiveScope applies (is_active=1)
-		}
-
-		$capsByGroup = $plan->capabilities->groupBy('group');
-
-		$limitsCaps   = $capsByGroup->get('limits', collect());
-		$featuresCaps = $capsByGroup->get('features', collect());
-
-		// Build limits dynamically: key => value
-		$limits = $limitsCaps->mapWithKeys(function ($cap) use ($plan) {
-			$val = match ($cap->type) {
-				'int'    => $plan->capabilityInt($cap->key, null),
-				'bool'   => $plan->capabilityBool($cap->key, false),
-				'string' => $plan->capabilityString($cap->key, null),
-				'json'   => $plan->capabilityValue($cap->key, null),
-				default  => $plan->capabilityValue($cap->key, null),
-			};
-
-			return [$cap->key => $val];
-		})->toArray();
-
-		// Build flags dynamically: key => value
-		$flags = $featuresCaps->mapWithKeys(function ($cap) use ($plan) {
-			$val = match ($cap->type) {
-				'int'    => $plan->capabilityInt($cap->key, null),
-				'bool'   => $plan->capabilityBool($cap->key, false),
-				'string' => $plan->capabilityString($cap->key, null),
-				'json'   => $plan->capabilityValue($cap->key, null),
-				default  => $plan->capabilityValue($cap->key, null),
-			};
-
-			return [$cap->key => $val];
-		})->toArray();
-
-		// Allowed: compute automatically for anything that has model_relationship (limits)
-		$allowed = [];
-		foreach ($limitsCaps as $cap) {
-			if (! $cap->model_relationship) continue;
-			if (! method_exists($this, $cap->model_relationship)) continue;
-
-			$max = $limits[$cap->key] ?? null;
-
-			// usage mode from meta
-			$usageMode = $cap->meta['usage'] ?? null;
-
-			if ($usageMode === 'monthly') {
-				$current = $this->{$cap->model_relationship}()
-					->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])
-					->count();
-			} else {
-				$current = $this->{$cap->model_relationship}()->count();
-			}
-
-			$allowed['create:' . $cap->model_relationship] = is_null($max) ? true : ($current < $max);
-
-			// expose current usage dynamically too
-			$limits['current:' . $cap->model_relationship] = $current;
-		}
-
-		// Allowed for features: bool => itself, string => not none/empty, int => >0/unlimited
-		foreach ($featuresCaps as $cap) {
-			$val = $flags[$cap->key] ?? null;
-
-			$allowed[$cap->key] = match ($cap->type) {
-				'bool'   => (bool) $val,
-				'string' => ! empty($val) && strtolower((string) $val) !== 'none',
-				'int'    => is_null($val) ? true : ((int) $val > 0),
-				default  => (bool) $val,
-			};
-		}
-
-		$notAllowed = [];
-		foreach ($allowed as $k => $v) $notAllowed[$k] = ! $v;
-
-		return [
-			'plan' => [
-				'id'   => $plan->id,
-				'code' => $plan->code,
-				'name' => $plan->name,
-			],
-			'limits'      => $limits,   // dynamic keys
-			'flags'       => $flags,    // dynamic keys
-			'allowed'     => $allowed,  // dynamic keys
-			'not_allowed' => $notAllowed,
-		];
+		return PlanPermission::attempt($this)->toArray();
 	}
 }

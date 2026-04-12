@@ -2,37 +2,21 @@
 
 namespace BilliftySDK\SharedResources\Modules\User\Service;
 
+use BilliftySDK\SharedResources\Modules\Billing\Support\PlanPermission;
 use BilliftySDK\SharedResources\Modules\User\Models\User;
 
 class PlanCapabilityService
 {
+    public function __construct(
+        protected PlanPermission $planPermission
+    ) {}
+
     /**
      * Get a raw capability value for a user.
      */
     public function get(User $user, string $key, mixed $default = null): mixed
     {
-        $plan = $user->plan;
-        if (! $plan) {
-            return $default;
-        }
-
-        $cap = $plan->capabilities
-            ->firstWhere('key', $key);
-
-		if($cap) {
-			if (
-				$cap->type === 'int' &&
-				(int)$cap->cast_value === 0 &&
-				isset($cap->meta['unlimited']) &&
-				$cap->meta['unlimited']
-			) {
-				// return null, it means it's unlimited
-				return null;
-			}
-			return $cap->cast_value;
-		}
-
-        return $default;
+        return $this->planPermission->forUser($user)->get($key, $default);
     }
 
     /**
@@ -53,17 +37,6 @@ class PlanCapabilityService
      */
     public function canWithinLimit(User $user, string $limitKey, int $currentUsage): bool
     {
-        $limit = $this->get($user, $limitKey, null);
-
-        // null = unlimited
-        if (is_null($limit)) {
-            return true;
-        }
-
-        if (! is_int($limit)) {
-            return false;
-        }
-
-        return $currentUsage < $limit;
+        return $this->planPermission->forUser($user)->canWithinLimit($limitKey, $currentUsage);
     }
 }

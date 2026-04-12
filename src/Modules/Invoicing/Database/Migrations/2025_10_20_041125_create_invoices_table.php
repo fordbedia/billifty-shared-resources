@@ -22,7 +22,7 @@ return new class extends Migration
 
         Schema::create('invoices', function (Blueprint $table) {
             $table->id();
-			$table->unsignedBigInteger('user_id');
+			$table->unsignedBigInteger('workspace_id');
 			$table->unsignedBigInteger('business_profile_id');
 			$table->unsignedBigInteger('client_id');
 			$table->unsignedBigInteger('invoice_template_id');
@@ -79,13 +79,13 @@ return new class extends Migration
 			$table->softDeletes();
             $table->timestamps();
 
-			$table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
+			$table->foreign('workspace_id')->references('id')->on('workspace')->cascadeOnDelete();
 			$table->foreign('business_profile_id')->references('id')->on('business_profiles')->cascadeOnDelete();
 			$table->foreign('client_id')->references('id')->on('clients')->cascadeOnDelete();
 			$table->foreign('invoice_template_id')->references('id')->on('invoice_templates')->cascadeOnDelete();
 			$table->foreign('color_scheme_id')->references('id')->on('color_scheme')->cascadeOnDelete();
 			$table->foreign('currency_id')->references('id')->on('currency')->cascadeOnDelete();
-			$table->index(['user_id', 'invoice_number'], 'invoices_user_invoice_unique');
+			$table->index(['workspace_id', 'invoice_number'], 'invoices_user_invoice_unique');
         });
     }
 

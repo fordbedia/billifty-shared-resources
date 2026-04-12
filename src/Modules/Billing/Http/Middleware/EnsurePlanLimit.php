@@ -1,19 +1,16 @@
 <?php
 
-namespace BilliftySDK\SharedResources\Modules\User\Http\Middleware;
+namespace BilliftySDK\SharedResources\Modules\Billing\Http\Middleware;
 
-use BilliftySDK\SharedResources\Modules\User\Service\PlanCapabilityService;
-use BilliftySDK\SharedResources\Modules\User\Traits\Capabilities;
+use BilliftySDK\SharedResources\Modules\Billing\Support\PlanPermission;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class EnsurePlanLimit
 {
-	use Capabilities;
-
     public function __construct(
-        protected PlanCapabilityService $planCaps
+        protected PlanPermission $planPermission
     ) {}
 
 	/**
@@ -46,7 +43,8 @@ class EnsurePlanLimit
             null
         );
 
-		$relationName = $this->relationships($limitKey) ?: $relationFromRoute;
+        $permission = $this->planPermission->forUser($user);
+        $relationName = $permission->relationship($limitKey) ?: $relationFromRoute;
 
         if (!$relationName || ! method_exists($user, $relationName)) {
             return response()->json([
@@ -54,9 +52,9 @@ class EnsurePlanLimit
             ], 500);
         }
 
-        $currentUsage = $this->currentUsageFor($user, $relationName, $limitKey);
+        $currentUsage = $permission->currentUsage($limitKey);
 
-        if (! $this->planCaps->canWithinLimit($user, $limitKey, $currentUsage)) {
+        if (! $permission->canWithinLimit($limitKey, $currentUsage)) {
             return response()->json([
                 'message'       => 'You have reached the limit for this resource on your current plan.',
                 'error_code'    => 'plan_limit_reached',
@@ -66,33 +64,6 @@ class EnsurePlanLimit
         }
 
         return $next($request);
-    }
-
-	/**
-     * Decide whether to count usage monthly or all-time.
-     * - Monthly when capability meta says so: meta['usage'] === 'monthly'
-     * - Fallback: treat max_invoices_per_month as monthly
-     */
-    protected function currentUsageFor($user, string $relationName, string $limitKey): int
-    {
-        $query = $user->{$relationName}();
-
-        // Pull capability meta safely (ActiveScope is respected)
-        $cap = $user->plan?->capabilities?->firstWhere('key', $limitKey);
-        $usageMode = $cap->meta['usage'] ?? null;
-
-        $isMonthly =
-            $usageMode === 'monthly'
-            || $limitKey === 'max_invoices_per_month'; // fallback for your known monthly limit
-
-        if ($isMonthly) {
-            return $query->whereBetween('created_at', [
-                now()->startOfMonth(),
-                now()->endOfMonth(),
-            ])->count();
-        }
-
-        return $query->count();
     }
 
 }

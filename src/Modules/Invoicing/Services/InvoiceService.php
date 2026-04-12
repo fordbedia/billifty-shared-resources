@@ -6,6 +6,7 @@ use BilliftySDK\SharedResources\Modules\Invoicing\Domain\InvoiceAction;
 use BilliftySDK\SharedResources\Modules\Invoicing\Domain\InvoiceStateMachine;
 use BilliftySDK\SharedResources\Modules\Invoicing\Domain\InvoiceStatus;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
+use BilliftySDK\SharedResources\Modules\Invoicing\Models\Workspace;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\InvoiceContracts;
 use DomainException;
 use Illuminate\Support\Collection;
@@ -57,7 +58,7 @@ class InvoiceService
 		$invoice->fill($payload);
 
 		if (!$invoice->exists && Auth::user()) {
-			$invoice->user_id = Auth::id();
+			$invoice->workspace_id = Workspace::ensureDefaultForUser(Auth::id())->getKey();
 		}
 
 		// Attach items transiently for compute

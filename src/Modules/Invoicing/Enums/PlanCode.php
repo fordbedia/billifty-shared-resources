@@ -90,6 +90,7 @@ enum PlanCode: string
             // payments/currency
             'online_payments' => (bool) ($caps['online_payments'] ?? false),
             'multi_currency'  => (bool) ($caps['multi_currency']  ?? false),
+            'ai_invoice_assistant' => (bool) ($caps['ai_invoice_assistant'] ?? false),
 
             // branding/support
             'email_branding'  => $caps['email_branding'] ?? 'billifty_footer',

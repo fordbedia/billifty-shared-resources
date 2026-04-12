@@ -8,8 +8,10 @@ use BilliftySDK\SharedResources\Modules\Invoicing\Helpers\InvoiceHelpers;
 use BilliftySDK\SharedResources\Modules\Invoicing\Jobs\GenerateInvoicePdfJob;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\InvoiceItems;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
+use BilliftySDK\SharedResources\Modules\Invoicing\Models\Workspace;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\BaseRepository;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\InvoiceContracts;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use RuntimeException;
@@ -18,7 +20,17 @@ class InvoiceRepository extends BaseRepository implements InvoiceContracts
 {
 	public function autoInvoiceNumber(): ?string
 	{
-		$lastInvoice = $this->getModelByAuthUser()->latest()->pluck('invoice_number')->first();
+		$workspaceId = $this->defaultWorkspaceIdForUser(Auth::id());
+		if (!$workspaceId) {
+			return null;
+		}
+
+		$lastInvoice = $this->model->newQuery()
+			->where('workspace_id', $workspaceId)
+			->latest()
+			->pluck('invoice_number')
+			->first();
+
 		if ($lastInvoice) {
 			return InvoiceHelpers::incrementInvoiceNumber($lastInvoice);
 		}
@@ -28,14 +40,19 @@ class InvoiceRepository extends BaseRepository implements InvoiceContracts
 	/*
 	 * @dep name: findForUpdate(int $id): Invoices
 	 */
-	public function findById(int $id, int $authId = null): Invoices
+	public function findById(int $id, ?int $authId = null): Invoices
 	{
 		$userId = $authId ?? Auth::user()->id ?? null;
-		$row = $this->model->where('user_id', $userId)->whereKey($id)->lockForUpdate()->first();
+		$row = $this->queryForUser($userId)
+			->whereKey($id)
+			->lockForUpdate()
+			->first();
+
 		if (!$row) {
 			throw new RuntimeException("Invoice {$id} and user {$userId} could not be found.");
 		}
-		return $row->loadMissing('items');
+
+		return $row->loadMissing(['items', 'workspace.user']);
 	}
 
 	public function syncItems(Invoices $invoice, iterable $items): void
@@ -86,7 +103,13 @@ class InvoiceRepository extends BaseRepository implements InvoiceContracts
 
 	public function duplicateInvoice($invoiceNumber): ?Model
 	{
-		return $this->getModelByAuthUser()
+		$workspaceId = $this->defaultWorkspaceIdForUser(Auth::id());
+		if (!$workspaceId) {
+			return null;
+		}
+
+		return $this->model->newQuery()
+			->where('workspace_id', $workspaceId)
 			->where('invoice_number', $invoiceNumber)
 			->first();
 	}
@@ -127,10 +150,45 @@ class InvoiceRepository extends BaseRepository implements InvoiceContracts
 	public function findByKey(int $id): ?Invoices
     {
         /** @var Invoices|null $invoice */
-        $invoice = Invoices::with(Invoices::relationships())->find($id);
+        $query = Invoices::with(Invoices::relationships());
+
+		if (Auth::check()) {
+			$query->whereHas('workspace', function (Builder $workspaceQuery): void {
+				$workspaceQuery->where('user_id', Auth::id());
+			});
+		}
+
+        $invoice = $query->find($id);
 
         return $invoice;
     }
+
+	public function getModelByAuthUser(): Builder
+	{
+		return $this->queryForUser(Auth::id());
+	}
+
+	protected function queryForUser(?int $userId): Builder
+	{
+		$query = $this->model->newQuery();
+
+		if (!$userId) {
+			return $query->whereRaw('1 = 0');
+		}
+
+		return $query->whereHas('workspace', function (Builder $workspaceQuery) use ($userId): void {
+			$workspaceQuery->where('user_id', $userId);
+		});
+	}
+
+	protected function defaultWorkspaceIdForUser(?int $userId): ?int
+	{
+		if (!$userId) {
+			return null;
+		}
+
+		return Workspace::ensureDefaultForUser($userId)->getKey();
+	}
 
 	/**
 	 * @param Invoices $invoice

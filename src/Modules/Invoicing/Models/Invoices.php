@@ -3,6 +3,7 @@
 namespace BilliftySDK\SharedResources\Modules\Invoicing\Models;
 
 
+use BilliftySDK\SharedResources\Modules\User\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
@@ -14,13 +15,27 @@ class Invoices extends Model
     protected $table = 'invoices';
 	protected $guarded = [];
 
+	protected $hidden = [
+		'workspace',
+	];
+
 	protected $appends = [
         'pdf_url',
+		'user_id',
     ];
+
+	protected $casts = [
+		'workspace_id' => 'integer',
+	];
 
 	public function businessProfile()
 	{
 		return $this->belongsTo(BusinessProfiles::class, 'business_profile_id');
+	}
+
+	public function workspace()
+	{
+		return $this->belongsTo(Workspace::class, 'workspace_id');
 	}
 
 	public function client()
@@ -46,6 +61,7 @@ class Invoices extends Model
 	public static function relationships(): array
 	{
 		return [
+			'workspace.user',
 			'businessProfile.paymentInformation',
 			'client',
 			'items',
@@ -58,6 +74,16 @@ class Invoices extends Model
 	public function currency()
 	{
 		return $this->belongsTo(Currency::class, 'currency_id');
+	}
+
+	public function getUserIdAttribute(): ?int
+	{
+		return $this->workspace?->user_id;
+	}
+
+	public function getUserAttribute(): ?User
+	{
+		return $this->workspace?->user;
 	}
 
 	public function getPdfUrlAttribute(): ?string

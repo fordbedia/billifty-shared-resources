@@ -63,6 +63,7 @@ class PlanCapabilitySeeder extends MakeSeeder
         $add('free', 'features', 'automated_reminders', 'Automated Reminders', null, 'string', 'none', null, null, true);
         $add('free', 'features', 'online_payments', 'Online Payments', null, 'bool', 'false', null, null, true);
         $add('free', 'features', 'multi_currency', 'Multi-Currency', null, 'bool', 'false', null, null, true);
+        $add('free', 'features', 'ai_invoice_assistant', 'AI Invoice Assistant', null, 'bool', 'false', null, null, true);
 
         // analytics: keep row, but if you set inactive it disappears everywhere
         $add('free', 'features', 'analytics_tier', 'Analytics', null, 'string', 'basic', null, null, false);
@@ -95,6 +96,7 @@ class PlanCapabilitySeeder extends MakeSeeder
         $add('pro', 'features', 'automated_reminders', 'Automated Reminders', 'Manual reminders', 'string', 'manual', null, null, true);
         $add('pro', 'features', 'online_payments', 'Online Payments', null, 'bool', 'false', null, null, true);
         $add('pro', 'features', 'multi_currency', 'Multi-Currency', null, 'bool', 'false', null, null, true);
+        $add('pro', 'features', 'ai_invoice_assistant', 'AI Invoice Assistant', 'AI invoice assistant chat', 'bool', 'true', null, null, true);
 
         $add('pro', 'features', 'analytics_tier', 'Analytics', null, 'string', 'standard', null, null, false);
 
@@ -125,6 +127,7 @@ class PlanCapabilitySeeder extends MakeSeeder
         $add('premium', 'features', 'automated_reminders', 'Automated Reminders', 'Automated invoice reminders', 'string', 'automatic', null, null, true);
         $add('premium', 'features', 'online_payments', 'Online Payments', 'Online payment links', 'bool', 'true', null, null, true);
         $add('premium', 'features', 'multi_currency', 'Multi-Currency', 'Multi-currency support', 'bool', 'true', null, null, true);
+        $add('premium', 'features', 'ai_invoice_assistant', 'AI Invoice Assistant', 'AI invoice assistant chat', 'bool', 'true', null, null, true);
 
         // If you want analytics hidden: set is_active=false (then it won't show in compare + bullets)
         $add('premium', 'features', 'analytics_tier', 'Analytics', 'Advanced analytics dashboard', 'string', 'advanced', null, null, false);

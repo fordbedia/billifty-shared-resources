@@ -2,14 +2,14 @@
 
 namespace BilliftySDK\SharedResources\Modules\Invoicing\Policies;
 
-use App\Models\User; // or your actual User class
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
-use BilliftySDK\SharedResources\Modules\User\Service\PlanCapabilityService;
+use BilliftySDK\SharedResources\Modules\User\Models\User;
+use BilliftySDK\SharedResources\Modules\Billing\Support\PlanPermission;
 
 class InvoicePolicy
 {
 	public function __construct(
-		protected PlanCapabilityService $planCaps
+		protected PlanPermission $planPermission
 	)
 	{
 	}
@@ -29,7 +29,7 @@ class InvoicePolicy
 	 */
 	public function view(User $user, Invoices $invoice): bool
 	{
-		return $invoice->user_id === $user->id;
+		return (int) $invoice->workspace?->user_id === (int) $user->id;
 	}
 
 	/**
@@ -38,17 +38,18 @@ class InvoicePolicy
 	 */
 	public function create(User $user): bool
 	{
-		$invoicesThisMonth = $user->invoices()
-			->whereBetween('created_at', [
+		$invoiceQuery = $user->invoices();
+		$createdAtColumn = $invoiceQuery->getRelated()->qualifyColumn('created_at');
+
+		$invoicesThisMonth = $invoiceQuery
+			->whereBetween($createdAtColumn, [
 				now()->startOfMonth(),
 				now()->endOfMonth(),
 			])->count();
 
-		return $this->planCaps->canWithinLimit(
-			$user,
-			'max_invoices_per_month',
-			$invoicesThisMonth
-		);
+		return $this->planPermission
+			->forUser($user)
+			->canWithinLimit('max_invoices_per_month', $invoicesThisMonth);
 	}
 
 	/**
@@ -57,7 +58,7 @@ class InvoicePolicy
 	 */
 	public function update(User $user, Invoices $invoice): bool
 	{
-		return $invoice->user_id === $user->id;
+		return (int) $invoice->workspace?->user_id === (int) $user->id;
 	}
 
 	/**
@@ -65,7 +66,7 @@ class InvoicePolicy
 	 */
 	public function delete(User $user, Invoices $invoice): bool
 	{
-		return $invoice->user_id === $user->id;
+		return (int) $invoice->workspace?->user_id === (int) $user->id;
 	}
 
 	/**
@@ -75,12 +76,12 @@ class InvoicePolicy
 	 */
 	public function sendToClient(User $user, Invoices $invoice): bool
 	{
-		if ($invoice->user_id !== $user->id) {
+		if ((int) $invoice->workspace?->user_id !== (int) $user->id) {
 			return false;
 		}
 
 		// Example: require some capability; you can define this in plan_capabilities
-		return $this->planCaps->has($user, 'send_invoice_email');
+		return $this->planPermission->forUser($user)->has('send_invoice_email');
 	}
 
 	/**
@@ -88,10 +89,10 @@ class InvoicePolicy
 	 */
 	public function enableOnlinePayments(User $user, Invoices $invoice): bool
 	{
-		if ($invoice->user_id !== $user->id) {
+		if ((int) $invoice->workspace?->user_id !== (int) $user->id) {
 			return false;
 		}
 
-		return $this->planCaps->has($user, 'online_payments');
+		return $this->planPermission->forUser($user)->has('online_payments');
 	}
 }

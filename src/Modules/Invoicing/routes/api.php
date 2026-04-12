@@ -51,7 +51,7 @@ Route::prefix('v1')->group(function () {
 Route::middleware(['auth:api'])->group(function () {
     Route::get('/v1/invoice/{invoice}/preview-url', function (Request $request, Invoices $invoice) {
         // Guard: only allow owner to get a preview link
-        if ((int) $invoice->user_id !== (int) $request->user()->id) {
+        if ((int) $invoice->workspace?->user_id !== (int) $request->user()->id) {
             abort(403, 'Unauthorized');
         }
 
@@ -72,7 +72,7 @@ Route::middleware(['auth:api'])->group(function () {
 
 	Route::get('/v1/invoice/{invoice}/preview-pdf', function (Request $request, Invoices $invoice) {
         // Guard: only allow owner to get a preview link
-        if ((int) $invoice->user_id !== (int) $request->user()->id) {
+        if ((int) $invoice->workspace?->user_id !== (int) $request->user()->id) {
             abort(403, 'Unauthorized');
         }
 
