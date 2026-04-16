@@ -95,7 +95,7 @@ class InvoiceTemplateCategorySeeder extends MakeSeeder
 			'current_version' => 1,
 			'is_active' => 1,
 			'view' => 'classic.v1.simplifi',
-			'preview_url' => '/images/templates/ledger.jpg',
+			'preview_url' => '/images/templates/simplifi.jpg',
 		]);
 		// ----------------------------------------------------------------------------
 		// Minimal
@@ -116,7 +116,7 @@ class InvoiceTemplateCategorySeeder extends MakeSeeder
 			'current_version' => 1,
 			'is_active' => 1,
 			'view' => 'minimal.v1.pulse',
-			'preview_url' => '/images/templates/nexxus.jpg',
+			'preview_url' => '/images/templates/pulse.jpg',
 		]);
 
 //        DB::table('invoice_templates')->where('slug', 'classic')->update([
