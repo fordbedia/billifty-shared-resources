@@ -67,6 +67,15 @@ class InvoiceTemplateCategorySeeder extends MakeSeeder
 			'view' => 'modern.v1.neo-columns',
 			'preview_url' => '/images/templates/neo.jpg',
 		]);
+		InvoiceTemplates::updateOrCreate(['slug' => 'mono'],[
+			'invoice_template_category_id' => $modernId,
+			'slug' => 'mono',
+			'display_name' => 'Mono',
+			'current_version' => 1,
+			'is_active' => 1,
+			'view' => 'modern.v1.mono',
+			'preview_url' => '/images/templates/mono.jpg',
+		]);
 		// ----------------------------------------------------------------------------
 		// Classic
 		// ----------------------------------------------------------------------------

@@ -83,6 +83,7 @@ class InvoiceRepository extends BaseRepository implements InvoiceContracts
 			}
 
 			$payload = [...$row, 'position' => $position];
+			unset($payload['_sortable_id']);
 
 			if ($existingItem) {
 				$existingItem->fill($payload)->save();
