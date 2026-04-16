@@ -52,6 +52,7 @@ class StoreInvoiceRequest extends FormRequest
             'shipping_tax_rate'   => ['nullable','numeric','min:0'],
             'invoice_items'       => ['required','array','min:1'],
 			'invoice_items.*.id' => 'nullable|integer|exists:invoice_items,id',
+			'invoice_items.*.position' => ['nullable','integer','min:1'],
 			'invoice_items.*.name' => 'nullable|string',
 			'invoice_items.*.description' => 'required|string',
 			'invoice_items.*.invoice_id' => 'nullable|integer|exists:invoices,id',

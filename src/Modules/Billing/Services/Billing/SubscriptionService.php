@@ -19,6 +19,14 @@ class SubscriptionService
 		protected UserInterface $userRepository
 	) {}
 
+	private function frontendUrl(string $path): string
+	{
+		$baseUrl = rtrim((string) (config('app.frontend_url') ?: config('app.url')), '/');
+		$path = '/' . ltrim($path, '/');
+
+		return $baseUrl . $path;
+	}
+
 	public function confirmSubscription(): bool
 	{
 		if ($this->userSubscriptionRepository->hasSubscribed()) {
@@ -50,7 +58,7 @@ class SubscriptionService
 		}
 
 		return [
-			'url' => config('urls.signin') . '?plan_code=free&cycle=monthly'
+			'url' => $this->frontendUrl('/auth?plan_code=free&billing_cycle=monthly')
 		];
 	}
 
@@ -149,16 +157,22 @@ class SubscriptionService
 
 	public function handle(string $url, array $next): string
 	{
-		if ($next) {
-			if ($next['plan_code'] === 'free') {
-				$this->handleFreeSubscription($next['plan_code'], $next['billing_cycle']);
-			} else {
-				// plan_code is either pro or premium
-				$url = config('urls.pricing_url') . "?plan_code={$next['plan_code']}&billing_cycle={$next['billing_cycle']}&auto_checkout=true";
-			}
+		$nextPath = $next['next_path'] ?? '/app/invoices';
+		$planCode = $next['plan_code'] ?? null;
+		$billingCycle = $next['billing_cycle'] ?? null;
+
+		if (!$planCode || !$billingCycle) {
+			return $this->frontendUrl($nextPath);
 		}
 
-		return $url;
+		if ($planCode === 'free') {
+			$result = $this->handleFreeSubscription($planCode, $billingCycle);
+			return $result['url'] ?? $this->frontendUrl($nextPath);
+		}
+
+		return $this->frontendUrl(
+			"/app/invoice/pricing?plan_code={$planCode}&billing_cycle={$billingCycle}&auto_checkout=true"
+		);
 	}
 
 }

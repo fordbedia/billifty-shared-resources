@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('invoice_items', function (Blueprint $table) {
             $table->id();
-						$table->unsignedBigInteger('invoice_id');
-						$table->unsignedInteger('position')->default(1); // for ordering
+            $table->unsignedBigInteger('invoice_id');
+            $table->unsignedInteger('position')->default(1); // sortable order within an invoice
             $table->string('name')->nullable();               // short label
             $table->text('description')->nullable();
 
@@ -31,8 +31,8 @@ return new class extends Migration
 
             $table->json('meta')->nullable();
             $table->timestamps();
-						$table->foreign('invoice_id')->references('id')->on('invoices')->cascadeOnDelete();
-						$table->index(['position']);
+            $table->foreign('invoice_id')->references('id')->on('invoices')->cascadeOnDelete();
+            $table->index(['invoice_id', 'position']);
         });
     }
 

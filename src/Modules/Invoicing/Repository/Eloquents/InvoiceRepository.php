@@ -75,16 +75,19 @@ class InvoiceRepository extends BaseRepository implements InvoiceContracts
 		$existingIds = [];
 
 		foreach($incoming as $row) {
-			$position = (int) ($row->position ?? 0);
-			if (isset($row['id'])) {
+			$position = (int) ($row['position'] ?? 0);
+			$existingItem = isset($row['id']) ? $existing->get($row['id']) : null;
+
+			if ($existingItem) {
 				$existingIds[] = $row['id'];
 			}
 
 			$payload = [...$row, 'position' => $position];
 
-			if (isset($row['id'])) {
-				$existing[$row['id']]->fill($payload)->save();
+			if ($existingItem) {
+				$existingItem->fill($payload)->save();
 			} else {
+				unset($payload['id']);
 				$invoice->items()->create($payload);
 			}
 		}

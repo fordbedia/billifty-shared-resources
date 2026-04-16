@@ -45,7 +45,9 @@ class Invoices extends Model
 
 	public function items()
 	{
-		return $this->hasMany(InvoiceItems::class, 'invoice_id', 'id');
+		return $this->hasMany(InvoiceItems::class, 'invoice_id', 'id')
+			->orderBy('position')
+			->orderBy('id');
 	}
 
 	public function colorScheme()
