@@ -91,12 +91,13 @@
     </section>
 
     <section class="items-section" aria-label="Invoice items">
-      <div class="items-grid">
+      <div class="items-grid{{ $hasLineDiscount ? ' has-line-discount' : '' }}">
         <div class="items-header">
           <div class="item-no">Item</div>
           <div class="desc">Description</div>
           <div class="center">Qty</div>
           <div class="amount-col">Rate</div>
+          @if($hasLineDiscount)<div class="discount-col">Discount</div>@endif
           <div class="amount-col">Amount</div>
         </div>
 
@@ -114,6 +115,7 @@
                 </div>
                 <div class="center">{{ rtrim(rtrim((string)($it->quantity ?? 0), '0'), '.') }}{{ $it->unit ? ' '.$it->unit : '' }}</div>
                 <div class="amount-col">{{ $fmtMoney($it->unit_price_cents ?? 0, $currency) }}</div>
+                @if($hasLineDiscount)<div class="discount-col">{{ $fmtPercent($it->line_discount_rate) }}</div>@endif
                 <div class="amount-col strong">{{ $fmtMoney($it->line_total_cents ?? 0, $currency) }}</div>
               </div>
             @endforeach
@@ -126,7 +128,7 @@
       <div class="lower-info">
         <div class="payment-block">
           <div class="lower-kicker">Payment Method</div>
-          @if($pi)
+          @if($pi->payment_method)
             <div class="payment-box">{!! $paymentInfo($pi, 'neo-payment-list') !!}</div>
           @else
             <div class="muted-line">&mdash;</div>
@@ -472,6 +474,11 @@
       column-gap: 0;
     }
 
+    .items-grid.has-line-discount .items-header,
+    .items-grid.has-line-discount .items-row {
+      grid-template-columns: 46px minmax(0, 1fr) 58px 96px 84px 102px;
+    }
+
     .items-header {
       align-items: end;
       border-bottom: 3px solid #111111;
@@ -516,6 +523,12 @@
 
     .items-grid .amount-col {
       text-align: right;
+      white-space: nowrap;
+    }
+
+    .items-grid .discount-col {
+      text-align: right;
+      white-space: nowrap;
     }
 
     .item-title {

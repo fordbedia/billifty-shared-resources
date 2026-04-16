@@ -16,6 +16,7 @@
   $logoInitial = strtoupper(substr(trim((string) $businessName), 0, 1));
   $paymentMethod = $pi?->payment_method instanceof \BackedEnum ? $pi->payment_method->value : ($pi?->payment_method ?? null);
   $hasDiscount = (int) ($invoice->discount_cents ?? 0) > 0;
+  $hasLineDiscount = ($invoice->discount_mode ?? null) === 'per-line';
   $hasShipping = (int) ($invoice->shipping_cents ?? 0) > 0;
   $itemCount = $items instanceof \Illuminate\Support\Collection ? $items->count() : count($items);
   $maskAccount = function($value) {
@@ -81,11 +82,12 @@
       @if($cl?->license_no)<div>License No: {{ $cl->license_no }}</div>@endif
     </section>
 
-    <section class="items-list" aria-label="Invoice items">
+    <section class="items-list{{ $hasLineDiscount ? ' has-line-discount' : '' }}" aria-label="Invoice items">
       <div class="items-head">
         <div class="desc">Description</div>
         <div class="qty">Qty</div>
         <div class="money">Unit Price</div>
+        @if($hasLineDiscount)<div class="discount-col">Discount</div>@endif
         <div class="money">Amount</div>
       </div>
 
@@ -100,6 +102,7 @@
             </div>
             <div class="qty">{{ rtrim(rtrim((string) ($it->quantity ?? 0), '0'), '.') }}{{ ($it->unit ?? null) ? ' '.$it->unit : '' }}</div>
             <div class="money">{{ $fmtMoney($it->unit_price_cents ?? 0, $currency) }}</div>
+            @if($hasLineDiscount)<div class="discount-col">{{ $fmtPercent($it->line_discount_rate) }}</div>@endif
             <div class="money item-amount">{{ $fmtMoney($it->line_total_cents ?? 0, $currency) }}</div>
           </article>
         @endforeach
@@ -318,6 +321,11 @@
       column-gap:20px;
       align-items:start;
     }
+    .simplifi-root .items-list.has-line-discount .items-head,
+    .simplifi-root .items-list.has-line-discount .item-row{
+      grid-template-columns:minmax(0, 1fr) minmax(46px, .24fr) minmax(82px, .36fr) minmax(76px, .34fr) minmax(88px, .38fr);
+      column-gap:14px;
+    }
     .simplifi-root .items-head{
       padding:0 0 12px;
       border-bottom:1px solid {{ $ink }};
@@ -341,12 +349,17 @@
     .simplifi-root .money{
       text-align:right;
     }
+    .simplifi-root .discount-col{
+      text-align:right;
+      white-space:nowrap;
+    }
     .simplifi-root .item-row .qty{
       color:{{ $ink }};
     }
     .simplifi-root .item-row .money{
       color:{{ $ink }};
       font-weight:600;
+      white-space:nowrap;
     }
     .simplifi-root .item-title{
       margin:0 0 2px;
@@ -498,6 +511,10 @@
       .simplifi-root .items-head,
       .simplifi-root .item-row{
         min-width:560px;
+      }
+      .simplifi-root .items-list.has-line-discount .items-head,
+      .simplifi-root .items-list.has-line-discount .item-row{
+        min-width:640px;
       }
     }
   </style>

@@ -121,12 +121,13 @@
       </div>
     </section>
 
-    <section class="items-wrap">
+    <section class="items-wrap{{ $hasLineDiscount ? ' has-line-discount' : '' }}">
       <div class="items-grid items-head">
         <div class="desc">Description</div>
         <div class="center">Qty</div>
         <div class="right">Unit Price</div>
         <div class="center">Tax</div>
+        @if($hasLineDiscount)<div class="discount-col">Discount</div>@endif
         <div class="right">Amount</div>
       </div>
 
@@ -142,6 +143,7 @@
             <div class="center">{{ rtrim(rtrim((string)($it->quantity ?? 0), '0'), '.') }}{{ $it->unit ? ' '.$it->unit : '' }}</div>
             <div class="right">{{ $fmtMoney($it->unit_price_cents ?? 0, $invoice->currency ?? 'USD') }}</div>
             <div class="center">{{ $fmtRate($it->tax_rate ?? 0) }}</div>
+            @if($hasLineDiscount)<div class="discount-col">{{ $fmtRate($it->line_discount_rate ?? 0) }}</div>@endif
             <div class="right amount">{{ $fmtMoney($it->line_total_cents ?? 0, $invoice->currency ?? 'USD') }}</div>
           </div>
         @endforeach
@@ -390,6 +392,9 @@
       align-items:start;
       column-gap:0;
     }
+    .aurora-root .items-wrap.has-line-discount .items-grid{
+      grid-template-columns:minmax(150px, 2fr) minmax(46px, 0.45fr) minmax(82px, 0.75fr) minmax(50px, 0.45fr) minmax(74px, 0.65fr) minmax(86px, 0.8fr);
+    }
     .aurora-root .items-grid > div{
       min-width:0;
       box-sizing:border-box;
@@ -429,6 +434,14 @@
     .aurora-root .amount{
       color:#202230;
       font-weight:800;
+    }
+    .aurora-root .right,
+    .aurora-root .discount-col,
+    .aurora-root .amount{
+      white-space:nowrap;
+    }
+    .aurora-root .discount-col{
+      text-align:center;
     }
     .aurora-root .item-description{
       margin-top:2px;

@@ -138,6 +138,7 @@
 
 		return $html;
 	};
+	$hasLineDiscount = ($invoice->discount_mode ?? null) === 'per-line';
 
 @endphp
 
