@@ -95,6 +95,7 @@
           <div class="desc">Description</div>
           <div class="center">Qty</div>
           <div class="amount-col">Rate</div>
+          <div class="tax-col">Tax</div>
           @if($hasLineDiscount)<div class="discount-col">Discount</div>@endif
           <div class="amount-col">Amount</div>
         </div>
@@ -113,6 +114,7 @@
                 </div>
                 <div class="center">{{ rtrim(rtrim((string)($it->quantity ?? 0), '0'), '.') }}{{ $it->unit ? ' '.$it->unit : '' }}</div>
                 <div class="amount-col">{{ $fmtMoney($it->unit_price_cents ?? 0, $currency) }}</div>
+                <div class="tax-col">{{ $fmtRate($it->tax_rate ?? 0) }}</div>
                 @if($hasLineDiscount)<div class="discount-col">{{ $fmtPercent($it->line_discount_rate) }}</div>@endif
                 <div class="amount-col strong">{{ $fmtMoney($it->line_total_cents ?? 0, $currency) }}</div>
               </div>
@@ -146,7 +148,7 @@
             <strong>{{ $fmtMoney($invoice->subtotal_cents ?? 0, $currency) }}</strong>
           </div>
           <div class="summary-row">
-            <span>Tax</span>
+            <span>Tax {{$isShippingTaxable ? " (includes shipping)" : ""}}</span>
             <strong>{{ $fmtMoney($invoice->tax_cents ?? 0, $currency) }}</strong>
           </div>
           <div class="summary-row">
@@ -167,7 +169,7 @@
       </aside>
     </section>
 
-	@if ($watermark())  
+	@if ($watermark())
 		<footer class="neo-footer">
 		  <div class="footer-brand"{{$watermark()}}</div>
 		</footer>
@@ -469,13 +471,13 @@
     .items-header,
     .items-row {
       display: grid;
-      grid-template-columns: 54px minmax(0, 1fr) 72px 122px 122px;
+      grid-template-columns: 46px minmax(0, 1fr) 58px 96px 56px 102px;
       column-gap: 0;
     }
 
     .items-grid.has-line-discount .items-header,
     .items-grid.has-line-discount .items-row {
-      grid-template-columns: 46px minmax(0, 1fr) 58px 96px 84px 102px;
+      grid-template-columns: 42px minmax(0, 1fr) 50px 84px 52px 74px 94px;
     }
 
     .items-header {
@@ -518,6 +520,11 @@
 
     .items-grid .center {
       text-align: center;
+    }
+
+    .items-grid .tax-col {
+      text-align: center;
+      white-space: nowrap;
     }
 
     .items-grid .amount-col {

@@ -174,6 +174,7 @@
               <th class="mono-desc-col">Description</th>
               <th class="mono-qty-col">Qty</th>
               <th class="mono-rate-col">Rate</th>
+			  <th class="mono-rate-col">Tax</th>
               @if($hasLineDiscount)<th class="mono-discount-col">Discount</th>@endif
               <th class="mono-amount-col">Amount</th>
             </tr>
@@ -187,6 +188,7 @@
                 </td>
                 <td class="mono-qty-col">{{ rtrim(rtrim((string) ($it->quantity ?? 0), '0'), '.') }}{{ $it->unit ? ' '.$it->unit : '' }}</td>
                 <td class="mono-rate-col">{{ $fmtMoney($it->unit_price_cents ?? 0, $currency) }}</td>
+				  <td class="mono-rate-col">{{ $fmtRate($it->tax_rate ?? 0) }}</td>
                 @if($hasLineDiscount)<td class="mono-discount-col">{{ $fmtPercent($it->line_discount_rate ?? 0) }}</td>@endif
                 <td class="mono-amount-col">{{ $fmtMoney($it->line_total_cents ?? 0, $currency) }}</td>
               </tr>
@@ -212,7 +214,9 @@
             </div>
           @endif
           <div class="mono-total-row">
-            <span>{{ $taxLabel }}:</span>
+            <span>
+				Tax{{$isShippingTaxable ? " (includes shipping):" : ":"}}
+			</span>
             <strong>{{ $fmtMoney($invoice->tax_cents ?? 0, $currency) }}</strong>
           </div>
           @if((int)($invoice->shipping_cents ?? 0) > 0)

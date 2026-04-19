@@ -168,7 +168,7 @@
             <strong>-{{ $fmtMoney($invoice->discount_cents ?? 0, $currency) }}</strong>
           </div>
           <div class="summary-row">
-            <span>Tax</span>
+            <span>Tax {{$isShippingTaxable ? " (includes shipping)" : ""}}</span>
             <strong>{{ $fmtMoney($invoice->tax_cents ?? 0, $currency) }}</strong>
           </div>
           @if((int)($invoice->shipping_cents ?? 0) > 0)

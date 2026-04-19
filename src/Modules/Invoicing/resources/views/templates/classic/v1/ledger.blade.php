@@ -175,7 +175,7 @@
               <span class="total-value">{{ $fmtMoney($invoice->subtotal_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
             </div>
             <div class="total-row">
-              <span class="total-label">Tax</span>
+              <span class="total-label">Tax {{$isShippingTaxable ? " (includes shipping)" : ""}}</span>
               <span class="total-value">{{ $fmtMoney($invoice->tax_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
             </div>
             <div class="total-row discount">

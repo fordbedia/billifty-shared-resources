@@ -85,6 +85,7 @@
         <div class="desc">Description</div>
         <div class="qty">Qty</div>
         <div class="money">Unit Price</div>
+        <div class="tax-col">Tax</div>
         @if($hasLineDiscount)<div class="discount-col">Discount</div>@endif
         <div class="money">Amount</div>
       </div>
@@ -100,6 +101,7 @@
             </div>
             <div class="qty">{{ rtrim(rtrim((string) ($it->quantity ?? 0), '0'), '.') }}{{ ($it->unit ?? null) ? ' '.$it->unit : '' }}</div>
             <div class="money">{{ $fmtMoney($it->unit_price_cents ?? 0, $currency) }}</div>
+            <div class="tax-col">{{ $fmtRate($it->tax_rate ?? 0) }}</div>
             @if($hasLineDiscount)<div class="discount-col">{{ $fmtPercent($it->line_discount_rate) }}</div>@endif
             <div class="money item-amount">{{ $fmtMoney($it->line_total_cents ?? 0, $currency) }}</div>
           </article>
@@ -120,7 +122,7 @@
           </div>
         @endif
         <div class="total-row">
-          <span>Tax</span>
+          <span>Tax {{$isShippingTaxable ? " (includes shipping)" : ""}}</span>
           <strong>{{ $fmtMoney($invoice->tax_cents ?? 0, $currency) }}</strong>
         </div>
         @if($hasShipping)
@@ -315,13 +317,13 @@
     .simplifi-root .items-head,
     .simplifi-root .item-row{
       display:grid;
-      grid-template-columns:minmax(0, 1fr) minmax(54px, .3fr) minmax(94px, .42fr) minmax(94px, .42fr);
-      column-gap:20px;
+      grid-template-columns:minmax(0, 1fr) 54px 94px 52px 100px;
+      column-gap:16px;
       align-items:start;
     }
     .simplifi-root .items-list.has-line-discount .items-head,
     .simplifi-root .items-list.has-line-discount .item-row{
-      grid-template-columns:minmax(0, 1fr) minmax(46px, .24fr) minmax(82px, .36fr) minmax(76px, .34fr) minmax(88px, .38fr);
+      grid-template-columns:minmax(0, 1fr) 46px 82px 50px 76px 92px;
       column-gap:14px;
     }
     .simplifi-root .items-head{
@@ -347,6 +349,10 @@
     .simplifi-root .money{
       text-align:right;
     }
+    .simplifi-root .tax-col{
+      text-align:right;
+      white-space:nowrap;
+    }
     .simplifi-root .discount-col{
       text-align:right;
       white-space:nowrap;
@@ -358,6 +364,10 @@
       color:{{ $ink }};
       font-weight:600;
       white-space:nowrap;
+    }
+    .simplifi-root .item-row .tax-col{
+      color:{{ $ink }};
+      font-weight:600;
     }
     .simplifi-root .item-title{
       margin:0 0 2px;

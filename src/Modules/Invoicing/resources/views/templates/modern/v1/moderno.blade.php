@@ -184,7 +184,12 @@
             <strong>{{ $fmtMoney($invoice->subtotal_cents ?? 0, $currency) }}</strong>
           </div>
           <div class="summary-row">
-            <span>Tax</span>
+            <span>
+				Tax
+				@if ($isShippingTaxable)
+					(includes shipping)
+			  	@endif
+			</span>
             <strong>{{ $fmtMoney($invoice->tax_cents ?? 0, $currency) }}</strong>
           </div>
           <div class="summary-row discount-row">

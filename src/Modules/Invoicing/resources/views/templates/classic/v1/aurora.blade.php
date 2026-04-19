@@ -155,7 +155,7 @@
           <strong>{{ $fmtMoney($invoice->subtotal_cents ?? 0, $invoice->currency ?? 'USD') }}</strong>
         </div>
         <div class="totals-row">
-          <span>Tax</span>
+          <span>Tax {{$isShippingTaxable ? " (includes shipping)" : ""}}</span>
           <strong>{{ $fmtMoney($invoice->tax_cents ?? 0, $invoice->currency ?? 'USD') }}</strong>
         </div>
         <div class="totals-row discount">
@@ -396,7 +396,13 @@
     .aurora-root .items-grid > div{
       min-width:0;
       box-sizing:border-box;
-      padding:17px 17px;
+      padding:17px 10px;
+      overflow-wrap:normal;
+      word-break:normal;
+    }
+    .aurora-root .items-grid > .desc{
+      padding-left:17px;
+      padding-right:17px;
       overflow-wrap:anywhere;
     }
     .aurora-root .items-head{
@@ -412,6 +418,7 @@
       text-transform:uppercase;
       letter-spacing:0.1em;
       font-weight:800;
+      white-space:nowrap;
     }
     .aurora-root .item-row{
       background:{{ $stripe }};
@@ -434,6 +441,7 @@
       font-weight:800;
     }
     .aurora-root .right,
+    .aurora-root .center,
     .aurora-root .discount-col,
     .aurora-root .amount{
       white-space:nowrap;

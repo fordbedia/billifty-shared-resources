@@ -66,7 +66,7 @@
 	$bp = $invoice->businessProfile ?? null;
 	$cl = $invoice->client ?? null;
 	$items = $invoice->items ?? collect();
-
+	$isShippingTaxable = (int) $invoice->shipping_tax_rate > 0;
 	$pi = $invoice->businessProfile?->payment_information;
 
 	// Decide which visual template to render (DB-driven or fallback)
@@ -142,6 +142,16 @@
 		return $html;
 	};
 	$hasLineDiscount = ($invoice->discount_mode ?? null) === 'per-line';
+
+	$fmtRate = function($value) {
+		$num = (float) ($value ?? 0);
+
+		if ($num > 0 && $num < 1) {
+		  $num *= 100;
+		}
+
+		return rtrim(rtrim(number_format($num, 2), '0'), '.').'%';
+	  };
 
 @endphp
 

@@ -11,17 +11,6 @@
   $logoInitial = strtoupper(substr(trim((string) $businessName), 0, 1));
   $hasLineDiscount = ($invoice->discount_mode ?? null) === 'per-line';
   $paymentMethod = $pi?->payment_method instanceof \BackedEnum ? $pi->payment_method->value : ($pi?->payment_method ?? null);
-  $fmtRate = function($value) {
-    $num = (float) ($value ?? 0);
-
-    if ($num > 0 && $num < 1) {
-      $num *= 100;
-    }
-
-    $decimals = fmod($num, 1.0) === 0.0 ? 0 : 2;
-
-    return number_format($num, $decimals).'%';
-  };
   $maskAccount = function($value) {
     $raw = trim((string) $value);
     $digits = preg_replace('/\D+/', '', $raw);
@@ -90,8 +79,9 @@
     <section class="items-table{{ $hasLineDiscount ? ' has-line-discount' : '' }}">
       <div class="item-row item-head">
         <div class="desc-col">Description</div>
-        <div class="rate-col">Rate</div>
-        <div class="qty-col">Hours/Qty</div>
+        <div class="qty-col">Qty</div>
+        <div class="unit-price-col">Unit Price</div>
+        <div class="tax-col">Tax</div>
         @if($hasLineDiscount)<div class="discount-col">Discount</div>@endif
         <div class="amount-col">Amount</div>
       </div>
@@ -102,8 +92,9 @@
             <div class="item-title">{{ $it->name ?? 'Item' }}</div>
             @if(!empty($it->description))<div class="item-description">{{ $it->description }}</div>@endif
           </div>
-          <div class="rate-col">{{ $fmtMoney($it->unit_price_cents ?? 0, $currency) }}</div>
           <div class="qty-col">{{ rtrim(rtrim((string) ($it->quantity ?? 0), '0'), '.') }}{{ ($it->unit ?? null) ? ' '.$it->unit : '' }}</div>
+          <div class="unit-price-col">{{ $fmtMoney($it->unit_price_cents ?? 0, $currency) }}</div>
+          <div class="tax-col">{{ $fmtRate($it->tax_rate ?? 0) }}</div>
           @if($hasLineDiscount)<div class="discount-col">{{ $fmtPercent($it->line_discount_rate) }}</div>@endif
           <div class="amount-col item-amount">{{ $fmtMoney($it->line_total_cents ?? 0, $currency) }}</div>
         </div>
@@ -164,7 +155,7 @@
             <strong class="discount-value">-{{ $fmtMoney($invoice->discount_cents ?? 0, $currency) }}</strong>
           </div>
           <div class="summary-row">
-            <span>Tax{{ (float)($invoice->tax_rate ?? 0) > 0 ? ' ('.$fmtRate($invoice->tax_rate).')' : '' }}</span>
+            <span>Tax {{$isShippingTaxable ? " (includes shipping)" : ""}}</span>
             <strong>{{ $fmtMoney($invoice->tax_cents ?? 0, $currency) }}</strong>
           </div>
           @if((int)($invoice->shipping_cents ?? 0) > 0)
@@ -370,13 +361,13 @@
 
   .pulse-root .item-row {
     display: grid;
-    grid-template-columns: minmax(0, 48%) 17% 17% 18%;
+    grid-template-columns: minmax(0, 1fr) 72px 94px 54px 102px;
     align-items: start;
     border-bottom: 1px solid #e4e8e6;
   }
 
   .pulse-root .items-table.has-line-discount .item-row {
-    grid-template-columns: minmax(0, 42%) 15% 15% 13% 15%;
+    grid-template-columns: minmax(0, 1fr) 64px 84px 52px 76px 96px;
   }
 
   .pulse-root .item-head {
@@ -396,28 +387,38 @@
     color: #4b5355;
     font-size: 10px;
     line-height: 13px;
-    overflow-wrap: anywhere;
+    overflow-wrap: normal;
+    word-break: normal;
   }
 
   .pulse-root .item-head > div {
     padding: 0 6px 15px;
+    white-space: nowrap;
   }
 
   .pulse-root .desc-col {
     padding-left: 7px !important;
     padding-right: 20px !important;
     text-align: left;
+    overflow-wrap: anywhere !important;
   }
 
-  .pulse-root .rate-col,
   .pulse-root .qty-col,
+  .pulse-root .tax-col,
   .pulse-root .discount-col {
     text-align: center;
+    white-space: nowrap;
+  }
+
+  .pulse-root .unit-price-col {
+    text-align: right;
+    white-space: nowrap;
   }
 
   .pulse-root .amount-col {
     padding-right: 5px !important;
     text-align: right;
+    white-space: nowrap;
   }
 
   .pulse-root .item-title {
