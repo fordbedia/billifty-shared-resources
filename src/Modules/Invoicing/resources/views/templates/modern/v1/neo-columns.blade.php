@@ -27,13 +27,11 @@
     <header class="neo-header">
       <section class="brand-cell" aria-label="Business profile">
         <div class="brand-lockup">
-          <div class="brand-mark-cell">
-            @if($logoSrc)
-              <img src="{{ $logoSrc }}" alt="Business Logo" class="logo" />
-            @else
-              <span class="logo-placeholder">{{ $logoInitial }}</span>
-            @endif
-          </div>
+			@if($logoSrc)
+			  <div class="brand-mark-cell">
+				  <img src="{{ $logoSrc }}" alt="Business Logo" class="logo" />
+			  </div>
+			@endif
           <div class="brand-copy">
             <div class="brand-name">{{ $bp?->name ?? 'Your Business' }}</div>
           </div>

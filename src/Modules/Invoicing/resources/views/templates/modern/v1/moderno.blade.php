@@ -50,13 +50,11 @@
     <div class="moderno-header">
       <div class="brand-cell">
         <div class="brand-lockup">
-          <div class="brand-mark-cell">
-            @if($logoSrc)
-              <img src="{{ $logoSrc }}" alt="Business Logo" class="logo" />
-            @else
-              <span class="logo-placeholder">{{ $logoInitial }}</span>
-            @endif
-          </div>
+			@if($logoSrc)
+			  <div class="brand-mark-cell">
+				  <img src="{{ $logoSrc }}" alt="Business Logo" class="logo" />
+			  </div>
+			@endif
           <div class="brand-name-cell">
             <div class="brand-name">{{ $bp?->name ?? 'Your Business' }}</div>
           </div>
@@ -274,7 +272,7 @@
 
     .brand-mark-cell {
       width: 34px;
-      margin-right: 10px;
+      margin-right: 3px;
     }
 
     .logo,
@@ -282,7 +280,6 @@
       display: block;
       width: 27px;
       height: 27px;
-      border-radius: 5px;
     }
 
     .logo {

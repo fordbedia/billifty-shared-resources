@@ -44,8 +44,6 @@
         <div class="brand-lockup">
           @if($logoSrc)
             <img src="{{ $logoSrc }}" alt="Business Logo" class="logo" />
-          @else
-            <span class="logo-placeholder">{{ $logoInitial }}</span>
           @endif
           <div class="brand-name">{{ $businessName }}</div>
         </div>

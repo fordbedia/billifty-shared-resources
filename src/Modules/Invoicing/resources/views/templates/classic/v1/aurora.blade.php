@@ -45,13 +45,11 @@
     <header class="header-grid">
       <section class="brand-block">
         <div class="brand-lockup">
-          <div class="brand-icon">
-            @if($logoSrc)
-              <img src="{{ $logoSrc }}" alt="logo" class="logo" />
-            @else
-              <span class="logo-mark"><span></span><span></span><span></span></span>
-            @endif
-          </div>
+			@if($logoSrc)
+				<div class="brand-icon">
+				  <img src="{{ $logoSrc }}" alt="logo" class="logo" />
+				</div>
+			@endif
           <div class="brand-name">{{ $bp?->name ?? 'Your Business' }}</div>
         </div>
 
@@ -241,7 +239,7 @@
     .aurora-root .logo{
       width:{{ $logoW }}px;
       height:auto;
-      border-radius:6px;
+      /*border-radius:6px;*/
       display:block;
     }
     .aurora-root .logo-mark{

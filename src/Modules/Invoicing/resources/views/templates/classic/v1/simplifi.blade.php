@@ -37,8 +37,6 @@
       <section class="brand-cell" aria-label="Business">
         @if($logoSrc)
           <img src="{{ $logoSrc }}" class="logo" alt="logo" />
-        @else
-          <span class="logo-placeholder">{{ $logoInitial }}</span>
         @endif
 
         <div class="business-name">{{ $businessName }}</div>

@@ -52,13 +52,11 @@
     <div class="ledger-header">
       <div class="brand-cell">
         <div class="brand-lockup">
-          <div class="brand-mark-cell">
-            @if($logoSrc)
-              <img src="{{ $logoSrc }}" class="logo" alt="logo" />
-            @else
-              <span class="logo-placeholder">{{ $logoInitial }}</span>
-            @endif
-          </div>
+			@if($logoSrc)
+				<div class="brand-mark-cell">
+				  <img src="{{ $logoSrc }}" class="logo" alt="logo" />
+				</div>
+			@endif
           <div class="brand-copy">
             <div class="brand-name">{{ $bp?->name ?? 'AgencyName' }}</div>
             <div class="brand-tagline">
@@ -263,7 +261,7 @@
       width:27px;
       height:auto;
       max-height:27px;
-      border-radius:4px;
+      /*border-radius:4px;*/
     }
     .ledger-root .logo-placeholder{
       display:block;

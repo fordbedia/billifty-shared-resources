@@ -41,8 +41,6 @@
         <div class="brand-lockup">
           @if($logoSrc)
             <span class="logo-frame"><img src="{{ $logoSrc }}" alt="Business Logo" class="logo" /></span>
-          @else
-            <span class="logo-placeholder">{{ $logoInitial }}</span>
           @endif
 
           <div>
@@ -258,7 +256,6 @@
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: {{ $accentDark }};
   }
 
   .pulse-root .logo {
@@ -266,7 +263,7 @@
     width: 36px;
     height: 36px;
     object-fit: contain;
-    border-radius: 50%;
+    /*border-radius: 50%;*/
   }
 
   .pulse-root .logo-placeholder {

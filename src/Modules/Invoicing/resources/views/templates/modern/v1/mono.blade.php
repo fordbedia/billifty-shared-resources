@@ -111,6 +111,11 @@
     <header class="mono-header">
       <div class="mono-brand">
         <div class="mono-title">INVOICE</div>
+		  @if($logoSrc)
+			  <div class="brand-mark-cell">
+				  <img src="{{ $logoSrc }}" alt="Business Logo" class="logo" />
+			  </div>
+			@endif
         <div class="mono-business-name">{{ $bp?->name ?? 'Your Business' }}</div>
         <div class="mono-business-lines">
           @foreach($bpAddressLines as $line)<div>{{ $line }}</div>@endforeach
@@ -343,6 +348,9 @@
       padding-top: 3px;
       padding-right: 28px;
     }
+	.brand-mark-cell img {
+		width: 34px;
+	}
 
     .mono-title {
       margin-bottom: 12px;
