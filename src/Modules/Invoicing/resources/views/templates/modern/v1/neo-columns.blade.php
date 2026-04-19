@@ -167,12 +167,13 @@
       </aside>
     </section>
 
-    <footer class="neo-footer">
-      <div class="thanks">Thank you for your business.</div>
-      <div class="footer-brand">{{ $bp?->website ?? $bp?->email ?? $bp?->name ?? 'Invoice' }}</div>
-    </footer>
+	@if ($watermark())  
+		<footer class="neo-footer">
+		  <div class="footer-brand"{{$watermark()}}</div>
+		</footer>
+	@endif
 
-    {!! $watermark() !!}
+
   </div>
 
   <style>
