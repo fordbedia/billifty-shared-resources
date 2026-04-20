@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use BilliftySDK\SharedResources\Modules\Billing\Services\Billing\SubscriptionService;
 use BilliftySDK\SharedResources\Modules\Invoicing\Adapters\Outbound\ProfileImageUploadAdapter;
 use BilliftySDK\SharedResources\Modules\User\Http\Requests\UserRequest;
+use BilliftySDK\SharedResources\Modules\User\Http\Resources\UserJsonResource;
 use BilliftySDK\SharedResources\Modules\User\Repository\Contract\UserInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -44,6 +45,7 @@ class UserController extends Controller
 			$next = $this->subscriptionService->decodeCallback($request);
 			$url =  config('services.stripe.return_url');
 			$nextUrl = $this->subscriptionService->handle($url, $next);
+			$user->sendEmailVerificationNotification();
 
 			 return response()->json([
 				 'user' => $user,
@@ -98,6 +100,6 @@ class UserController extends Controller
 
 		$user->loadMissing('plan.capabilities', 'subscription');
 
-		return $user;
+		return new UserJsonResource($user);
 	}
 }

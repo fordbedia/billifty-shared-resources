@@ -9,6 +9,7 @@ use BilliftySDK\SharedResources\Modules\User\AuthTypes\PasswordAuthServiceInterf
 use BilliftySDK\SharedResources\Modules\User\Repository\Contract\UserInterface;
 use BilliftySDK\SharedResources\Modules\User\Repository\Eloquent\UserRepository;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Http\Resources\Json\JsonResource;
 
 class UserServiceProvider extends ServiceProvider
 {
@@ -27,5 +28,6 @@ class UserServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+		JsonResource::withoutWrapping();
     }
 }
