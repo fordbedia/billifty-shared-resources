@@ -24,9 +24,9 @@ Route::get('/dev/invoices/{invoiceId}/pdf', function (int $invoiceId) {
 
 	// Render the same Blade view, but tell it we're in "pdf" mode
 	$html = view('invoicing::templates.show', [
-		'invoice' => data_get($payload, 'data'),
-		'category' => data_get($payload, 'data.template.category'),
-		'colorScheme' => data_get($payload, 'data.colorScheme'),
+		'invoice' => $payload,
+		'category' => data_get($payload, 'template.category'),
+		'colorScheme' => data_get($payload, 'colorScheme'),
 		'renderContext' => 'pdf',
 	])->render();
 

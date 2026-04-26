@@ -10,12 +10,14 @@ use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Workspace;
 use BilliftySDK\SharedResources\Modules\Invoicing\Support\ImageUrlTrait;
 use BilliftySDK\SharedResources\Modules\Billing\Support\PlanPermission;
+use BilliftySDK\SharedResources\Modules\User\Notifications\CustomVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Passport\HasApiTokens;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasApiTokens, ImageUrlTrait;
@@ -53,6 +55,11 @@ class User extends Authenticatable
         'password',
         'remember_token',
     ];
+
+	public function sendEmailVerificationNotification(): void
+	{
+		$this->notify(new CustomVerifyEmail);
+	}
 
 	protected function imageAttributeName(): string
 	{

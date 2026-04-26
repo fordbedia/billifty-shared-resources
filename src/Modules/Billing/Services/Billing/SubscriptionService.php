@@ -162,7 +162,10 @@ class SubscriptionService
 		$billingCycle = $next['billing_cycle'] ?? null;
 
 		if (!$planCode || !$billingCycle) {
-			return $this->frontendUrl($nextPath);
+			// If no subscription is set, Automatically subscribed him/her to FREE plan.
+			$planCode = 'free';
+			$result = $this->handleFreeSubscription($planCode, null);
+			return $result['url'] ?? $this->frontendUrl($nextPath);
 		}
 
 		if ($planCode === 'free') {

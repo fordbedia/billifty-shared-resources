@@ -7,6 +7,23 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class InvoiceResource extends JsonResource
 {
+	protected function relationArray(string $relation): mixed
+	{
+		if (!$this->resource->relationLoaded($relation)) {
+			return null;
+		}
+
+		$value = $this->resource->getRelation($relation);
+
+		if ($value instanceof \Illuminate\Support\Collection) {
+			return $value->map(function ($item) {
+				return method_exists($item, 'toArray') ? $item->toArray() : $item;
+			})->values()->all();
+		}
+
+		return method_exists($value, 'toArray') ? $value->toArray() : $value;
+	}
+
     /**
      * Transform the resource into an array.
      *
@@ -18,17 +35,17 @@ class InvoiceResource extends JsonResource
             'id' => $this->id,
 			'user_id' => $this->user_id,
 			'workspace_id' => $this->workspace_id,
-           	'businessProfile' => $this->whenLoaded('businessProfile'),
-			'client' => $this->whenLoaded('client'),
-			'template' => $this->whenLoaded('template'),
-			'colorScheme' => $this->whenLoaded('colorScheme'),
-            'paymentInformation' => PaymentInformationResource::make(
-				$this->whenLoaded('paymentInformation')
-			),
-			'items' => $this->whenLoaded('items'),
+           	'businessProfile' => $this->relationArray('businessProfile'),
+			'client' => $this->relationArray('client'),
+			'template' => $this->relationArray('template'),
+			'colorScheme' => $this->relationArray('colorScheme'),
+            'paymentInformation' => $this->resource->relationLoaded('paymentInformation') && $this->paymentInformation
+				? PaymentInformationResource::make($this->paymentInformation)->toArray($request)
+				: null,
+			'items' => $this->relationArray('items'),
 			'invoice_number' => $this->invoice_number,
 			'reference' => $this->reference,
-			'currency' => $this->currency,
+			'currency' => $this->relationArray('currency'),
 			'issued_on' => $this->issued_on,
 			'due_on' => $this->due_on,
 			'paid_at' => $this->paid_at,

@@ -54,6 +54,7 @@ abstract class ModularMakeCommand extends ModularCommand
 			'middleware' => $this->makeMiddleware(),
 			'policy' 	=> $this->makePolicy(),
 			'scope'		=> $this->makeScope(),
+			'notification' => $this->makeNotification(),
             default      => $this->error('Invalid make option: ' . $this->what),
         };
     }
@@ -151,6 +152,13 @@ abstract class ModularMakeCommand extends ModularCommand
 	public function makeJob(): int
 	{
 		return $this->artisanCallOrCustom('make:job', [
+            'name' => $this->className
+        ]);
+	}
+
+	public function makeNotification(): int
+	{
+		return $this->artisanCallOrCustom('make:notification', [
             'name' => $this->className
         ]);
 	}
@@ -255,6 +263,10 @@ abstract class ModularMakeCommand extends ModularCommand
 			case 'command':
 				$this->fileName = $this->className;
 				$this->stubPath = $this->resolveCommandStubPath('stub');
+				break;
+			case 'notification':
+				$this->fileName = $this->className;
+				$this->stubPath = $this->resolveNotificationStubPath('stub');
 				break;
         }
     }

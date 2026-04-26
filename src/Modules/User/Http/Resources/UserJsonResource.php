@@ -32,7 +32,7 @@ class UserJsonResource extends JsonResource
 			'stripe_customer_id' => $this->stripe_customer_id,
 			'is_test' => $this->is_test,
 			'image_url' => $this->image_url ?? null,
-			'email_verified_date' => $this->email_verified_at->format('F j, Y'),
+			'email_verified_date' => $this->email_verified_at?->format('F j, Y'),
 			'created_at' => $this->created_at,
 			'updated_at' => $this->updated_at,
 		];

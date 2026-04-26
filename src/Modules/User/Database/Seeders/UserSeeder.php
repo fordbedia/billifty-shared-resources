@@ -2,6 +2,7 @@
 
 namespace BilliftySDK\SharedResources\Modules\User\Database\Seeders;
 
+use BilliftySDK\SharedResources\Modules\Billing\Models\UserSubscription;
 use BilliftySDK\SharedResources\Modules\User\Models\Plan;
 use BilliftySDK\SharedResources\Modules\User\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -41,7 +42,15 @@ class UserSeeder extends MakeSeeder
     public function run(): void
     {
 		foreach($this->users as $user) {
-			User::updateOrCreate(array_merge($user, ['password' => bcrypt('123456')]));
+			$user = User::updateOrCreate(array_merge($user, ['password' => bcrypt('123456')]));
+			UserSubscription::updateOrCreate([
+				'user_id' => $user->id,
+				'plan_id' => $user->plan_id,
+				'plan_code' => Plan::find($user->plan_id)->code,
+				'billing_cycle' => '',
+				'currency' => 'usd',
+				'status' => 'active',
+			]);
 		}
     }
 

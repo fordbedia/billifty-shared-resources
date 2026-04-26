@@ -44,10 +44,10 @@ class GenerateInvoicePdf
 
         // 4) Render the same view you use for preview
         $html = view('invoicing::templates.show', [
-            'invoice'     => data_get($payload, 'data'),
-            'category'    => data_get($payload, 'data.template.category'),
-            'colorScheme' => data_get($payload, 'data.colorScheme'),
-			'renderContext' => 'pdf'
+            'invoice'     => $payload,
+            'category'    => data_get($payload, 'template.category'),
+            'colorScheme' => data_get($payload, 'colorScheme'),
+				'renderContext' => 'pdf'
         ])->render();
 
         // 5) Generate PDF from HTML through Playwright service

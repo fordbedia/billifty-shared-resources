@@ -102,4 +102,12 @@ class UserController extends Controller
 
 		return new UserJsonResource($user);
 	}
+
+	public function changePassword(
+		Request $request,
+		int $id,
+		UserInterface $userRepo
+	){
+		dd($request->all());
+	}
 }

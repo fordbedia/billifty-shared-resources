@@ -2,14 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>
-        Invoice {{ $invoice->invoice_number }}
-        @if($invoice->businessProfile?->legal_name)
-            from {{ $invoice->businessProfile->legal_name }}
-        @else
-            from your service provider
-        @endif
-    </title>
+    <title>Verify your Billifty account</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <style>
@@ -23,8 +16,7 @@
 
         .wrapper {
             width: 100%;
-            background:
-                radial-gradient(circle at top, #eaf4fe 0%, #f4f8fc 42%, #f4f8fc 100%);
+            background: radial-gradient(circle at top, #ebf5ff 0%, #f4f8fc 42%, #f4f8fc 100%);
             padding: 32px 16px;
         }
 
@@ -40,8 +32,7 @@
 
         .hero {
             padding: 28px 28px 24px 28px;
-            background:
-                linear-gradient(180deg, #eff7ff 0%, #e7f1fb 100%);
+            background: linear-gradient(180deg, #eff7ff 0%, #e7f1fb 100%);
             border-bottom: 1px solid #d7e6f4;
         }
 
@@ -88,18 +79,6 @@
             background-color: rgba(255, 255, 255, 0.88);
         }
 
-        .hero-meta-row {
-            font-size: 0;
-        }
-
-        .hero-meta-item {
-            display: inline-block;
-            width: 50%;
-            vertical-align: top;
-            box-sizing: border-box;
-            padding-right: 12px;
-        }
-
         .meta-label {
             margin: 0 0 6px 0;
             color: #6f8aa0;
@@ -121,6 +100,14 @@
             padding: 28px;
         }
 
+        .content-card {
+            padding: 22px 22px 20px 22px;
+            border: 1px solid #e2ebf3;
+            border-radius: 20px;
+            background-color: #ffffff;
+            box-shadow: 0 16px 36px -34px rgba(43, 84, 111, 0.5);
+        }
+
         .content p {
             margin: 0 0 16px 0;
             color: #385165;
@@ -133,46 +120,7 @@
             font-weight: 700;
         }
 
-        .body-card {
-            padding: 22px 22px 20px 22px;
-            border: 1px solid #e2ebf3;
-            border-radius: 20px;
-            background-color: #ffffff;
-            box-shadow: 0 16px 36px -34px rgba(43, 84, 111, 0.5);
-        }
-
-        .user-message-wrapper {
-            margin: 24px 0;
-        }
-
-        .user-message-label {
-            margin: 0 0 10px 2px;
-            color: #6f8aa0;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 0.09em;
-            text-transform: uppercase;
-        }
-
-        .user-message-box {
-            padding: 18px 20px;
-            border: 1px solid #cfe1f1;
-            border-radius: 20px;
-            background: linear-gradient(180deg, #f5fafe 0%, #eef6fd 100%);
-            color: #294255;
-            font-size: 15px;
-            line-height: 1.8;
-        }
-
-        .user-message-box p {
-            margin: 0 0 10px 0;
-        }
-
-        .user-message-box p:last-child {
-            margin-bottom: 0;
-        }
-
-        .details-card {
+        .summary-card {
             margin: 24px 0;
             padding: 20px;
             border: 1px solid #d9e6f1;
@@ -180,7 +128,7 @@
             background-color: #f8fbfe;
         }
 
-        .details-title {
+        .summary-title {
             margin: 0 0 16px 0;
             color: #294459;
             font-size: 16px;
@@ -220,10 +168,36 @@
             font-weight: 500;
         }
 
-        .signoff {
-            margin-top: 22px;
-            padding-top: 18px;
-            border-top: 1px solid #e6edf4;
+        .action-wrap {
+            margin: 30px 0 26px 0;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 14px 24px;
+            border-radius: 10px;
+            background-color: #1d84c6;
+            color: #ffffff !important;
+            font-size: 15px;
+            font-weight: 600;
+            line-height: 1;
+            text-decoration: none;
+        }
+
+        .subcopy {
+            margin-top: 28px;
+            padding-top: 24px;
+            border-top: 1px solid #e1ebf3;
+        }
+
+        .subcopy p {
+            color: #6c8294;
+            font-size: 14px;
+        }
+
+        .subcopy a,
+        .footer a {
+            color: #2f78ae;
         }
 
         .footer {
@@ -237,6 +211,7 @@
             color: #6c8294;
             font-size: 12px;
             line-height: 1.65;
+            text-align: center;
         }
 
         .footer p:last-child {
@@ -259,12 +234,10 @@
                 font-size: 26px;
             }
 
-            .hero-meta-item,
             .detail-label,
             .detail-value {
                 display: block;
                 width: 100%;
-                padding-right: 0;
             }
 
             .detail-value {
@@ -282,7 +255,6 @@
 @endphp
 <div class="wrapper">
     <div class="container">
-
         <div class="hero">
             <div class="logo-wrap">
                 <img
@@ -292,120 +264,77 @@
                 >
             </div>
 
-            @php
-                $clientName = $invoice->client->name ?? 'there';
-                $businessName = $invoice->businessProfile->legal_name
-                    ?? $invoice->businessProfile->name
-                    ?? $invoice->user->name
-                    ?? config('app.name', 'Billifty');
-            @endphp
-
-            <div class="eyebrow">Client Delivery</div>
-            <h1 class="hero-title">Invoice from {{ $businessName }}</h1>
+            <div class="eyebrow">Email Verification</div>
+            <h1 class="hero-title">Welcome to Billifty!</h1>
             <p class="hero-subtitle">
-                Invoice #{{ $invoice->invoice_number }} has been sent to you.
+                Please verify your email address to activate your account and keep your billing information secure.
             </p>
 
             <div class="hero-meta">
-                <div class="hero-meta-row">
-                    <div class="hero-meta-item">
-                        <p class="meta-label">Invoice Number</p>
-                        <p class="meta-value">#{{ $invoice->invoice_number }}</p>
-                    </div>
-                    <div class="hero-meta-item">
-                        <p class="meta-label">From</p>
-                        <p class="meta-value">{{ $businessName }}</p>
-                    </div>
-                </div>
+                <p class="meta-label">Verification Email</p>
+                <p class="meta-value">{{ $recipientEmail ?: 'Your registered email address' }}</p>
             </div>
         </div>
 
         <div class="content">
-            @php
-                $clientEmail = $invoice->client->email ?? null;
-            @endphp
-
-            <div class="body-card">
-                <p>Hi {{ $clientName }},</p>
+            <div class="content-card">
+                <p>Hi {{ $recipientName }},</p>
 
                 <p>
-                    {{ $businessName }} has sent you an invoice:
-                    <strong>#{{ $invoice->invoice_number }}</strong>.
-                    The PDF is attached to this email for your review and records.
+                    Please confirm your email address to finish setting up your Billifty account.
+                    Once verified, you’ll be able to access your workspace and continue managing invoices with confidence.
                 </p>
 
                 <p>
-                    Inside the invoice, you’ll find a breakdown of the products or services provided,
-                    quantities, pricing details, and the total amount due. If anything looks unclear
-                    or if you have questions about specific charges, please don’t hesitate to reach out
-                    directly to {{ $businessName }}.
+                    This extra step helps us protect your account and make sure important invoice and billing updates
+                    reach the right inbox.
                 </p>
 
-                @if (!empty($userMessage ?? null))
-                    <div class="user-message-wrapper">
-                        <div class="user-message-label">A note from {{ $businessName }}</div>
-                        <div class="user-message-box">
-                            {!! $userMessage !!}
-                        </div>
-                    </div>
-                @endif
-
-                <div class="details-card">
-                    <h2 class="details-title">Invoice summary</h2>
+                <div class="summary-card">
+                    <h2 class="summary-title">What happens next</h2>
 
                     <div class="detail-row">
-                        <div class="detail-label">Invoice number</div>
-                        <div class="detail-value"><strong>#{{ $invoice->invoice_number }}</strong></div>
+                        <div class="detail-label">Step</div>
+                        <div class="detail-value">Verify your email address</div>
                     </div>
 
-                    @if($businessName)
-                        <div class="detail-row">
-                            <div class="detail-label">From</div>
-                            <div class="detail-value">{{ $businessName }}</div>
-                        </div>
-                    @endif
+                    <div class="detail-row">
+                        <div class="detail-label">Status</div>
+                        <div class="detail-value">Pending confirmation</div>
+                    </div>
 
-                    @if($clientName)
-                        <div class="detail-row">
-                            <div class="detail-label">To</div>
-                            <div class="detail-value">{{ $clientName }}</div>
-                        </div>
-                    @endif
-
-                    @if($clientEmail)
+                    @if($recipientEmail)
                         <div class="detail-row">
                             <div class="detail-label">Email</div>
-                            <div class="detail-value">{{ $clientEmail }}</div>
+                            <div class="detail-value">{{ $recipientEmail }}</div>
                         </div>
                     @endif
                 </div>
 
-                <p>
-                    Please review the invoice at your convenience. If the invoice includes a due date or
-                    payment instructions, we kindly ask that you follow those details to ensure a smooth
-                    payment process.
-                </p>
+                <div class="action-wrap">
+                    <a href="{{ $verificationUrl }}" class="button" target="_blank" rel="noopener">
+                        Verify Email Address
+                    </a>
+                </div>
 
                 <p>
-                    Thank you for your time and for your business.
+                    If you did not create a Billifty account, you can safely ignore this email.
                 </p>
 
-                <div class="signoff">
+                <div class="subcopy">
                     <p>
-                        Best regards,<br>
-                        {{ $businessName }}
+                        If you're having trouble clicking the "Verify Email Address" button, copy and paste the URL below into your web browser:
+                    </p>
+                    <p style="word-break: break-all;">
+                        <a href="{{ $verificationUrl }}">{{ $verificationUrl }}</a>
                     </p>
                 </div>
             </div>
         </div>
 
         <div class="footer">
-            <p>
-                You’re receiving this email because {{ $businessName }} issued an invoice to you.
-            </p>
-            <p>{{ config('app.name', 'Billifty') }} — {{ config('app.url') }}</p>
+            <p>© {{ date('Y') }} {{ config('app.name', 'Billifty') }}. All rights reserved.</p>
         </div>
-
     </div>
 </div>
 </body>

@@ -17,9 +17,9 @@ Route::middleware('web')->group(function () {
 		$payload = (new InvoiceResource($invoice))->response()->getData();
 
 		return view("invoicing::templates.show", [
-			'invoice' => data_get($payload, 'data'),
-			'category' => data_get($payload, 'data.template.category'), // or 'Classic' / 'Minimal'
-			'colorScheme' => data_get($payload, 'data.colorScheme'),
+			'invoice' => $payload,
+			'category' => data_get($payload, 'template.category'), // or 'Classic' / 'Minimal'
+			'colorScheme' => data_get($payload, 'colorScheme'),
 			'renderContext' => 'html'
 		]);
 	})->name('dev.invoice.preview');
@@ -41,12 +41,12 @@ Route::middleware('web')->group(function () {
 
         $payload = (new InvoiceResource($invoice))->response()->getData();
 
-        return view('invoicing::templates.show', [
-            'invoice'     => data_get($payload, 'data'),
-            'category'    => data_get($payload, 'data.template.category'),
-            'colorScheme' => data_get($payload, 'data.colorScheme'),
-			'renderContext' => 'html'
-        ]);
+	        return view('invoicing::templates.show', [
+	            'invoice'     => $payload,
+	            'category'    => data_get($payload, 'template.category'),
+	            'colorScheme' => data_get($payload, 'colorScheme'),
+				'renderContext' => 'html'
+	        ]);
     })
         ->middleware('signed') // only valid if URL has a correct signature
         ->name('invoice.preview'); // used when generating the signed URL
@@ -64,25 +64,25 @@ Route::middleware('web')->group(function () {
 			);
 		}
 
-		// Build payload exactly like the resource does
-		$payload = (new InvoiceResource($invoice))
-			->response()
-			->getData();
+			// Build payload exactly like the resource does
+			$payload = (new InvoiceResource($invoice))
+				->response()
+				->getData();
 
-		// Render the same Blade view, but tell it we're in "pdf" mode
+			// Render the same Blade view, but tell it we're in "pdf" mode
 		$html = view('invoicing::templates.show', [
-			'invoice' => data_get($payload, 'data'),
-			'category' => data_get($payload, 'data.template.category'),
-			'colorScheme' => data_get($payload, 'data.colorScheme'),
+			'invoice' => $payload,
+			'category' => data_get($payload, 'template.category'),
+			'colorScheme' => data_get($payload, 'colorScheme'),
 			'renderContext' => 'pdf',
 		])->render();
 
-        $binary = app(PlaywrightPdfRenderer::class)->render($html, [
-            'format' => 'A4',
-            'landscape' => false,
-            'printBackground' => true,
-            'preferCSSPageSize' => true,
-        ]);
+		$binary = app(PlaywrightPdfRenderer::class)->render($html, [
+			'format' => 'A4',
+			'landscape' => false,
+			'printBackground' => true,
+			'preferCSSPageSize' => true,
+		]);
 
 		// Stream inline in browser (no download)
 		$filename = 'invoice-' . $invoiceId . '.pdf';

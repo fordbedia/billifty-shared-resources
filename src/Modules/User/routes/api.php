@@ -5,6 +5,7 @@ use BilliftySDK\SharedResources\Modules\User\Http\Controllers\AuthController;
 use BilliftySDK\SharedResources\Modules\User\Http\Controllers\GoogleController;
 use BilliftySDK\SharedResources\Modules\User\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
 
 Route::prefix('v1')->group(function () {
 	Route::post('user/login', [AuthController::class, 'login']);
@@ -14,8 +15,23 @@ Route::prefix('v1')->group(function () {
 			->name('user.logout');
 		Route::get('user/me', [UserController::class, 'me']);
 		Route::post('user/{id}', [UserController::class, 'update']);;
+		Route::post('user/change-password', [UserController::class, 'changePassword']);
 	});
 	Route::apiResource('user', UserController::class);
+
+	Route::post('/user/email/verification-notification', function (Request $request) {
+		if ($request->user()->hasVerifiedEmail()) {
+			return response()->json([
+				'message' => 'Email is already verified.',
+			]);
+		}
+
+		$request->user()->sendEmailVerificationNotification();
+
+		return response()->json([
+			'message' => 'Verification link sent.',
+		]);
+	})->middleware(['auth:api', 'throttle:6,1'])->name('verification.send');
 });
 
 Route::get('/auth/google/redirect', [GoogleController::class, 'redirect'])

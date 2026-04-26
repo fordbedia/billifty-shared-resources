@@ -28,6 +28,8 @@ enum StubsPathEnum: string
 
 	case COMMAND = 'console.';
 
+	CASE NOTIFICATION = 'notification.';
+
     public function getFullPath()
     {
         return '/vendor/billifty/shared-resources/src/SDK/Foundation/stubs/' . $this->value;
