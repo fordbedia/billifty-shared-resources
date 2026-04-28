@@ -14,8 +14,8 @@ Route::prefix('v1')->group(function () {
 		Route::post('user/logout', [AuthController::class, 'logout'])
 			->name('user.logout');
 		Route::get('user/me', [UserController::class, 'me']);
-		Route::post('user/{id}', [UserController::class, 'update']);;
 		Route::post('user/change-password', [UserController::class, 'changePassword']);
+		Route::post('user/{id}', [UserController::class, 'update']);;
 	});
 	Route::apiResource('user', UserController::class);
 

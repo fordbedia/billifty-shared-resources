@@ -7,6 +7,7 @@ use BilliftySDK\SharedResources\Modules\User\Repository\UserBaseRepository;
 use BilliftySDK\SharedResources\Modules\User\Repository\Contract\UserInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class UserRepository extends UserBaseRepository implements UserInterface
 {
@@ -63,5 +64,21 @@ class UserRepository extends UserBaseRepository implements UserInterface
 		$user->save();
 
 		return $user;
+	}
+
+	public function checkCurrentPassword(string $password)
+	{
+		$currentPassword = Auth::user()->password;
+
+		return Hash::check($password, $currentPassword);
+	}
+
+	public function updatePassword(string $password): void
+	{
+		$user = $this->getModelByAuthUser()->first();
+
+		$user->password = Hash::make($password);
+
+		$user->save();
 	}
 }

@@ -5,6 +5,7 @@ namespace BilliftySDK\SharedResources\Modules\User\Http\Controllers;
 use App\Http\Controllers\Controller;
 use BilliftySDK\SharedResources\Modules\Billing\Services\Billing\SubscriptionService;
 use BilliftySDK\SharedResources\Modules\Invoicing\Adapters\Outbound\ProfileImageUploadAdapter;
+use BilliftySDK\SharedResources\Modules\User\Http\Requests\ChangePasswordRequest;
 use BilliftySDK\SharedResources\Modules\User\Http\Requests\UserRequest;
 use BilliftySDK\SharedResources\Modules\User\Http\Resources\UserJsonResource;
 use BilliftySDK\SharedResources\Modules\User\Repository\Contract\UserInterface;
@@ -12,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use BilliftySDK\SharedResources\Modules\User\Auth\traits\TokenName;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
@@ -104,10 +106,21 @@ class UserController extends Controller
 	}
 
 	public function changePassword(
-		Request $request,
-		int $id,
-		UserInterface $userRepo
+		ChangePasswordRequest $request,
+		UserInterface $userRepo,
 	){
-		dd($request->all());
+		if (!$userRepo->checkCurrentPassword($request->current_password)) {
+			throw ValidationException::withMessages([
+				'current_password' => 'Current password is incorrect.'
+			]);
+		}
+
+		try {
+			$userRepo->updatePassword($request->password);
+		} catch (\Throwable $e) {
+			throw ValidationException::withMessages([
+				'error' => $e->getMessage()
+			]);
+		}
 	}
 }

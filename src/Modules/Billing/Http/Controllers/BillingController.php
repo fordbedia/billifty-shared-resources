@@ -194,7 +194,7 @@ class BillingController extends Controller
 			: null;
 
 		UserSubscription::updateOrCreate(
-			['stripe_subscription_id' => $subscription->id],
+			['user_id' => (int) $user->id],
 			[
 				'user_id'            => (int) $user->id,
 				'plan_id'            => $planId ?? $freeId,
