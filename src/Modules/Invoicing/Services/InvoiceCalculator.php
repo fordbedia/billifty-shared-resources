@@ -20,7 +20,8 @@ final class InvoiceCalculator
         $taxSum       = 0;   // sum of item taxes in cents
 
         // Ensure items are available (you usually call ->load('items') before this)
-        $items = $invoice->items ?? collect();
+        $items = collect($invoice->items ?? []);
+        $computedItems = collect();
 
         foreach ($items as $idx => $item) {
             $qty     = $toFloat($item['quantity'] ?? 0);
@@ -54,11 +55,21 @@ final class InvoiceCalculator
             $subtotalBase += $base;
             $taxSum       += max(0, $lineTax);
 
-            // Write back onto the model (handy for PDFs/UI)
-            $item['position']         = $item['position'] ?? ($idx + 1);
-            $item['tax_cents']        = max(0, $lineTax);
-            $item['line_total_cents'] = max(0, $lineWith);
+            // Write back onto the item so the relation stays in sync for persistence/UI.
+            if (is_array($item)) {
+                $item['position']         = $item['position'] ?? ($idx + 1);
+                $item['tax_cents']        = max(0, $lineTax);
+                $item['line_total_cents'] = max(0, $lineWith);
+            } else {
+                $item->position         = $item->position ?? ($idx + 1);
+                $item->tax_cents        = max(0, $lineTax);
+                $item->line_total_cents = max(0, $lineWith);
+            }
+
+            $computedItems->push($item);
         }
+
+        $invoice->setRelation('items', $computedItems);
 
         // Invoice-level discount (mutually exclusive with per-line)
         $invoiceLevelDiscount = 0;

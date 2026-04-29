@@ -9,7 +9,9 @@ class SnapshotTestDatabase extends Command
 {
     protected $signature = 'testdb:snapshot
 		{--db=app_db : Database name}
-		{--user=billifty_u : DB username}
+		{--user=root : DB username}
+		{--host=mysql : DB host}
+		{--port=3306 : DB port}
 		{--file=src/TestCase/sqldumps/billifty.mysql.sql : Output dump path (relative to shared-resources root)}';
 
     protected $description = 'Create a MySQL SQL dump used by Testbench/RefreshDatabase for fast resets.';
@@ -27,12 +29,12 @@ class SnapshotTestDatabase extends Command
 		$db   = (string) $this->option('db');
 		$user = (string) $this->option('user');
 
-		$host = env('TEST_DB_HOST', env('DB_HOST', 'mysql'));
-		$port = env('TEST_DB_PORT', env('DB_PORT', '3306'));
-		$pass = env('TEST_DB_PASSWORD', env('DB_PASSWORD', ''));
+		$host = (string) $this->option('host');
+		$port = (string) $this->option('port');
+		$pass = env('TEST_DB_SNAPSHOT_PASSWORD', env('MYSQL_ROOT_PASSWORD', 'root'));
 
 		if ($pass === '') {
-			$this->error('Missing TEST_DB_PASSWORD/DB_PASSWORD env var (needed for mysqldump).');
+			$this->error('Missing TEST_DB_SNAPSHOT_PASSWORD/MYSQL_ROOT_PASSWORD env var (needed for mysqldump).');
 			return self::FAILURE;
 		}
 
@@ -53,6 +55,7 @@ class SnapshotTestDatabase extends Command
 			'-P', $port,
 			'-u', $user,
 			'--single-transaction',
+			'--skip-lock-tables',
 			'--routines',
 			'--triggers',
 			'--events',
@@ -63,20 +66,22 @@ class SnapshotTestDatabase extends Command
 		], null, 120);
 
 		$process->run();
-
-		file_put_contents($errFile, $process->getErrorOutput() ?: '');
+		$errorOutput = $process->getErrorOutput() ?: '';
 
 		if (! $process->isSuccessful()) {
+			file_put_contents($errFile, $errorOutput);
 			$this->error("mysqldump failed. See: {$errFile}");
-			$this->line($process->getErrorOutput());
+			$this->line($errorOutput);
 			return self::FAILURE;
 		}
 
 		file_put_contents($output, $process->getOutput());
+		if (file_exists($errFile)) {
+			@unlink($errFile);
+		}
 
 		$size = @filesize($output) ?: 0;
 		$this->info("✅ Dump written: {$output} (" . number_format($size) . " bytes)");
-		$this->info("ℹ️  Stderr log: {$errFile}");
 
 		return self::SUCCESS;
 	}

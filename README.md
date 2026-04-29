@@ -1,11 +1,9 @@
 # Unit Test
 
 ```shell
-PGPASSWORD='33L!0213LYM26.' \
-docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T postgres \
-  sh -lc "pg_dump -U 'app_us3r_26\!.' -d 'app_db' --no-owner --no-privileges" \
-  > shared-resources/src/TestCase/sqldumps/billifty.pgsql \
-  2> shared-resources/src/TestCase/sqldumps/billifty.dump.err
+docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T mysql \
+  sh -lc "MYSQL_PWD='root' mysqldump -u 'root' app_db --single-transaction --routines --triggers --events --no-tablespaces" \
+  > shared-resources/src/TestCase/sqldumps/billifty.mysql.sql
 ```
 
 ## and run the test on specific class

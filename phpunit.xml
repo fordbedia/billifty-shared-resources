@@ -10,12 +10,13 @@
         <env name="APP_ENV" value="testing"/>
         <env name="DB_CONNECTION" value="testing"/>
 
-        <!-- Your docker postgres creds -->
-        <env name="TEST_DB_HOST" value="postgres"/>
-        <env name="TEST_DB_PORT" value="5432"/>
+        <env name="TEST_DB_HOST" value="mysql"/>
+        <env name="TEST_DB_PORT" value="3306"/>
         <env name="TEST_DB_DATABASE" value="app_db"/>
-        <env name="TEST_DB_USERNAME" value="app_us3r_26!."/>
-        <env name="TEST_DB_PASSWORD" value="33L!0213LYM26."/>
+        <env name="TEST_DB_USERNAME" value="billifty_u"/>
+        <env name="TEST_DB_PASSWORD" value="b1ll1iftykamikalara0213"/>
+        <env name="TEST_DB_SNAPSHOT_PASSWORD" value="root"/>
+        <env name="TEST_DB_SNAPSHOT_FILE" value="src/TestCase/sqldumps/billifty.mysql.sql"/>
     </php>
 
     <testsuites>
