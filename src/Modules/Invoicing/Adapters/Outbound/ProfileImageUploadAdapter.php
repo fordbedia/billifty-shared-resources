@@ -4,6 +4,7 @@ namespace BilliftySDK\SharedResources\Modules\Invoicing\Adapters\Outbound;
 
 use BilliftySDK\SharedResources\Modules\Invoicing\Ports\ImageProcessor;
 use BilliftySDK\SharedResources\Modules\Invoicing\Support\FileImageProcessor;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 
 class ProfileImageUploadAdapter implements ImageProcessor
@@ -34,5 +35,13 @@ class ProfileImageUploadAdapter implements ImageProcessor
 	public function store(UploadedFile $file): array
 	{
 		return $this->processor->store($file);
+	}
+
+	/** @adapter Adapts delete method
+	 * Deletes the last record or item from the applicable dataset or resource.
+	 */
+	public function deleteLast(Model $model, string $column = 'avatar'): bool
+	{
+		return $this->processor->delete($model->{$column});
 	}
 }

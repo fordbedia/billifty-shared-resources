@@ -3,6 +3,7 @@
 namespace BilliftySDK\SharedResources\Modules\Invoicing\Support;
 
 use BilliftySDK\SharedResources\Modules\Invoicing\Ports\ImageProcessor;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -53,5 +54,10 @@ class FileImageProcessor implements ImageProcessor
             'logo_path' => $path,
             'logo_disk' => $this->disk,
         ];
+	}
+
+	public function delete(string $path): bool
+	{
+		return Storage::disk($this->disk)->delete($path);
 	}
 }

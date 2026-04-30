@@ -74,10 +74,12 @@ class UserController extends Controller
 		UserInterface $userRepo
 	) {
 		$avatar = null;
+		$uploader = ProfileImageUploadAdapter::make('public');
 		if ($request->has('avatar') && $request->avatar) {
-			$uploader = ProfileImageUploadAdapter::make('public');
 			['logo_path' => $avatar] = $uploader->store($request->file('avatar'));
 		}
+
+		$uploader->deleteLast($userRepo->authUser(), 'avatar');
 
         return $userRepo->updateUser(array_merge($request->all(), ['avatar' => $avatar]));
     }
