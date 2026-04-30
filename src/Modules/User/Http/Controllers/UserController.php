@@ -10,6 +10,7 @@ use BilliftySDK\SharedResources\Modules\User\Http\Requests\UserRequest;
 use BilliftySDK\SharedResources\Modules\User\Http\Resources\UserJsonResource;
 use BilliftySDK\SharedResources\Modules\User\Repository\Contract\UserInterface;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use BilliftySDK\SharedResources\Modules\User\Auth\traits\TokenName;
 use Illuminate\Support\Facades\DB;
@@ -73,13 +74,15 @@ class UserController extends Controller
 		int $id,
 		UserInterface $userRepo
 	) {
-		$avatar = null;
+		$avatar = $userRepo->authUser()->avatar;
 		$uploader = ProfileImageUploadAdapter::make('public');
-		if ($request->has('avatar') && $request->avatar) {
+		if ($request->has('avatar') && $request->file('avatar') && $request->file('avatar') instanceof UploadedFile) {
 			['logo_path' => $avatar] = $uploader->store($request->file('avatar'));
 		}
 
-		$uploader->deleteLast($userRepo->authUser(), 'avatar');
+		if ($userRepo->authUser()->avatar) {
+			$uploader->deleteLast($userRepo->authUser(), 'avatar');
+		}
 
         return $userRepo->updateUser(array_merge($request->all(), ['avatar' => $avatar]));
     }
