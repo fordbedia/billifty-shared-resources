@@ -141,8 +141,8 @@
                 @if($pi->swift_code)<div class="payment-row"><span>Swift:</span><strong>{{ $pi->swift_code }}</strong></div>@endif
               @elseif($paymentMethod === 'paypal' && $pi->paypal_email)
                 <div class="payment-row"><span>PayPal:</span><strong>{{ $pi->paypal_email }}</strong></div>
-              @elseif($paymentMethod === 'stripe' && $pi->stripe_payment_link)
-                <div class="payment-row"><span>Stripe:</span><strong>{{ $pi->stripe_payment_link }}</strong></div>
+              @elseif($paymentMethod === 'stripe' && $pi->stripe_account_id)
+                <div class="payment-row"><span>Stripe:</span><strong>{{ $pi->stripe_account_id }}</strong></div>
               @elseif($paymentMethod === 'cash_app' && $pi->cash_app)
                 <div class="payment-row"><span>Cash App:</span><strong>{{ $pi->cash_app }}</strong></div>
               @else

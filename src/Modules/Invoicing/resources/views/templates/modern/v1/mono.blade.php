@@ -250,9 +250,9 @@
             @elseif($paymentMethod === 'paypal' && $pi->paypal_email)
               <div class="mono-info-line"><span>Payment Method:</span> <strong>PayPal</strong></div>
               <div class="mono-info-line"><span>PayPal:</span> <strong>{{ $pi->paypal_email }}</strong></div>
-            @elseif($paymentMethod === 'stripe' && $pi->stripe_payment_link)
+            @elseif($paymentMethod === 'stripe' && $pi->stripe_account_id)
               <div class="mono-info-line"><span>Payment Method:</span> <strong>Stripe</strong></div>
-              <div class="mono-info-line"><span>Payment Link:</span> <strong>{{ $pi->stripe_payment_link }}</strong></div>
+              <div class="mono-info-line"><span>Payment Link:</span> <strong>{{ $pi->stripe_account_id }}</strong></div>
             @elseif($paymentMethod === 'cash_app' && $pi->cash_app)
               <div class="mono-info-line"><span>Payment Method:</span> <strong>Cash App</strong></div>
               <div class="mono-info-line"><span>Cash App:</span> <strong>{{ $pi->cash_app }}</strong></div>

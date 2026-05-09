@@ -123,10 +123,10 @@
                 <div class="payment-heading"><span class="payment-mark"></span>PayPal</div>
                 <div>{{ $pi->paypal_email }}</div>
               </div>
-            @elseif($paymentMethod === 'stripe' && $pi->stripe_payment_link)
+            @elseif($paymentMethod === 'stripe' && $pi->stripe_account_id)
               <div class="payment-group">
                 <div class="payment-heading"><span class="payment-mark"></span>Stripe</div>
-                <div>{{ $pi->stripe_payment_link }}</div>
+                <div>{{ $pi->stripe_account_id }}</div>
               </div>
             @elseif($paymentMethod === 'cash_app' && $pi->cash_app)
               <div class="payment-group">

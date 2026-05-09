@@ -3,6 +3,7 @@
 namespace BilliftySDK\SharedResources\Modules\Invoicing\Models;
 
 
+use BilliftySDK\SharedResources\Modules\Billing\Models\PaymentLink;
 use BilliftySDK\SharedResources\Modules\User\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -96,4 +97,9 @@ class Invoices extends Model
 
         return Storage::disk($this->pdf_disk)->url($this->pdf_path);
     }
+
+	public function paymentLink()
+	{
+		return $this->hasOne(PaymentLink::class, 'invoice_id', 'id');
+	}
 }

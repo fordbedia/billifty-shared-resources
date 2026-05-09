@@ -106,7 +106,7 @@
           @elseif($paymentMethod === 'paypal')
             @if($pi->paypal_email)<div><span>PayPal:</span> {{ $pi->paypal_email }}</div>@endif
           @elseif($paymentMethod === 'stripe')
-            @if($pi->stripe_payment_link)<div><span>Stripe:</span> {{ $pi->stripe_payment_link }}</div>@endif
+            @if($pi->stripe_account_id)<div><span>Stripe:</span> {{ $pi->stripe_account_id }}</div>@endif
           @elseif($paymentMethod === 'cash_app')
             @if($pi->cash_app)<div><span>Cash App:</span> {{ $pi->cash_app }}</div>@endif
           @else

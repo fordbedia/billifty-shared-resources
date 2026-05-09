@@ -10,7 +10,7 @@
   $logoInitial = strtoupper(substr(trim((string) ($bp?->name ?? 'B')), 0, 1));
   $hasLineDiscount = ($invoice->discount_mode ?? null) === 'per-line';
   $paymentMethod = $pi?->payment_method instanceof \BackedEnum ? $pi->payment_method->value : ($pi?->payment_method ?? null);
-  $payUrl = $paymentMethod === 'stripe' ? ($pi?->stripe_payment_link ?? null) : null;
+  $payUrl = $paymentMethod === 'stripe' ? ($pi?->stripe_account_id ?? null) : null;
   $dueBaseDate = $invoice->issued_on ? \Carbon\Carbon::parse($invoice->issued_on)->startOfDay() : \Carbon\Carbon::today();
   $dueDate = $invoice->due_on ? \Carbon\Carbon::parse($invoice->due_on)->startOfDay() : null;
   $daysRemaining = $dueDate ? (int) round($dueBaseDate->diffInDays($dueDate, false)) : null;
@@ -154,8 +154,8 @@
               </div>
             @elseif($paymentMethod === 'paypal' && $pi->paypal_email)
               <div class="payment-line"><span>PayPal:</span> {{ $pi->paypal_email }}</div>
-            @elseif($paymentMethod === 'stripe' && $pi->stripe_payment_link)
-              <div class="payment-line"><span>Stripe:</span> {{ $pi->stripe_payment_link }}</div>
+            @elseif($paymentMethod === 'stripe' && $pi->stripe_account_id)
+              <div class="payment-line"><span>Stripe:</span> {{ $pi->stripe_account_id }}</div>
             @elseif($paymentMethod === 'cash_app' && $pi->cash_app)
               <div class="payment-line"><span>Cash App:</span> {{ $pi->cash_app }}</div>
             @else

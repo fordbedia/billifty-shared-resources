@@ -4,15 +4,14 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
-    /**
-     * Run the migrations.
-     */
-    public function up(): void
-    {
-        Schema::create('payment_information', function (Blueprint $table) {
-            $table->id();
+return new class extends Migration {
+	/**
+	 * Run the migrations.
+	 */
+	public function up(): void
+	{
+		Schema::create('payment_information', function (Blueprint $table) {
+			$table->id();
 			$table->enum('payment_method', [
 				'bank_transfer',
 				'paypal',
@@ -26,20 +25,21 @@ return new class extends Migration
 			$table->string('iban')->nullable();
 			$table->string('swift_code')->nullable();
 			$table->string('paypal_email')->nullable();
-			$table->string('stripe_payment_link')->nullable();
+			$table->string('stripe_account_id')->nullable();
+			$table->timestamp('stripe_connected_at')->nullable();
 			$table->string('cash_app')->nullable();
 			$table->text('notes')->nullable();
 			$table->tinyInteger('is_test')->default(0);
-            $table->timestamps();
+			$table->timestamps();
 			$table->softDeletes();
-        });
-    }
+		});
+	}
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        Schema::dropIfExists('payment_information');
-    }
+	/**
+	 * Reverse the migrations.
+	 */
+	public function down(): void
+	{
+		Schema::dropIfExists('payment_information');
+	}
 };
