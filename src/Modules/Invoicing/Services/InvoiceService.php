@@ -17,21 +17,24 @@ class InvoiceService
 {
 	public function __construct(
 		protected InvoiceCalculator $calculator,
-		protected InvoiceContracts $repo
-	) {}
+		protected InvoiceContracts  $repo,
+		protected InvoicePaymentLinkServices $paymentLinkServices
+	)
+	{
+	}
 
 	public function upsert(
-		array $data,
+		array         $data,
 		InvoiceAction $action,
-		?int $id = null
-	): Invoices {
+		?int          $id = null
+	): Invoices
+	{
 		DB::beginTransaction();
 
 		$invoice = $id
 			? $this->repo->findById($id)
-			: new Invoices(Collection::make($data)->filter(fn ($inv, $key) =>
-					!in_array($key, ['invoice_items', 'business_profile', 'template'])
-				)->toArray());
+			: new Invoices(Collection::make($data)->filter(fn($inv, $key) => !in_array($key, ['invoice_items', 'business_profile', 'template'])
+			)->toArray());
 
 		$fromStatus = InvoiceStatus::from($invoice->status ?? InvoiceStatus::DRAFT->value);
 		if (!InvoiceStateMachine::canTransition($fromStatus, $action)) {
@@ -51,8 +54,8 @@ class InvoiceService
 		}
 
 		$payload = Collection::make($data)->except([
-			'subtotal_cents','tax_cents','shipping_tax_cents','total_cents','amount_due_cents',
-			'invoice_items','action',
+			'subtotal_cents', 'tax_cents', 'shipping_tax_cents', 'total_cents', 'amount_due_cents',
+			'invoice_items', 'action',
 		])->toArray();
 
 		$invoice->fill($payload);
@@ -77,13 +80,13 @@ class InvoiceService
 			&& is_numeric($data['subtotal_cents'])
 			&& is_numeric($data['total_cents'])
 		) {
-			$frontendSubtotal = (int) $data['subtotal_cents'];
-			$frontendTotal    = (int) $data['total_cents'];
-			$backendSubtotal  = (int) $invoice->subtotal_cents;
-			$backendTotal     = (int) $invoice->total_cents;
+			$frontendSubtotal = (int)$data['subtotal_cents'];
+			$frontendTotal = (int)$data['total_cents'];
+			$backendSubtotal = (int)$invoice->subtotal_cents;
+			$backendTotal = (int)$invoice->total_cents;
 
 			// Allow 1-cent rounding tolerance (optional)
-			$withinTolerance = fn ($a, $b) => abs($a - $b) <= 1;
+			$withinTolerance = fn($a, $b) => abs($a - $b) <= 1;
 
 			if (!$withinTolerance($frontendSubtotal, $backendSubtotal)
 				|| !$withinTolerance($frontendTotal, $backendTotal)) {
@@ -105,6 +108,11 @@ class InvoiceService
 		$invoice->save();
 
 		$this->repo->syncItems($invoice, $invoice->items);
+
+		// Save Payment Link
+		$this->paymentLinkServices->createForInvoice($invoice, [
+			'expires_at' => $this->paymentLinkServices->generateExpireAt(),
+		]);
 
 		if ($action === InvoiceAction::Issue) {
 			InvoiceStateMachine::onIssue($invoice);

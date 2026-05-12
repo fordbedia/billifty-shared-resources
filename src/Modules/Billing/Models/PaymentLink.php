@@ -3,8 +3,8 @@
 namespace BilliftySDK\SharedResources\Modules\Billing\Models;
 
 
+use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use Illuminate\Database\Eloquent\Model;
-use Stripe\Invoice;
 
 class PaymentLink extends Model
 {
@@ -13,6 +13,17 @@ class PaymentLink extends Model
 
 	public function invoice()
 	{
-		return $this->belongsTo(Invoice::class, 'invoice_id');
+		return $this->belongsTo(Invoices::class, 'invoice_id');
 	}
+
+	public static function relationships()
+	{
+		return [
+			'invoice',
+			'invoice.client',
+			'invoice.businessProfile',
+			'invoice.currency'
+		];
+	}
+
 }

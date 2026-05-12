@@ -186,6 +186,9 @@
         <h4>Terms &amp; Conditions</h4>
         <p>@if($invoice->terms){{ $invoice->terms }}@else &mdash; @endif</p>
       </section>
+		<section>
+			@include('invoicing::templates.payment-method', ['invoice' => $invoice])
+		</section>
     </footer>
 
     {!! $watermark() !!}

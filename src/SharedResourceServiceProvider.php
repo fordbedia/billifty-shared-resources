@@ -5,8 +5,10 @@ namespace BilliftySDK\SharedResources;
 use BilliftySDK\SharedResources\Modules\Billing\BillingProvider;
 use BilliftySDK\SharedResources\Modules\Invoicing\InvoicingProvider;
 use BilliftySDK\SharedResources\Modules\User\UserProvider;
+use BilliftySDK\SharedResources\SDK\Application\Ports\Transactional;
 use BilliftySDK\SharedResources\SDK\Console\Config\Make;
 use BilliftySDK\SharedResources\SDK\Console\Config\ResetTestData;
+use BilliftySDK\SharedResources\SDK\Infrastructure\Transactions\EloquentDBTransaction;
 use BilliftySDK\SharedResources\TestCase\Command\SnapshotTestDatabase;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -121,6 +123,8 @@ class SharedResourceServiceProvider extends ServiceProvider
         foreach($this->providers as $provider) {
             $this->app->register($provider);
         }
+
+		$this->app->singleton(Transactional::class, EloquentDBTransaction::class);
     }
 }
 

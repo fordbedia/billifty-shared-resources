@@ -24,6 +24,23 @@ class InvoiceResource extends JsonResource
 		return method_exists($value, 'toArray') ? $value->toArray() : $value;
 	}
 
+	protected function businessProfileArray(Request $request): ?array
+	{
+		if (!$this->resource->relationLoaded('businessProfile') || !$this->businessProfile) {
+			return null;
+		}
+
+		$businessProfile = $this->businessProfile->toArray();
+
+		if ($this->businessProfile->relationLoaded('paymentInformation')) {
+			$businessProfile['paymentInformation'] = $this->businessProfile->paymentInformation
+				? PaymentInformationResource::make($this->businessProfile->paymentInformation)->toArray($request)
+				: null;
+		}
+
+		return $businessProfile;
+	}
+
     /**
      * Transform the resource into an array.
      *
@@ -35,13 +52,14 @@ class InvoiceResource extends JsonResource
             'id' => $this->id,
 			'user_id' => $this->user_id,
 			'workspace_id' => $this->workspace_id,
-           	'businessProfile' => $this->relationArray('businessProfile'),
+           	'businessProfile' => $this->businessProfileArray($request),
 			'client' => $this->relationArray('client'),
 			'template' => $this->relationArray('template'),
 			'colorScheme' => $this->relationArray('colorScheme'),
             'paymentInformation' => $this->resource->relationLoaded('paymentInformation') && $this->paymentInformation
 				? PaymentInformationResource::make($this->paymentInformation)->toArray($request)
 				: null,
+			'paymentLink' => $this->relationArray('paymentLink'),
 			'items' => $this->relationArray('items'),
 			'invoice_number' => $this->invoice_number,
 			'reference' => $this->reference,

@@ -64,6 +64,7 @@ class StripePaymentLink implements InvoicePaymentLinkGateway
 
 		$session = $this->stripe->checkout->sessions->create([
 			'mode' => 'payment',
+			'customer_email' => $invoice?->client?->email,
 			'success_url' => $data->successUrl,
 			'cancel_url' => $data->cancelUrl,
 			'line_items' => $lineItems,

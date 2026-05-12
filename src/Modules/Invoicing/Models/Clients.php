@@ -10,6 +10,6 @@ class Clients extends Model
 {
 	use softDeletes;
 
-    protected $table = 'clients';
-		protected $guarded = [];
+	protected $table = 'clients';
+	protected $guarded = [];
 }

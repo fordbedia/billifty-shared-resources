@@ -4,6 +4,7 @@ namespace BilliftySDK\SharedResources\Modules\Invoicing\Models;
 
 
 use BilliftySDK\SharedResources\Modules\Billing\Models\PaymentLink;
+use BilliftySDK\SharedResources\Modules\Billing\Models\PaymentRecord;
 use BilliftySDK\SharedResources\Modules\User\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -66,6 +67,7 @@ class Invoices extends Model
 		return [
 			'workspace.user',
 			'businessProfile.paymentInformation',
+			'paymentLink',
 			'client',
 			'items',
 			'colorScheme.colors',
@@ -101,5 +103,10 @@ class Invoices extends Model
 	public function paymentLink()
 	{
 		return $this->hasOne(PaymentLink::class, 'invoice_id', 'id');
+	}
+
+	public function paymentRecord()
+	{
+		return $this->hasOne(PaymentRecord::class, 'invoice_id', 'id');
 	}
 }

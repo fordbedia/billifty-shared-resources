@@ -4,8 +4,12 @@ namespace BilliftySDK\SharedResources\Modules\Billing\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use BilliftySDK\SharedResources\Modules\Billing\Contracts\PaymentGateway;
+use BilliftySDK\SharedResources\Modules\Billing\Mail\PaymentSuccessNotificationForBusinessProfileMail;
+use BilliftySDK\SharedResources\Modules\Billing\Mail\PaymentSuccessNotificationForClientMail;
+use BilliftySDK\SharedResources\Modules\Billing\Models\PaymentRecord;
 use BilliftySDK\SharedResources\Modules\Billing\Models\StripeWebhookEvents;
 use BilliftySDK\SharedResources\Modules\Billing\Models\UserSubscription;
+use BilliftySDK\SharedResources\Modules\Invoicing\Models\Currency;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use BilliftySDK\SharedResources\Modules\User\Models\Plan;
 use BilliftySDK\SharedResources\Modules\User\Models\User;
@@ -13,6 +17,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Stripe\Exception\SignatureVerificationException;
 use Stripe\StripeClient;
 use Stripe\Webhook;
@@ -116,19 +121,14 @@ class StripeWebhookController extends Controller
 		if (in_array($event->type, [
 			'checkout.session.completed',
 			'checkout.session.async_payment_succeeded',
-			'checkout.session.async_payment_failed',
 		])) {
 			$session = $event?->data?->object ?? null;
 
 			$invoiceId = $session?->metadata?->invoice_id ?? null;
 
-			if ($invoiceId) {
-				if ($event->type === 'checkout.session.async_payment_failed') {
-					$this->markInvoicePaymentFailed($session);
-				} else {
-					$this->markInvoicePaid($session);
-				}
 
+			if ($invoiceId) {
+				$this->processSuceessPayment($event, $session, $invoiceId);
 				return response('OK', 200);
 			}
 		}
@@ -366,5 +366,93 @@ class StripeWebhookController extends Controller
 		$invoice->update([
 			'status' => 'void',
 		]);
+	}
+
+	private function retrievePaymentData(object $event, object $session, Invoices $invoice): array
+	{
+		$stripeAccountId = $event->account
+			?? $invoice?->businessProfile?->paymentInformation?->stripe_account_id
+			?? null;
+		$stripeRequestOptions = $stripeAccountId ? ['stripe_account' => $stripeAccountId] : [];
+		$paymentIntentId = is_object($session->payment_intent ?? null)
+			? ($session->payment_intent->id ?? null)
+			: ($session->payment_intent ?? null);
+
+		$paymentIntent = $this->stripe->paymentIntents->retrieve(
+			$paymentIntentId,
+			[
+				'expand' => [
+					'payment_method',
+					'latest_charge',
+				],
+			],
+			$stripeRequestOptions
+		);
+
+		$paymentMethod = $paymentIntent->payment_method;
+		$charge = $paymentIntent->latest_charge;
+
+		$lineItems = $this->stripe->checkout->sessions->allLineItems(
+			$session->id,
+			['limit' => 100],
+			$stripeRequestOptions
+		);
+
+		$cardLast4 = null;
+		$cardBrand = null;
+
+		if ($paymentMethod && $paymentMethod->type === 'card') {
+			$cardLast4 = $paymentMethod->card->last4;
+			$cardBrand = $paymentMethod->card->brand;
+		}
+
+		$currencySymbol = Currency::whereCode($paymentIntent->currency)->value('symbol');
+
+		$paymentData = [
+			'invoice_number' => $invoice->invoice_number,
+			'invoice_payment_method' => $invoice->businessProfile?->paymentInformation?->payment_method,
+			'stripe_session_id' => $session->id,
+			'stripe_payment_intent_id' => $paymentIntent->id,
+			'payment_method' => $paymentMethod?->type,
+			'card_brand' => $cardBrand,
+			'card_last4' => $cardLast4,
+			'amount_paid' => $paymentIntent->amount_received,
+			'currency' => $paymentIntent->currency,
+			'currency_symbol' => $currencySymbol,
+			'payment_date' => now()->setTimestamp($paymentIntent->created),
+			'receipt_url' => $charge?->receipt_url,
+			'token' => $invoice->paymentLink?->token,
+			'line_items' => collect($lineItems->data)->map(fn($item) => [
+				'description' => $item->description,
+				'quantity' => $item->quantity,
+				'amount_total' => $item->amount_total,
+				'currency' => $item->currency,
+			])->values()->all(),
+		];
+
+		return $paymentData;
+	}
+
+	private function processSuceessPayment(object $event, object $session, int $invoiceId): void
+	{
+		$invoice = Invoices::query()->find($invoiceId);
+		$data = $this->retrievePaymentData($event, $session, $invoice);
+
+		if ($event->type === 'checkout.session.async_payment_failed') {
+			$this->markInvoicePaymentFailed($session);
+		} else {
+			$this->markInvoicePaid($session);
+		}
+
+		PaymentRecord::create([
+			'invoice_id' => $invoiceId,
+			'payment_method' => $data['invoice_payment_method'],
+			'data' => $data,
+			'token' => $data['token'],
+		]);
+		Mail::to($invoice->businessProfile?->email)
+			->send(new PaymentSuccessNotificationForBusinessProfileMail($invoice, $data));
+		Mail::to($invoice->client?->email)
+			->send(new PaymentSuccessNotificationForClientMail($invoice, $data));
 	}
 }
