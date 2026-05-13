@@ -18,4 +18,9 @@ class PaymentInformation extends Model
 	protected $casts = [
 		'payment_method' => PaymentMethod::class
 	];
+
+	public function businessProfile()
+	{
+		return $this->belongsTo(BusinessProfiles::class, 'business_profile_id');
+	}
 }

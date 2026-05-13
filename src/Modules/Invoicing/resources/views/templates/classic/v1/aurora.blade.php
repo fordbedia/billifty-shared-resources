@@ -1,5 +1,4 @@
 @php
-  $fontFamily = $theme->fontFamily ?? "DejaVu Sans, Arial, sans-serif";
   $ink        = '#202230';
   $muted      = '#6b7280';
   $bg         = '#ffffff';
@@ -9,33 +8,6 @@
   $stripe     = '#ffffff';
   $railColor  = $scheme->main->code;
   $accentSoft = $scheme->extra_light->code ?? '#f0edff';
-  $totalDue   = $invoice->amount_due_cents ?? $invoice->total_cents ?? 0;
-  $bpAddress  = $bp ? $addr($bp) : null;
-  $clAddress  = $cl ? $addr($cl) : null;
-  $paymentMethod = $pi?->payment_method instanceof \BackedEnum ? $pi->payment_method->value : ($pi?->payment_method ?? null);
-  $maskAccount = function($value) {
-    $raw = trim((string) $value);
-    $digits = preg_replace('/\D+/', '', $raw);
-
-    if ($digits === '') {
-      return $raw;
-    }
-
-    return '**** **** '.substr($digits, -4);
-  };
-  $fmtRate = function($value) {
-    $num = (float) ($value ?? 0);
-
-    if ($num > 0 && $num < 1) {
-      $num *= 100;
-    }
-
-    $decimals = fmod($num, 1.0) === 0.0 ? 0 : 2;
-
-    return number_format($num, $decimals).'%';
-  };
-
-  $logoW = 24;
 @endphp
 
 <div class="aurora--theme aurora-root scheme cat">
@@ -94,25 +66,11 @@
       </div>
 
       <div class="info-cell payment-info">
-        <div class="section-label"><span class="label-mark"></span>Payment Info</div>
-        @if($pi)
-          @if($paymentMethod === 'bank_transfer')
-            @if($pi->bank_name)<div><span>Bank:</span> {{ $pi->bank_name }}</div>@endif
-            @if($pi->account_name)<div><span>Account Name:</span> {{ $pi->account_name }}</div>@endif
-            @if($pi->account_number)<div><span>Account No:</span> {{ $maskAccount($pi->account_number) }}</div>@endif
-            @if($pi->routing_number)<div><span>Routing:</span> {{ $pi->routing_number }}</div>@endif
-            @if($pi->iban)<div><span>IBAN:</span> {{ $pi->iban }}</div>@endif
-            @if($pi->swift_code)<div><span>Swift:</span> {{ $pi->swift_code }}</div>@endif
-          @elseif($paymentMethod === 'paypal')
-            @if($pi->paypal_email)<div><span>PayPal:</span> {{ $pi->paypal_email }}</div>@endif
-          @elseif($paymentMethod === 'stripe')
-            @if($pi->stripe_account_id)<div><span>Stripe:</span> {{ $pi->stripe_account_id }}</div>@endif
-          @elseif($paymentMethod === 'cash_app')
-            @if($pi->cash_app)<div><span>Cash App:</span> {{ $pi->cash_app }}</div>@endif
-          @else
-            {!! $paymentInfo($pi) !!}
-          @endif
-          @if($pi->notes)<div><span>Notes:</span> {{ $pi->notes }}</div>@endif
+        <div class="section-label"><span class="label-mark"></span>Payment Information</div>
+        @if($hasBankTransferDetails)
+          @foreach($bankTransferDetails as $label => $value)
+            <div><span>{{ $label }}:</span> {{ $value }}</div>
+          @endforeach
         @else
           <div class="muted">Payment details unavailable.</div>
         @endif
@@ -129,7 +87,7 @@
         <div class="right">Amount</div>
       </div>
 
-      @if(($items instanceof \Illuminate\Support\Collection ? $items->count() : count($items)) === 0)
+      @if($itemCount === 0)
         <div class="items-empty muted center">No items.</div>
       @else
         @foreach($items as $it)
@@ -138,11 +96,11 @@
               <div class="item-title">{{ $it->name ?? 'Item' }}</div>
               @if(!empty($it->description))<div class="item-description">{{ $it->description }}</div>@endif
             </div>
-            <div class="center">{{ rtrim(rtrim((string)($it->quantity ?? 0), '0'), '.') }}{{ $it->unit ? ' '.$it->unit : '' }}</div>
-            <div class="right">{{ $fmtMoney($it->unit_price_cents ?? 0, $invoice->currency ?? 'USD') }}</div>
-            <div class="center">{{ $fmtRate($it->tax_rate ?? 0) }}</div>
-            @if($hasLineDiscount)<div class="discount-col">{{ $fmtRate($it->line_discount_rate ?? 0) }}</div>@endif
-            <div class="right amount">{{ $fmtMoney($it->line_total_cents ?? 0, $invoice->currency ?? 'USD') }}</div>
+            <div class="center">{{ $fmtQuantity($it) }}</div>
+            <div class="right">{{ $fmtItemUnitPrice($it) }}</div>
+            <div class="center">{{ $fmtItemTaxRate($it) }}</div>
+            @if($hasLineDiscount)<div class="discount-col">{{ $fmtItemLineDiscount($it) }}</div>@endif
+            <div class="right amount">{{ $fmtItemLineTotal($it) }}</div>
           </div>
         @endforeach
       @endif
@@ -152,25 +110,25 @@
       <div class="totals-panel">
         <div class="totals-row">
           <span>Subtotal</span>
-          <strong>{{ $fmtMoney($invoice->subtotal_cents ?? 0, $invoice->currency ?? 'USD') }}</strong>
+          <strong>{{ $fmtMoney($subtotalCents, $currency) }}</strong>
         </div>
         <div class="totals-row">
-          <span>Tax {{$isShippingTaxable ? " (includes shipping)" : ""}}</span>
-          <strong>{{ $fmtMoney($invoice->tax_cents ?? 0, $invoice->currency ?? 'USD') }}</strong>
+          <span>{{ $taxLabel }}</span>
+          <strong>{{ $fmtMoney($taxCents, $currency) }}</strong>
         </div>
         <div class="totals-row discount">
           <span>Discount</span>
-          <strong>-{{ $fmtMoney($invoice->discount_cents ?? 0, $invoice->currency ?? 'USD') }}</strong>
+          <strong>-{{ $fmtMoney($discountCents, $currency) }}</strong>
         </div>
-        @if((int)($invoice->shipping_cents ?? 0) > 0)
+        @if($hasShipping)
           <div class="totals-row">
             <span>Shipping</span>
-            <strong>{{ $fmtMoney($invoice->shipping_cents ?? 0, $invoice->currency ?? 'USD') }}</strong>
+            <strong>{{ $fmtMoney($shippingCents, $currency) }}</strong>
           </div>
         @endif
         <div class="totals-due">
           <span>Total Due</span>
-          <strong>{{ $fmtMoney($totalDue, $invoice->currency ?? 'USD') }}</strong>
+          <strong>{{ $fmtMoney($totalDue, $currency) }}</strong>
         </div>
       </div>
     </section>
@@ -186,9 +144,7 @@
         <h4>Terms &amp; Conditions</h4>
         <p>@if($invoice->terms){{ $invoice->terms }}@else &mdash; @endif</p>
       </section>
-		<section>
-			@include('invoicing::templates.payment-method', ['invoice' => $invoice])
-		</section>
+      @include('invoicing::templates.payment-method', ['invoice' => $invoice, 'pi' => $pi])
     </footer>
 
     {!! $watermark() !!}
@@ -240,7 +196,7 @@
       flex:0 0 24px;
     }
     .aurora-root .logo{
-      width:{{ $logoW }}px;
+      width:24px;
       height:auto;
       /*border-radius:6px;*/
       display:block;

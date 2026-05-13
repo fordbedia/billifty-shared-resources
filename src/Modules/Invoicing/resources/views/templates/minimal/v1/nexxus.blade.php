@@ -1,40 +1,8 @@
 @php
-  $fontFamily = data_get($theme ?? null, 'fontFamily', 'DejaVu Sans, Arial, sans-serif');
   $accent = data_get($scheme ?? null, 'main.code', '#ff3108') ?: '#ff3108';
   $accentDark = data_get($scheme ?? null, 'dark.code', $accent) ?: $accent;
-  $currency = $invoice->currency ?? 'USD';
-  $totalDue = $invoice->amount_due_cents ?? $invoice->total_cents ?? 0;
-  $bpAddress = $bp ? $addr($bp) : null;
-  $clAddress = $cl ? $addr($cl) : null;
-  $businessName = $bp?->name ?? 'Your Business';
-  $clientName = $cl?->company ?: ($cl?->name ?? 'Client');
-  $logoInitial = strtoupper(substr(trim((string) $businessName), 0, 1));
-  $hasLineDiscount = ($invoice->discount_mode ?? null) === 'per-line';
-  $firstItem = $items instanceof \Illuminate\Support\Collection ? $items->first() : (is_array($items) ? reset($items) : null);
   $projectTitle = data_get($firstItem, 'name') ?: 'Project Details';
   $projectReference = $invoice->reference ?: null;
-  $paymentMethod = $pi?->payment_method instanceof \BackedEnum ? $pi->payment_method->value : ($pi?->payment_method ?? null);
-  $fmtRate = function($value) {
-    $num = (float) ($value ?? 0);
-
-    if ($num > 0 && $num < 1) {
-      $num *= 100;
-    }
-
-    $decimals = fmod($num, 1.0) === 0.0 ? 0 : 2;
-
-    return number_format($num, $decimals).'%';
-  };
-  $maskAccount = function($value) {
-    $raw = trim((string) $value);
-    $digits = preg_replace('/\D+/', '', $raw);
-
-    if ($digits === '') {
-      return $raw;
-    }
-
-    return '**** '.substr($digits, -4);
-  };
 @endphp
 
 <div class="nexxus--theme invoice-root nexxus-root scheme cat">
@@ -115,11 +83,11 @@
             <div class="item-title">{{ $it->name ?? 'Item' }}</div>
             @if(!empty($it->description))<div class="item-description">{{ $it->description }}</div>@endif
           </div>
-          <div class="qty-col">{{ rtrim(rtrim((string) ($it->quantity ?? 0), '0'), '.') }}{{ ($it->unit ?? null) ? ' '.$it->unit : '' }}</div>
-          <div class="money-col">{{ $fmtMoney($it->unit_price_cents ?? 0, $currency) }}</div>
-          <div class="tax-col">{{ $fmtRate($it->tax_rate ?? 0) }}</div>
-          @if($hasLineDiscount)<div class="tax-col">{{ $fmtPercent($it->line_discount_rate) }}</div>@endif
-          <div class="money-col item-amount">{{ $fmtMoney($it->line_total_cents ?? 0, $currency) }}</div>
+          <div class="qty-col">{{ $fmtQuantity($it) }}</div>
+          <div class="money-col">{{ $fmtItemUnitPrice($it) }}</div>
+          <div class="tax-col">{{ $fmtItemTaxRate($it) }}</div>
+          @if($hasLineDiscount)<div class="tax-col">{{ $fmtItemLineDiscount($it) }}</div>@endif
+          <div class="money-col item-amount">{{ $fmtItemLineTotal($it) }}</div>
         </div>
       @empty
         <div class="empty-cell">No items.</div>
@@ -130,26 +98,12 @@
       <div class="payment-cell">
         <div class="section-label">Payment Information</div>
         <div class="payment-panel">
-          @if($pi)
+          @if($hasBankTransferDetails)
             <div class="payment-details">
-              @if($paymentMethod === 'bank_transfer')
-                @if($pi->bank_name)<div class="payment-row"><span>Bank:</span><strong>{{ $pi->bank_name }}</strong></div>@endif
-                @if($pi->account_name)<div class="payment-row"><span>Account Name:</span><strong>{{ $pi->account_name }}</strong></div>@endif
-                @if($pi->account_number)<div class="payment-row"><span>Account No:</span><strong>{{ $maskAccount($pi->account_number) }}</strong></div>@endif
-                @if($pi->routing_number)<div class="payment-row"><span>Routing:</span><strong>{{ $pi->routing_number }}</strong></div>@endif
-                @if($pi->iban)<div class="payment-row"><span>IBAN:</span><strong>{{ $pi->iban }}</strong></div>@endif
-                @if($pi->swift_code)<div class="payment-row"><span>Swift:</span><strong>{{ $pi->swift_code }}</strong></div>@endif
-              @elseif($paymentMethod === 'paypal' && $pi->paypal_email)
-                <div class="payment-row"><span>PayPal:</span><strong>{{ $pi->paypal_email }}</strong></div>
-              @elseif($paymentMethod === 'stripe' && $pi->stripe_account_id)
-                <div class="payment-row"><span>Stripe:</span><strong>{{ $pi->stripe_account_id }}</strong></div>
-              @elseif($paymentMethod === 'cash_app' && $pi->cash_app)
-                <div class="payment-row"><span>Cash App:</span><strong>{{ $pi->cash_app }}</strong></div>
-              @else
-                {!! $paymentInfo($pi, 'nexxus-payment-list') !!}
-              @endif
+              @foreach($bankTransferDetails as $label => $value)
+                <div class="payment-row"><span>{{ $label }}:</span><strong>{{ $value }}</strong></div>
+              @endforeach
             </div>
-            @if($pi->notes)<div class="payment-note">{{ $pi->notes }}</div>@endif
           @else
             <div class="muted-line">&mdash;</div>
           @endif
@@ -161,20 +115,20 @@
         <div class="summary-list">
           <div class="summary-row">
             <span>Subtotal</span>
-            <strong>{{ $fmtMoney($invoice->subtotal_cents ?? 0, $currency) }}</strong>
+            <strong>{{ $fmtMoney($subtotalCents, $currency) }}</strong>
           </div>
           <div class="summary-row">
             <span>Discount</span>
-            <strong>-{{ $fmtMoney($invoice->discount_cents ?? 0, $currency) }}</strong>
+            <strong>-{{ $fmtMoney($discountCents, $currency) }}</strong>
           </div>
           <div class="summary-row">
-            <span>Tax {{$isShippingTaxable ? " (includes shipping)" : ""}}</span>
-            <strong>{{ $fmtMoney($invoice->tax_cents ?? 0, $currency) }}</strong>
+            <span>{{ $taxLabel }}</span>
+            <strong>{{ $fmtMoney($taxCents, $currency) }}</strong>
           </div>
-          @if((int)($invoice->shipping_cents ?? 0) > 0)
+          @if($hasShipping)
             <div class="summary-row">
               <span>Shipping</span>
-              <strong>{{ $fmtMoney($invoice->shipping_cents ?? 0, $currency) }}</strong>
+              <strong>{{ $fmtMoney($shippingCents, $currency) }}</strong>
             </div>
           @endif
           <div class="summary-row total-row">
@@ -195,6 +149,8 @@
         <div class="footer-label">Terms &amp; Conditions</div>
         <div class="footer-copy">@if($invoice->terms){!! nl2br(e($invoice->terms)) !!}@else &mdash; @endif</div>
       </section>
+
+      @include('invoicing::templates.payment-method', ['invoice' => $invoice, 'pi' => $pi])
     </footer>
 
     {!! $watermark() !!}

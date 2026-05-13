@@ -13,9 +13,8 @@ class BusinessProfiles extends Model
     protected $table = 'business_profiles';
 	protected $guarded = [];
 
-
-	public function paymentInformation()
+	public function paymentInformations()
 	{
-		return $this->hasOne(PaymentInformation::class, 'id', 'payment_information_id');
+		return $this->hasMany(PaymentInformation::class, 'business_profile_id')->orderBy('id');
 	}
 }

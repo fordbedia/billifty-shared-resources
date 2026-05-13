@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::create('business_profiles', function (Blueprint $table) {
             $table->id();
 			$table->unsignedBigInteger('user_id');
-			$table->unsignedBigInteger('payment_information_id')->nullable();
 			$table->string('name');
 			$table->string('legal_name')->nullable();
             $table->string('email')->nullable();
@@ -41,7 +40,6 @@ return new class extends Migration
 				->references('id')
 				->on('users')
 				->cascadeOnDelete();
-			$table->foreign('payment_information_id')->references('id')->on('payment_information')->cascadeOnDelete();
         });
     }
 

@@ -30,11 +30,20 @@ class StripePaymentLink implements InvoicePaymentLinkGateway
 	 */
 	public function create(CreateInvoicePaymentLinkData $data): PaymentLinkResult
 	{
-		$invoice = $this->invoiceRepo->getModel()->whereHas('paymentLink', function ($q) use ($data) {
-			$q->where('token', $data->token);
-		})->first();
+		$invoice = $this->invoiceRepo->getModel()
+			->with(['businessProfile.paymentInformations', 'paymentLink', 'items', 'client', 'currency'])
+			->whereHas('paymentLink', function ($q) use ($data) {
+				$q->where('token', $data->token);
+			})
+			->first();
 
-		$stripeAcctId = $invoice?->businessProfile?->paymentInformation?->stripe_account_id;
+		$stripePaymentInfo = $invoice?->businessProfile?->paymentInformations?->first(function ($paymentInfo) {
+			$paymentMethod = $paymentInfo?->payment_method;
+			$paymentMethod = $paymentMethod instanceof \BackedEnum ? $paymentMethod->value : (string) $paymentMethod;
+
+			return $paymentMethod === 'stripe';
+		});
+		$stripeAcctId = $stripePaymentInfo?->stripe_account_id;
 
 		if (!$stripeAcctId) {
 			abort(404, 'Stripe account` not found');

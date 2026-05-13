@@ -1,26 +1,6 @@
 @php
-  $fontFamily = data_get($theme ?? null, 'fontFamily', 'DejaVu Sans, Arial, sans-serif');
   $accent = data_get($scheme ?? null, 'main.code', '#0b5a47') ?: '#0b5a47';
   $accentDark = data_get($scheme ?? null, 'dark.code', $accent) ?: $accent;
-  $currency = $invoice->currency ?? 'USD';
-  $totalDue = $invoice->amount_due_cents ?? $invoice->total_cents ?? 0;
-  $bpAddress = $bp ? $addr($bp) : null;
-  $clAddress = $cl ? $addr($cl) : null;
-  $businessName = $bp?->name ?? 'Your Business';
-  $clientName = $cl?->company ?: ($cl?->name ?? 'Client');
-  $logoInitial = strtoupper(substr(trim((string) $businessName), 0, 1));
-  $hasLineDiscount = ($invoice->discount_mode ?? null) === 'per-line';
-  $paymentMethod = $pi?->payment_method instanceof \BackedEnum ? $pi->payment_method->value : ($pi?->payment_method ?? null);
-  $maskAccount = function($value) {
-    $raw = trim((string) $value);
-    $digits = preg_replace('/\D+/', '', $raw);
-
-    if ($digits === '') {
-      return $raw;
-    }
-
-    return '**** '.substr($digits, -4);
-  };
 @endphp
 
 <div class="pulse--theme invoice-root pulse-root scheme cat">
@@ -92,11 +72,11 @@
             <div class="item-title">{{ $it->name ?? 'Item' }}</div>
             @if(!empty($it->description))<div class="item-description">{{ $it->description }}</div>@endif
           </div>
-          <div class="qty-col">{{ rtrim(rtrim((string) ($it->quantity ?? 0), '0'), '.') }}{{ ($it->unit ?? null) ? ' '.$it->unit : '' }}</div>
-          <div class="unit-price-col">{{ $fmtMoney($it->unit_price_cents ?? 0, $currency) }}</div>
-          <div class="tax-col">{{ $fmtRate($it->tax_rate ?? 0) }}</div>
-          @if($hasLineDiscount)<div class="discount-col">{{ $fmtPercent($it->line_discount_rate) }}</div>@endif
-          <div class="amount-col item-amount">{{ $fmtMoney($it->line_total_cents ?? 0, $currency) }}</div>
+          <div class="qty-col">{{ $fmtQuantity($it) }}</div>
+          <div class="unit-price-col">{{ $fmtItemUnitPrice($it) }}</div>
+          <div class="tax-col">{{ $fmtItemTaxRate($it) }}</div>
+          @if($hasLineDiscount)<div class="discount-col">{{ $fmtItemLineDiscount($it) }}</div>@endif
+          <div class="amount-col item-amount">{{ $fmtItemLineTotal($it) }}</div>
         </div>
       @empty
         <div class="empty-cell">No items.</div>
@@ -107,37 +87,13 @@
       <div class="payment-cell">
         <div class="section-label">Payment Information</div>
         <div class="payment-details">
-          @if($pi)
-            @if($paymentMethod === 'bank_transfer')
+          @if($hasBankTransferDetails)
               <div class="payment-group">
                 <div class="payment-heading"><span class="payment-mark"></span>Bank Transfer</div>
-                @if($pi->bank_name)<div>Bank: {{ $pi->bank_name }}</div>@endif
-                @if($pi->account_name)<div>Account Name: {{ $pi->account_name }}</div>@endif
-                @if($pi->account_number)<div>Account No: {{ $maskAccount($pi->account_number) }}</div>@endif
-                @if($pi->routing_number)<div>Routing No: {{ $pi->routing_number }}</div>@endif
-                @if($pi->iban)<div>IBAN: {{ $pi->iban }}</div>@endif
-                @if($pi->swift_code)<div>Swift: {{ $pi->swift_code }}</div>@endif
+                @foreach($bankTransferDetails as $label => $value)
+                  <div>{{ $label }}: {{ $value }}</div>
+                @endforeach
               </div>
-            @elseif($paymentMethod === 'paypal' && $pi->paypal_email)
-              <div class="payment-group">
-                <div class="payment-heading"><span class="payment-mark"></span>PayPal</div>
-                <div>{{ $pi->paypal_email }}</div>
-              </div>
-            @elseif($paymentMethod === 'stripe' && $pi->stripe_account_id)
-              <div class="payment-group">
-                <div class="payment-heading"><span class="payment-mark"></span>Stripe</div>
-                <div>{{ $pi->stripe_account_id }}</div>
-              </div>
-            @elseif($paymentMethod === 'cash_app' && $pi->cash_app)
-              <div class="payment-group">
-                <div class="payment-heading"><span class="payment-mark"></span>Cash App</div>
-                <div>{{ $pi->cash_app }}</div>
-              </div>
-            @else
-              {!! $paymentInfo($pi, 'pulse-payment-list') !!}
-            @endif
-
-            @if($pi->notes)<div class="payment-note">{{ $pi->notes }}</div>@endif
           @else
             <div class="muted-line">&mdash;</div>
           @endif
@@ -148,20 +104,20 @@
         <div class="summary-box">
           <div class="summary-row">
             <span>Subtotal</span>
-            <strong>{{ $fmtMoney($invoice->subtotal_cents ?? 0, $currency) }}</strong>
+            <strong>{{ $fmtMoney($subtotalCents, $currency) }}</strong>
           </div>
           <div class="summary-row">
-            <span>Discount{{ (float)($invoice->discount_rate ?? 0) > 0 ? ' ('.$fmtRate($invoice->discount_rate).')' : '' }}</span>
-            <strong class="discount-value">-{{ $fmtMoney($invoice->discount_cents ?? 0, $currency) }}</strong>
+            <span>{{ $discountLabel }}</span>
+            <strong class="discount-value">-{{ $fmtMoney($discountCents, $currency) }}</strong>
           </div>
           <div class="summary-row">
-            <span>Tax {{$isShippingTaxable ? " (includes shipping)" : ""}}</span>
-            <strong>{{ $fmtMoney($invoice->tax_cents ?? 0, $currency) }}</strong>
+            <span>{{ $taxLabel }}</span>
+            <strong>{{ $fmtMoney($taxCents, $currency) }}</strong>
           </div>
-          @if((int)($invoice->shipping_cents ?? 0) > 0)
+          @if($hasShipping)
             <div class="summary-row">
               <span>Shipping</span>
-              <strong>{{ $fmtMoney($invoice->shipping_cents ?? 0, $currency) }}</strong>
+              <strong>{{ $fmtMoney($shippingCents, $currency) }}</strong>
             </div>
           @endif
           <div class="summary-row total-row">
@@ -182,6 +138,8 @@
         <div class="footer-label">Terms &amp; Conditions</div>
         <div class="footer-copy">@if($invoice->terms){!! nl2br(e($invoice->terms)) !!}@else &mdash; @endif</div>
       </section>
+
+      @include('invoicing::templates.payment-method', ['invoice' => $invoice, 'pi' => $pi])
     </footer>
 
     {!! $watermark() !!}

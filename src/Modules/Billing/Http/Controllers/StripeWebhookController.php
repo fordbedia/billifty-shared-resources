@@ -370,8 +370,13 @@ class StripeWebhookController extends Controller
 
 	private function retrievePaymentData(object $event, object $session, Invoices $invoice): array
 	{
+		$stripePaymentInfo = $this->paymentInfoForMethod($invoice, 'stripe');
+		$stripePaymentMethod = $stripePaymentInfo?->payment_method;
+		$stripePaymentMethod = $stripePaymentMethod instanceof \BackedEnum
+			? $stripePaymentMethod->value
+			: $stripePaymentMethod;
 		$stripeAccountId = $event->account
-			?? $invoice?->businessProfile?->paymentInformation?->stripe_account_id
+			?? $stripePaymentInfo?->stripe_account_id
 			?? null;
 		$stripeRequestOptions = $stripeAccountId ? ['stripe_account' => $stripeAccountId] : [];
 		$paymentIntentId = is_object($session->payment_intent ?? null)
@@ -410,7 +415,7 @@ class StripeWebhookController extends Controller
 
 		$paymentData = [
 			'invoice_number' => $invoice->invoice_number,
-			'invoice_payment_method' => $invoice->businessProfile?->paymentInformation?->payment_method,
+			'invoice_payment_method' => $stripePaymentMethod,
 			'stripe_session_id' => $session->id,
 			'stripe_payment_intent_id' => $paymentIntent->id,
 			'payment_method' => $paymentMethod?->type,
@@ -431,6 +436,16 @@ class StripeWebhookController extends Controller
 		];
 
 		return $paymentData;
+	}
+
+	private function paymentInfoForMethod(Invoices $invoice, string $method): ?object
+	{
+		return $invoice->businessProfile?->paymentInformations?->first(function ($paymentInfo) use ($method) {
+			$paymentMethod = $paymentInfo?->payment_method;
+			$paymentMethod = $paymentMethod instanceof \BackedEnum ? $paymentMethod->value : (string) $paymentMethod;
+
+			return $paymentMethod === $method;
+		});
 	}
 
 	private function processSuceessPayment(object $event, object $session, int $invoiceId): void

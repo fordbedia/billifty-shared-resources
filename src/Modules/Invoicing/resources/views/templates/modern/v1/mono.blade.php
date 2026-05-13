@@ -1,26 +1,7 @@
 @php
-  $fontFamily = data_get($theme ?? null, 'fontFamily', 'DejaVu Sans, Arial, sans-serif');
   $accent = data_get($scheme ?? null, 'main.code', '#3154d4') ?: '#3154d4';
   $accentDark = data_get($scheme ?? null, 'dark.code', '#2847c7') ?: '#2847c7';
   $accentSoft = data_get($scheme ?? null, 'extra_light.code', data_get($scheme ?? null, 'light.code', '#eef3ff')) ?: '#eef3ff';
-  $currency = $invoice->currency ?? 'USD';
-  $totalDue = $invoice->amount_due_cents ?? $invoice->total_cents ?? 0;
-  $bp = $bp ?? ($invoice->businessProfile ?? null);
-  $cl = $cl ?? ($invoice->client ?? null);
-  $items = $items ?? ($invoice->items ?? collect());
-  $pi = $pi ?? ($bp?->payment_information ?? $bp?->paymentInformation ?? null);
-  $clientName = $cl?->company ?: ($cl?->name ?? 'Client');
-  $paymentMethod = $pi?->payment_method instanceof \BackedEnum ? $pi->payment_method->value : ($pi?->payment_method ?? null);
-
-  $fmtRate = function($value) {
-    $num = (float) ($value ?? 0);
-
-    if ($num > 0 && $num < 1) {
-      $num *= 100;
-    }
-
-    return rtrim(rtrim(number_format($num, 2), '0'), '.').'%';
-  };
 
   $addressLines = function($entity) {
     if (!$entity) {
@@ -65,43 +46,11 @@
     return $lines;
   };
 
-  $maskAccount = function($value) {
-    $raw = trim((string) $value);
-    $digits = preg_replace('/\D+/', '', $raw);
-
-    if ($digits === '') {
-      return $raw;
-    }
-
-    return '**** '.substr($digits, -4);
-  };
-
   $bpAddressLines = $addressLines($bp);
   $clAddressLines = $addressLines($cl);
   $shippingAddress = data_get($invoice ?? null, 'shipping_address');
   $shipAddressLines = $freeAddressLines($shippingAddress);
 
-  $dueBaseDate = $invoice->issued_on ? \Carbon\Carbon::parse($invoice->issued_on)->startOfDay() : null;
-  $dueDate = $invoice->due_on ? \Carbon\Carbon::parse($invoice->due_on)->startOfDay() : null;
-  $daysRemaining = $dueBaseDate && $dueDate ? (int) round($dueBaseDate->diffInDays($dueDate, false)) : null;
-  $paymentTerms = match (true) {
-    $daysRemaining === null => null,
-    $daysRemaining <= 0 => 'Due on receipt',
-    default => "Net {$daysRemaining}",
-  };
-
-  $itemTaxRates = [];
-
-  foreach ($items as $item) {
-    $rate = (float) ($item->tax_rate ?? 0);
-
-    if ($rate > 0) {
-      $itemTaxRates[] = $fmtRate($rate);
-    }
-  }
-
-  $itemTaxRates = array_values(array_unique($itemTaxRates));
-  $taxLabel = count($itemTaxRates) === 1 ? 'Tax ('.$itemTaxRates[0].')' : 'Tax';
   $notesLines = $textLines($invoice->notes ?? null);
   $termsLines = $textLines($invoice->terms ?? null);
 @endphp
@@ -186,11 +135,11 @@
                   <div class="mono-item-title">{{ $it->name ?? 'Item' }}</div>
                   @if(!empty($it->description))<div class="mono-item-description">{{ $it->description }}</div>@endif
                 </td>
-                <td class="mono-qty-col">{{ rtrim(rtrim((string) ($it->quantity ?? 0), '0'), '.') }}{{ $it->unit ? ' '.$it->unit : '' }}</td>
-                <td class="mono-rate-col">{{ $fmtMoney($it->unit_price_cents ?? 0, $currency) }}</td>
-				  <td class="mono-rate-col">{{ $fmtRate($it->tax_rate ?? 0) }}</td>
-                @if($hasLineDiscount)<td class="mono-discount-col">{{ $fmtPercent($it->line_discount_rate ?? 0) }}</td>@endif
-                <td class="mono-amount-col">{{ $fmtMoney($it->line_total_cents ?? 0, $currency) }}</td>
+                <td class="mono-qty-col">{{ $fmtQuantity($it) }}</td>
+                <td class="mono-rate-col">{{ $fmtItemUnitPrice($it) }}</td>
+				  <td class="mono-rate-col">{{ $fmtItemTaxRate($it) }}</td>
+                @if($hasLineDiscount)<td class="mono-discount-col">{{ $fmtItemLineDiscount($it) }}</td>@endif
+                <td class="mono-amount-col">{{ $fmtItemLineTotal($it) }}</td>
               </tr>
             @empty
               <tr>
@@ -205,24 +154,22 @@
         <div class="mono-totals">
           <div class="mono-total-row">
             <span>Subtotal:</span>
-            <strong>{{ $fmtMoney($invoice->subtotal_cents ?? 0, $currency) }}</strong>
+            <strong>{{ $fmtMoney($subtotalCents, $currency) }}</strong>
           </div>
-          @if((int)($invoice->discount_cents ?? 0) > 0)
+          @if($hasDiscount)
             <div class="mono-total-row">
               <span>Discount:</span>
-              <strong>-{{ $fmtMoney($invoice->discount_cents ?? 0, $currency) }}</strong>
+              <strong>-{{ $fmtMoney($discountCents, $currency) }}</strong>
             </div>
           @endif
           <div class="mono-total-row">
-            <span>
-				Tax{{$isShippingTaxable ? " (includes shipping):" : ":"}}
-			</span>
-            <strong>{{ $fmtMoney($invoice->tax_cents ?? 0, $currency) }}</strong>
+            <span>{{ $taxLabel }}:</span>
+            <strong>{{ $fmtMoney($taxCents, $currency) }}</strong>
           </div>
-          @if((int)($invoice->shipping_cents ?? 0) > 0)
+          @if($hasShipping)
             <div class="mono-total-row">
               <span>Shipping:</span>
-              <strong>{{ $fmtMoney($invoice->shipping_cents ?? 0, $currency) }}</strong>
+              <strong>{{ $fmtMoney($shippingCents, $currency) }}</strong>
             </div>
           @endif
           <div class="mono-grand-total">
@@ -238,27 +185,10 @@
           @if($paymentTerms)
             <div class="mono-info-line"><span>Payment Terms:</span> <strong>{{ $paymentTerms }}</strong></div>
           @endif
-          @if($pi)
-            @if($paymentMethod === 'bank_transfer')
-              <div class="mono-info-line"><span>Payment Method:</span> <strong>Bank Transfer</strong></div>
-              @if($pi->bank_name)<div class="mono-info-line"><span>Bank:</span> <strong>{{ $pi->bank_name }}</strong></div>@endif
-              @if($pi->account_name)<div class="mono-info-line"><span>Account Name:</span> <strong>{{ $pi->account_name }}</strong></div>@endif
-              @if($pi->account_number)<div class="mono-info-line"><span>Account:</span> <strong>{{ $maskAccount($pi->account_number) }}</strong></div>@endif
-              @if($pi->routing_number)<div class="mono-info-line"><span>Routing:</span> <strong>{{ $pi->routing_number }}</strong></div>@endif
-              @if($pi->iban)<div class="mono-info-line"><span>IBAN:</span> <strong>{{ $pi->iban }}</strong></div>@endif
-              @if($pi->swift_code)<div class="mono-info-line"><span>Swift:</span> <strong>{{ $pi->swift_code }}</strong></div>@endif
-            @elseif($paymentMethod === 'paypal' && $pi->paypal_email)
-              <div class="mono-info-line"><span>Payment Method:</span> <strong>PayPal</strong></div>
-              <div class="mono-info-line"><span>PayPal:</span> <strong>{{ $pi->paypal_email }}</strong></div>
-            @elseif($paymentMethod === 'stripe' && $pi->stripe_account_id)
-              <div class="mono-info-line"><span>Payment Method:</span> <strong>Stripe</strong></div>
-              <div class="mono-info-line"><span>Payment Link:</span> <strong>{{ $pi->stripe_account_id }}</strong></div>
-            @elseif($paymentMethod === 'cash_app' && $pi->cash_app)
-              <div class="mono-info-line"><span>Payment Method:</span> <strong>Cash App</strong></div>
-              <div class="mono-info-line"><span>Cash App:</span> <strong>{{ $pi->cash_app }}</strong></div>
-            @else
-              <div class="mono-payment-fallback">{!! $paymentInfo($pi, 'mono-payment-list') !!}</div>
-            @endif
+          @if($hasBankTransferDetails)
+            @foreach($bankTransferDetails as $label => $value)
+              <div class="mono-info-line"><span>{{ $label }}:</span> <strong>{{ $value }}</strong></div>
+            @endforeach
           @elseif(!$paymentTerms)
             <div class="mono-muted">&mdash;</div>
           @endif
@@ -275,6 +205,8 @@
             <div class="mono-muted">&mdash;</div>
           @endif
         </div>
+
+        @include('invoicing::templates.payment-method', ['invoice' => $invoice, 'pi' => $pi])
       </section>
     </main>
 

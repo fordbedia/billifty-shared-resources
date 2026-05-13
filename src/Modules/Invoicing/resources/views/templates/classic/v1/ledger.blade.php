@@ -1,50 +1,10 @@
 @php
-  $fontFamily = $theme->fontFamily ?? "DejaVu Sans, Arial, sans-serif";
   $ink        = '#2c2f39';
   $muted      = '#7b8190';
   $bg         = '#ffffff';
   $panelSoft  = '#f5f6fb';
   $border     = '#edf0f6';
   $accent     = $scheme->main->code;
-  $totalDue   = $invoice->amount_due_cents ?? $invoice->total_cents ?? 0;
-  $bpAddress  = $bp ? $addr($bp) : null;
-  $clAddress  = $cl ? $addr($cl) : null;
-  $paymentMethod = $pi?->payment_method instanceof \BackedEnum ? $pi->payment_method->value : ($pi?->payment_method ?? null);
-  $statusRaw = $invoice->status instanceof \BackedEnum ? $invoice->status->value : ($invoice->status ?? 'issued');
-  $statusLabel = match ($statusRaw) {
-    'issued', 'sent' => 'Pending Payment',
-    'partially' => 'Partially Paid',
-    default => ucwords(str_replace('_', ' ', (string) $statusRaw)),
-  };
-  $statusClass = match ($statusRaw) {
-    'paid' => 'is-paid',
-    'void' => 'is-void',
-    'draft' => 'is-draft',
-    default => 'is-pending',
-  };
-  $logoInitial = strtoupper(substr(trim((string)($bp?->name ?? 'A')), 0, 1));
-  $hasLineDiscount = ($invoice->discount_mode ?? null) === 'per-line';
-  $fmtRate = function($value) {
-    $num = (float) ($value ?? 0);
-
-    if ($num > 0 && $num < 1) {
-      $num *= 100;
-    }
-
-    $decimals = fmod($num, 1.0) === 0.0 ? 0 : 2;
-
-    return number_format($num, $decimals).'%';
-  };
-  $maskAccount = function($value) {
-    $raw = trim((string) $value);
-    $digits = preg_replace('/\D+/', '', $raw);
-
-    if ($digits === '') {
-      return $raw;
-    }
-
-    return '**** **** '.substr($digits, -4);
-  };
 @endphp
 
 <div class="ledger--theme ledger-root scheme cat">
@@ -120,7 +80,7 @@
         <div class="item-col amount amount-col">Amount</div>
       </div>
 
-      @if(($items instanceof \Illuminate\Support\Collection ? $items->count() : count($items)) === 0)
+      @if($itemCount === 0)
         <div class="item-empty muted center">No items.</div>
       @else
         @foreach($items as $it)
@@ -129,11 +89,11 @@
               <div class="item-title">{{ $it->name ?? 'Item' }}</div>
               @if(!empty($it->description))<div class="item-description">{{ $it->description }}</div>@endif
             </div>
-            <div class="item-col qty center">{{ rtrim(rtrim((string)($it->quantity ?? 0), '0'), '.') }}{{ $it->unit ? ' '.$it->unit : '' }}</div>
-            <div class="item-col unit amount-col">{{ $fmtMoney($it->unit_price_cents ?? 0, $invoice->currency ?? 'USD') }}</div>
-            <div class="item-col tax center">{{ $fmtRate($it->tax_rate ?? 0) }}</div>
-            @if($hasLineDiscount)<div class="item-col discount center">{{ $fmtPercent($it->line_discount_rate) }}</div>@endif
-            <div class="item-col amount amount-col item-amount">{{ $fmtMoney($it->line_total_cents ?? 0, $invoice->currency ?? 'USD') }}</div>
+            <div class="item-col qty center">{{ $fmtQuantity($it) }}</div>
+            <div class="item-col unit amount-col">{{ $fmtItemUnitPrice($it) }}</div>
+            <div class="item-col tax center">{{ $fmtItemTaxRate($it) }}</div>
+            @if($hasLineDiscount)<div class="item-col discount center">{{ $fmtItemLineDiscount($it) }}</div>@endif
+            <div class="item-col amount amount-col item-amount">{{ $fmtItemLineTotal($it) }}</div>
           </div>
         @endforeach
       @endif
@@ -143,25 +103,11 @@
       <div class="summary-layout">
         <div class="payment-cell">
           <div class="section-label">Payment Information</div>
-          @if($pi)
+          @if($hasBankTransferDetails)
             <div class="payment-list">
-              @if($paymentMethod === 'bank_transfer')
-                @if($pi->bank_name)<div class="payment-row"><span>Bank Name</span><strong>{{ $pi->bank_name }}</strong></div>@endif
-                @if($pi->account_name)<div class="payment-row"><span>Account Name</span><strong>{{ $pi->account_name }}</strong></div>@endif
-                @if($pi->account_number)<div class="payment-row"><span>Account Number</span><strong>{{ $maskAccount($pi->account_number) }}</strong></div>@endif
-                @if($pi->routing_number)<div class="payment-row"><span>Routing Number</span><strong>{{ $pi->routing_number }}</strong></div>@endif
-                @if($pi->iban)<div class="payment-row"><span>IBAN</span><strong>{{ $pi->iban }}</strong></div>@endif
-                @if($pi->swift_code)<div class="payment-row"><span>Swift Code</span><strong>{{ $pi->swift_code }}</strong></div>@endif
-              @elseif($paymentMethod === 'paypal')
-                @if($pi->paypal_email)<div class="payment-row"><span>PayPal Email</span><strong>{{ $pi->paypal_email }}</strong></div>@endif
-              @elseif($paymentMethod === 'stripe')
-                @if($pi->stripe_account_id)<div class="payment-row"><span>Stripe Link</span><strong>{{ $pi->stripe_account_id }}</strong></div>@endif
-              @elseif($paymentMethod === 'cash_app')
-                @if($pi->cash_app)<div class="payment-row"><span>Cash App</span><strong>{{ $pi->cash_app }}</strong></div>@endif
-              @else
-                <div class="payment-fallback">{!! $paymentInfo($pi) !!}</div>
-              @endif
-              @if($pi->notes)<div class="payment-row"><span>Notes</span><strong>{{ $pi->notes }}</strong></div>@endif
+              @foreach($bankTransferDetails as $label => $value)
+                <div class="payment-row"><span>{{ $label }}</span><strong>{{ $value }}</strong></div>
+              @endforeach
             </div>
           @else
             <div class="muted">Payment details unavailable.</div>
@@ -172,25 +118,25 @@
           <div class="totals-card">
             <div class="total-row">
               <span class="total-label">Subtotal</span>
-              <span class="total-value">{{ $fmtMoney($invoice->subtotal_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
+              <span class="total-value">{{ $fmtMoney($subtotalCents, $currency) }}</span>
             </div>
             <div class="total-row">
-              <span class="total-label">Tax {{$isShippingTaxable ? " (includes shipping)" : ""}}</span>
-              <span class="total-value">{{ $fmtMoney($invoice->tax_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
+              <span class="total-label">{{ $taxLabel }}</span>
+              <span class="total-value">{{ $fmtMoney($taxCents, $currency) }}</span>
             </div>
             <div class="total-row discount">
               <span class="total-label">Discount</span>
-              <span class="total-value">-{{ $fmtMoney($invoice->discount_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
+              <span class="total-value">-{{ $fmtMoney($discountCents, $currency) }}</span>
             </div>
-            @if((int)($invoice->shipping_cents ?? 0) > 0)
+            @if($hasShipping)
               <div class="total-row">
                 <span class="total-label">Shipping</span>
-                <span class="total-value">{{ $fmtMoney($invoice->shipping_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
+                <span class="total-value">{{ $fmtMoney($shippingCents, $currency) }}</span>
               </div>
             @endif
             <div class="total-due">
               <span class="total-label">Total Due</span>
-              <span class="total-value">{{ $fmtMoney($totalDue, $invoice->currency ?? 'USD') }}</span>
+              <span class="total-value">{{ $fmtMoney($totalDue, $currency) }}</span>
             </div>
           </div>
         </div>
@@ -206,6 +152,7 @@
         <h4>Terms &amp; Conditions</h4>
         <p>@if($invoice->terms){{ $invoice->terms }}@else &mdash; @endif</p>
       </div>
+      @include('invoicing::templates.payment-method', ['invoice' => $invoice, 'pi' => $pi])
     </div>
 
     {!! $watermark() !!}

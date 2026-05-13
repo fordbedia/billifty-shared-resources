@@ -1,23 +1,9 @@
 @php
-  $fontFamily = data_get($theme ?? null, 'fontFamily', 'DejaVu Sans');
   $accent = data_get($scheme ?? null, 'main.code', '#ff3108');
   $accentSoft = data_get($scheme ?? null, 'light.code', '#fff5ef');
-  $currency = $invoice->currency ?? 'USD';
-  $bpAddress = $bp ? $addr($bp) : null;
-  $clAddress = $cl ? $addr($cl) : null;
-  $itemsCount = $items instanceof \Illuminate\Support\Collection ? $items->count() : count($items);
-  $firstItem = $items instanceof \Illuminate\Support\Collection ? $items->first() : (is_array($items) ? reset($items) : null);
   $projectTitle = $invoice->reference ?: (data_get($firstItem, 'name') ?? 'Project Detail');
   $projectDetail = $invoice->notes ?: ($invoice->terms ?: null);
-  $totalDue = $invoice->amount_due_cents ?? $invoice->total_cents ?? 0;
-  $hasLineDiscount = ($invoice->discount_mode ?? null) === 'per-line';
-  $logoInitial = strtoupper(substr(trim((string)($bp?->name ?? 'G')), 0, 1));
-  $statusRaw = $invoice->status instanceof \BackedEnum ? $invoice->status->value : ($invoice->status ?? 'issued');
-  $statusLabel = match ($statusRaw) {
-    'issued', 'sent' => 'Pending Payment',
-    'partially' => 'Partially Paid',
-    default => ucwords(str_replace('_', ' ', (string) $statusRaw)),
-  };
+  $watermarkHtml = $watermark();
 @endphp
 
 <div class="neo--theme invoice-root neo-root scheme cat">
@@ -101,7 +87,7 @@
         </div>
 
         <div class="items-body">
-          @if($itemsCount === 0)
+          @if($itemCount === 0)
             <div class="items-empty">No items.</div>
           @else
             @foreach($items as $it)
@@ -110,13 +96,13 @@
                 <div class="desc">
                   <div class="item-title">{{ $it->name ?? 'Item' }}</div>
                   @if(!empty($it->description))<div class="item-description">{{ $it->description }}</div>@endif
-                  @if($hasLineDiscount)<div class="item-description">Discount: {{ $fmtPercent($it->line_discount_rate) }}</div>@endif
+                  @if($hasLineDiscount)<div class="item-description">Discount: {{ $fmtItemLineDiscount($it) }}</div>@endif
                 </div>
-                <div class="center">{{ rtrim(rtrim((string)($it->quantity ?? 0), '0'), '.') }}{{ $it->unit ? ' '.$it->unit : '' }}</div>
-                <div class="amount-col">{{ $fmtMoney($it->unit_price_cents ?? 0, $currency) }}</div>
-                <div class="tax-col">{{ $fmtRate($it->tax_rate ?? 0) }}</div>
-                @if($hasLineDiscount)<div class="discount-col">{{ $fmtPercent($it->line_discount_rate) }}</div>@endif
-                <div class="amount-col strong">{{ $fmtMoney($it->line_total_cents ?? 0, $currency) }}</div>
+                <div class="center">{{ $fmtQuantity($it) }}</div>
+                <div class="amount-col">{{ $fmtItemUnitPrice($it) }}</div>
+                <div class="tax-col">{{ $fmtItemTaxRate($it) }}</div>
+                @if($hasLineDiscount)<div class="discount-col">{{ $fmtItemLineDiscount($it) }}</div>@endif
+                <div class="amount-col strong">{{ $fmtItemLineTotal($it) }}</div>
               </div>
             @endforeach
           @endif
@@ -127,8 +113,8 @@
     <section class="lower-layout" aria-label="Payment and total">
       <div class="lower-info">
         <div class="payment-block">
-          <div class="lower-kicker">Payment Method</div>
-          @if($pi->payment_method)
+          <div class="lower-kicker">Payment Information</div>
+          @if($hasBankTransferDetails)
             <div class="payment-box">{!! $paymentInfo($pi, 'neo-payment-list') !!}</div>
           @else
             <div class="muted-line">&mdash;</div>
@@ -139,26 +125,28 @@
           <div class="lower-kicker">Terms &amp; Conditions</div>
           <div class="terms-copy">@if($invoice->terms){{ $invoice->terms }}@else &mdash; @endif</div>
         </div>
+
+        @include('invoicing::templates.payment-method', ['invoice' => $invoice, 'pi' => $pi])
       </div>
 
       <aside class="total-panel-cell" aria-label="Invoice total">
         <div class="total-panel">
           <div class="summary-row">
             <span>Subtotal</span>
-            <strong>{{ $fmtMoney($invoice->subtotal_cents ?? 0, $currency) }}</strong>
+            <strong>{{ $fmtMoney($subtotalCents, $currency) }}</strong>
           </div>
           <div class="summary-row">
-            <span>Tax {{$isShippingTaxable ? " (includes shipping)" : ""}}</span>
-            <strong>{{ $fmtMoney($invoice->tax_cents ?? 0, $currency) }}</strong>
+            <span>{{ $taxLabel }}</span>
+            <strong>{{ $fmtMoney($taxCents, $currency) }}</strong>
           </div>
           <div class="summary-row">
             <span>Discount</span>
-            <strong>-{{ $fmtMoney($invoice->discount_cents ?? 0, $currency) }}</strong>
+            <strong>-{{ $fmtMoney($discountCents, $currency) }}</strong>
           </div>
-          @if((int)($invoice->shipping_cents ?? 0) > 0)
+          @if($hasShipping)
             <div class="summary-row">
               <span>Shipping</span>
-              <strong>{{ $fmtMoney($invoice->shipping_cents ?? 0, $currency) }}</strong>
+              <strong>{{ $fmtMoney($shippingCents, $currency) }}</strong>
             </div>
           @endif
           <div class="total-divider"></div>
@@ -169,9 +157,9 @@
       </aside>
     </section>
 
-	@if ($watermark())
+	@if ($watermarkHtml)
 		<footer class="neo-footer">
-		  <div class="footer-brand"{{$watermark()}}</div>
+		  <div class="footer-brand">{!! $watermarkHtml !!}</div>
 		</footer>
 	@endif
 

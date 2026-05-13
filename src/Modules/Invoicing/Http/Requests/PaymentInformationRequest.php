@@ -3,12 +3,46 @@
 namespace BilliftySDK\SharedResources\Modules\Invoicing\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class PaymentInformationRequest extends FormRequest
 {
+	protected const PAYMENT_METHODS = [
+		'bank_transfer',
+		'paypal',
+		'stripe',
+		'cash_app',
+	];
+
 	public function authorize(): bool
 	{
 		return true;
+	}
+
+	protected function prepareForValidation(): void
+	{
+		$paymentInfo = $this->input('paymentInfo');
+
+		if (!is_array($paymentInfo)) {
+			return;
+		}
+
+		$paymentInfo['payment_methods'] = $this->decodeArrayInput($paymentInfo['payment_methods'] ?? []);
+		$paymentInfo['payment_information_ids'] = $this->decodeArrayInput($paymentInfo['payment_information_ids'] ?? []);
+		$paymentInfo['payment_method'] = $this->normalizePaymentMethod($paymentInfo['payment_method'] ?? null);
+
+		$paymentInfo['payment_methods'] = array_values(array_unique(array_filter(array_map(
+			fn ($method) => $this->normalizePaymentMethod($method),
+			$paymentInfo['payment_methods']
+		))));
+
+		if (empty($paymentInfo['payment_methods']) && $paymentInfo['payment_method']) {
+			$paymentInfo['payment_methods'] = [$paymentInfo['payment_method']];
+		}
+
+		$this->merge([
+			'paymentInfo' => $paymentInfo,
+		]);
 	}
 
 	public function rules(): array
@@ -16,48 +50,52 @@ class PaymentInformationRequest extends FormRequest
 		return [
 			'paymentInfo.id' => ['nullable', 'integer'],
 
-			'paymentInfo.payment_method' => ['nullable', 'string'],
+			'paymentInfo.payment_method' => ['nullable', 'string', Rule::in(self::PAYMENT_METHODS)],
+			'paymentInfo.payment_methods' => ['nullable', 'array'],
+			'paymentInfo.payment_methods.*' => ['string', Rule::in(self::PAYMENT_METHODS)],
+			'paymentInfo.payment_information_ids' => ['nullable', 'array'],
+			'paymentInfo.payment_information_ids.*' => ['nullable', 'integer'],
 
 			// Bank Transfer
 			'paymentInfo.bank_name' => [
-				'exclude_unless:paymentInfo.payment_method,bank_transfer',
-				'required',
+				Rule::requiredIf(fn () => $this->isPaymentMethodSelected('bank_transfer')),
+				'nullable',
 				'string',
 			],
 			'paymentInfo.account_name' => [
-				'exclude_unless:paymentInfo.payment_method,bank_transfer',
-				'required',
+				Rule::requiredIf(fn () => $this->isPaymentMethodSelected('bank_transfer')),
+				'nullable',
 				'string',
 			],
 			'paymentInfo.account_number' => [
-				'exclude_unless:paymentInfo.payment_method,bank_transfer',
-				'required',
+				Rule::requiredIf(fn () => $this->isPaymentMethodSelected('bank_transfer')),
+				'nullable',
 				'string',
 			],
 			'paymentInfo.routing_number' => [
-				'exclude_unless:paymentInfo.payment_method,bank_transfer',
-				'required',
+				Rule::requiredIf(fn () => $this->isPaymentMethodSelected('bank_transfer')),
+				'nullable',
 				'string',
 			],
 
 			// Stripe
 			'paymentInfo.stripe_account_id' => [
-				'exclude_unless:paymentInfo.payment_method,stripe',
-				'required',
+				Rule::requiredIf(fn () => $this->isPaymentMethodSelected('stripe')),
+				'nullable',
 				'string',
 			],
 
 			// PayPal
 			'paymentInfo.paypal_email' => [
-				'exclude_unless:paymentInfo.payment_method,paypal',
-				'required',
+				Rule::requiredIf(fn () => $this->isPaymentMethodSelected('paypal')),
+				'nullable',
 				'string',
 			],
 
 			// Cash App
 			'paymentInfo.cash_app' => [
-				'exclude_unless:paymentInfo.payment_method,cash_app',
-				'required',
+				Rule::requiredIf(fn () => $this->isPaymentMethodSelected('cash_app')),
+				'nullable',
 				'string',
 			],
 
@@ -68,9 +106,67 @@ class PaymentInformationRequest extends FormRequest
 		];
 	}
 
+	protected function decodeArrayInput(mixed $value): array
+	{
+		if (is_array($value)) {
+			return $value;
+		}
+
+		if (!is_string($value) || trim($value) === '') {
+			return [];
+		}
+
+		$decoded = json_decode($value, true);
+
+		return is_array($decoded) ? $decoded : [];
+	}
+
+	protected function normalizePaymentMethod(mixed $method): ?string
+	{
+		if (!$method) {
+			return null;
+		}
+
+		return match (strtolower(trim((string) $method))) {
+			'bank transfer' => 'bank_transfer',
+			'paypal' => 'paypal',
+			'stripe' => 'stripe',
+			'cash app' => 'cash_app',
+			default => strtolower(trim((string) $method)),
+		};
+	}
+
+	protected function selectedPaymentMethods(): array
+	{
+		$methods = $this->input('paymentInfo.payment_methods', []);
+
+		if (!is_array($methods)) {
+			$methods = [];
+		}
+
+		$singleMethod = $this->normalizePaymentMethod($this->input('paymentInfo.payment_method'));
+
+		if ($singleMethod) {
+			$methods[] = $singleMethod;
+		}
+
+		return array_values(array_unique(array_filter(array_map(
+			fn ($method) => $this->normalizePaymentMethod($method),
+			$methods
+		))));
+	}
+
+	protected function isPaymentMethodSelected(string $method): bool
+	{
+		return in_array($method, $this->selectedPaymentMethods(), true);
+	}
+
 	public function messages(): array
 	{
 		return [
+			'paymentInfo.payment_method.in' => 'Please select a valid payment method.',
+			'paymentInfo.payment_methods.*.in' => 'Please select a valid payment method.',
+
 			// Bank Transfer
 			'paymentInfo.bank_name.required' => 'Bank Name is required when Bank Transfer is selected.',
 			'paymentInfo.account_name.required' => 'Account Name is required when Bank Transfer is selected.',

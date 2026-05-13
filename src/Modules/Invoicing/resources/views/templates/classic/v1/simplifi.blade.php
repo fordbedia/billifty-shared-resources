@@ -1,5 +1,4 @@
 @php
-  $fontFamily = $theme->fontFamily ?? "DejaVu Sans, Arial, sans-serif";
   $ink        = '#182333';
   $muted      = '#707985';
   $faint      = '#a0a7b1';
@@ -7,28 +6,6 @@
   $border     = '#e4e7eb';
   $rule       = '#eef0f3';
   $accent     = $scheme->main->code;
-  $currency   = $invoice->currency ?? 'USD';
-  $totalDue   = $invoice->amount_due_cents ?? $invoice->total_cents ?? 0;
-  $bpAddress  = $bp ? $addr($bp) : null;
-  $clAddress  = $cl ? $addr($cl) : null;
-  $clientName = $cl?->company ?: ($cl?->name ?? 'Client');
-  $businessName = $bp?->name ?? 'Your Business';
-  $logoInitial = strtoupper(substr(trim((string) $businessName), 0, 1));
-  $paymentMethod = $pi?->payment_method instanceof \BackedEnum ? $pi->payment_method->value : ($pi?->payment_method ?? null);
-  $hasDiscount = (int) ($invoice->discount_cents ?? 0) > 0;
-  $hasLineDiscount = ($invoice->discount_mode ?? null) === 'per-line';
-  $hasShipping = (int) ($invoice->shipping_cents ?? 0) > 0;
-  $itemCount = $items instanceof \Illuminate\Support\Collection ? $items->count() : count($items);
-  $maskAccount = function($value) {
-    $raw = trim((string) $value);
-    $digits = preg_replace('/\D+/', '', $raw);
-
-    if ($digits === '') {
-      return $raw;
-    }
-
-    return '**** **** '.substr($digits, -4);
-  };
 @endphp
 
 <div class="simplifi--theme simplifi-root scheme cat">
@@ -99,11 +76,11 @@
               <div class="item-title">{{ $it->name ?? 'Item' }}</div>
               @if(!empty($it->description))<div class="item-description">{{ $it->description }}</div>@endif
             </div>
-            <div class="qty">{{ rtrim(rtrim((string) ($it->quantity ?? 0), '0'), '.') }}{{ ($it->unit ?? null) ? ' '.$it->unit : '' }}</div>
-            <div class="money">{{ $fmtMoney($it->unit_price_cents ?? 0, $currency) }}</div>
-            <div class="tax-col">{{ $fmtRate($it->tax_rate ?? 0) }}</div>
-            @if($hasLineDiscount)<div class="discount-col">{{ $fmtPercent($it->line_discount_rate) }}</div>@endif
-            <div class="money item-amount">{{ $fmtMoney($it->line_total_cents ?? 0, $currency) }}</div>
+            <div class="qty">{{ $fmtQuantity($it) }}</div>
+            <div class="money">{{ $fmtItemUnitPrice($it) }}</div>
+            <div class="tax-col">{{ $fmtItemTaxRate($it) }}</div>
+            @if($hasLineDiscount)<div class="discount-col">{{ $fmtItemLineDiscount($it) }}</div>@endif
+            <div class="money item-amount">{{ $fmtItemLineTotal($it) }}</div>
           </article>
         @endforeach
       @endif
@@ -113,22 +90,22 @@
       <div class="totals-panel">
         <div class="total-row">
           <span>Subtotal</span>
-          <strong>{{ $fmtMoney($invoice->subtotal_cents ?? 0, $currency) }}</strong>
+          <strong>{{ $fmtMoney($subtotalCents, $currency) }}</strong>
         </div>
         @if($hasDiscount)
           <div class="total-row">
             <span>Discount</span>
-            <strong>-{{ $fmtMoney($invoice->discount_cents ?? 0, $currency) }}</strong>
+            <strong>-{{ $fmtMoney($discountCents, $currency) }}</strong>
           </div>
         @endif
         <div class="total-row">
-          <span>Tax {{$isShippingTaxable ? " (includes shipping)" : ""}}</span>
-          <strong>{{ $fmtMoney($invoice->tax_cents ?? 0, $currency) }}</strong>
+          <span>{{ $taxLabel }}</span>
+          <strong>{{ $fmtMoney($taxCents, $currency) }}</strong>
         </div>
         @if($hasShipping)
           <div class="total-row">
             <span>Shipping</span>
-            <strong>{{ $fmtMoney($invoice->shipping_cents ?? 0, $currency) }}</strong>
+            <strong>{{ $fmtMoney($shippingCents, $currency) }}</strong>
           </div>
         @endif
         <div class="grand-total">
@@ -143,25 +120,12 @@
     <footer class="footer-grid">
       <section class="payment-cell">
         <div class="section-label">Payment Information</div>
-        @if($pi)
+
+        @if($hasBankTransferDetails)
           <div class="payment-lines">
-            @if($paymentMethod === 'bank_transfer')
-              @if($pi->bank_name)<div><span>Bank:</span> {{ $pi->bank_name }}</div>@endif
-              @if($pi->account_name)<div><span>Account Name:</span> {{ $pi->account_name }}</div>@endif
-              @if($pi->account_number)<div><span>Account No:</span> {{ $maskAccount($pi->account_number) }}</div>@endif
-              @if($pi->routing_number)<div><span>Routing:</span> {{ $pi->routing_number }}</div>@endif
-              @if($pi->iban)<div><span>IBAN:</span> {{ $pi->iban }}</div>@endif
-              @if($pi->swift_code)<div><span>Swift:</span> {{ $pi->swift_code }}</div>@endif
-            @elseif($paymentMethod === 'paypal' && $pi->paypal_email)
-              <div><span>PayPal:</span> {{ $pi->paypal_email }}</div>
-            @elseif($paymentMethod === 'stripe' && $pi->stripe_account_id)
-              <div><span>Stripe:</span> {{ $pi->stripe_account_id }}</div>
-            @elseif($paymentMethod === 'cash_app' && $pi->cash_app)
-              <div><span>Cash App:</span> {{ $pi->cash_app }}</div>
-            @else
-              {!! $paymentInfo($pi, 'simplifi-payment-list') !!}
-            @endif
-            @if($pi->notes)<div class="payment-note">{{ $pi->notes }}</div>@endif
+            @foreach($bankTransferDetails as $label => $value)
+              <div><span>{{ $label }}:</span> {{ $value }}</div>
+            @endforeach
           </div>
         @else
           <div class="muted">&mdash;</div>
@@ -174,6 +138,8 @@
         @if($invoice->terms)<p>{!! nl2br(e($invoice->terms)) !!}</p>@endif
         @if(!$invoice->notes && !$invoice->terms)<p>&mdash;</p>@endif
       </section>
+
+      @include('invoicing::templates.payment-method', ['invoice' => $invoice, 'pi' => $pi])
     </footer>
 
     {!! $watermark() !!}

@@ -3,24 +3,8 @@
 	// === your boilerplate ===
 	use BilliftySDK\SharedResources\Modules\Billing\Support\PlanPermission;
 	use Illuminate\Support\Facades\Storage;
-	$schemeMap = [
-	  'Ocean Blue'    => 'ocean',
-	  'Forest Green'  => 'forest',
-	  'Royal Purple'  => 'royal',
-	  'Crimson Red'   => 'crimson',
-	  'Sunset Orange' => 'sunset',
-	];
-	$categoryMap = [
-	  'Modern'  => 'modern',
-	  'Classic' => 'classic',
-	  'Minimal' => 'minimal',
-	];
 
-	  $categoryName = $category->slug;
-
-	  $scheme = $colorScheme->colors;
-
-	$category = $categoryMap[$categoryName ?? 'Modern'] ?? 'modern';
+	$scheme = $colorScheme->colors;
 
 	$fmtMoney = function ($cents, object|string $currency = 'USD') {
 		$val = ($cents ?? 0) / 100;
@@ -43,12 +27,6 @@
 
 		return number_format($num, $decimals) . '%';
 	};
-	$getCurrency = function(object|string $currency) {
-		if (is_object($currency)) {
-			return $currency->code;
-		}
-		return $currency;
-	};
 	$fmtDate = fn($d) => $d ? \Carbon\Carbon::parse($d)->toFormattedDateString() : '—';
 	$addr = function ($x) {
 		$g = is_array($x) ? $x : (method_exists($x, 'toArray') ? $x->toArray() : []);
@@ -63,11 +41,120 @@
 		return implode(', ', $parts);
 	};
 
+	$fontFamily = data_get($theme ?? null, 'fontFamily', 'DejaVu Sans, Arial, sans-serif');
 	$bp = $invoice->businessProfile ?? null;
 	$cl = $invoice->client ?? null;
 	$items = $invoice->items ?? collect();
+	$itemCount = $items instanceof \Illuminate\Support\Collection ? $items->count() : (is_countable($items) ? count($items) : 0);
+	$firstItem = $items instanceof \Illuminate\Support\Collection ? $items->first() : (is_array($items) ? reset($items) : null);
+	$currency = $invoice->currency ?? 'USD';
+	$totalDue = $invoice->amount_due_cents ?? $invoice->total_cents ?? 0;
+	$subtotalCents = $invoice->subtotal_cents ?? 0;
+	$taxCents = $invoice->tax_cents ?? 0;
+	$discountCents = $invoice->discount_cents ?? 0;
+	$shippingCents = $invoice->shipping_cents ?? 0;
+	$bpAddress = $bp ? $addr($bp) : null;
+	$clAddress = $cl ? $addr($cl) : null;
+	$businessName = $bp?->name ?? 'Your Business';
+	$clientName = $cl?->company ?: ($cl?->name ?? 'Client');
 	$isShippingTaxable = (int) $invoice->shipping_tax_rate > 0;
-	$pi = $invoice->businessProfile?->payment_information;
+	$taxLabel = $isShippingTaxable ? 'Tax (includes shipping)' : 'Tax';
+	$hasDiscount = (int) $discountCents > 0;
+	$hasShipping = (int) $shippingCents > 0;
+	$hasLineDiscount = ($invoice->discount_mode ?? null) === 'per-line';
+	$statusRaw = $invoice->status instanceof \BackedEnum ? $invoice->status->value : ($invoice->status ?? 'issued');
+	$statusLabel = match ($statusRaw) {
+		'issued', 'sent' => 'Pending Payment',
+		'partially' => 'Partially Paid',
+		default => ucwords(str_replace('_', ' ', (string) $statusRaw)),
+	};
+	$statusClass = match ($statusRaw) {
+		'paid' => 'is-paid',
+		'void' => 'is-void',
+		'draft' => 'is-draft',
+		default => 'is-pending',
+	};
+	$dueBaseDate = $invoice->issued_on ? \Carbon\Carbon::parse($invoice->issued_on)->startOfDay() : \Carbon\Carbon::today();
+	$dueDate = $invoice->due_on ? \Carbon\Carbon::parse($invoice->due_on)->startOfDay() : null;
+	$daysRemaining = $dueDate ? (int) round($dueBaseDate->diffInDays($dueDate, false)) : null;
+	$dueLabel = match (true) {
+		$daysRemaining === null => null,
+		$daysRemaining > 1 => "Due in {$daysRemaining} days",
+		$daysRemaining === 1 => 'Due tomorrow',
+		$daysRemaining === 0 => 'Due today',
+		$daysRemaining === -1 => 'Past due by 1 day',
+		default => 'Past due by '.abs($daysRemaining).' days',
+	};
+	$paymentTerms = match (true) {
+		$daysRemaining === null => null,
+		$daysRemaining <= 0 => 'Due on receipt',
+		default => "Net {$daysRemaining}",
+	};
+	$paymentInformations = collect(
+		data_get($invoice, 'businessProfile.paymentInformations')
+		?? data_get($invoice, 'businessProfile.payment_informations')
+		?? []
+	);
+	$paymentMethodValue = function($paymentInfo) {
+		$paymentMethodRaw = data_get($paymentInfo, 'payment_method');
+
+		return $paymentMethodRaw instanceof \BackedEnum
+			? $paymentMethodRaw->value
+			: (string) $paymentMethodRaw;
+	};
+	$paymentMethodKey = function($paymentInfo) use ($paymentMethodValue) {
+		$value = $paymentMethodValue($paymentInfo);
+
+		return str_replace([' ', '-'], '_', strtolower(trim($value)));
+	};
+	$singlePaymentInformation = data_get($invoice, 'businessProfile.paymentInformation')
+		?? data_get($invoice, 'businessProfile.payment_information');
+
+	if ($singlePaymentInformation) {
+		$paymentInformations = $paymentInformations
+			->prepend($singlePaymentInformation)
+			->unique(fn ($paymentInfo) => data_get($paymentInfo, 'id') ?? spl_object_id((object) $paymentInfo))
+			->values();
+	}
+	$pi = $paymentInformations->first(fn ($paymentInfo) => $paymentMethodKey($paymentInfo) === 'bank_transfer');
+	$currentPaymentMethodKey = $pi ? $paymentMethodKey($pi) : null;
+	$isBankTransfer = $currentPaymentMethodKey === 'bank_transfer';
+	$paymentToken = data_get($invoice, 'paymentLink.token');
+	$payUrl = $paymentToken
+		? rtrim(config('app.frontend_url', config('app.url')), '/') . '/app/pay/' . $paymentToken
+		: null;
+	$onlinePaymentMethodKeys = ['stripe', 'paypal', 'cash_app'];
+	$hasOnlinePaymentMethod = $paymentInformations->contains(
+		fn ($paymentInfo) => in_array($paymentMethodKey($paymentInfo), $onlinePaymentMethodKeys, true)
+	);
+	$bankTransferRows = function($paymentInfo) {
+		if (!$paymentInfo) {
+			return [];
+		}
+
+		$fields = [
+			'bank_name' => 'Bank Name',
+			'account_name' => 'Account Name',
+			'account_number' => 'Account Number',
+			'routing_number' => 'Routing Number',
+			'iban' => 'IBAN',
+			'swift_code' => 'Swift',
+		];
+
+		$rows = [];
+
+		foreach ($fields as $field => $label) {
+			$value = data_get($paymentInfo, $field);
+
+			if ($value !== null && $value !== '') {
+				$rows[$label] = $value;
+			}
+		}
+
+		return $rows;
+	};
+	$bankTransferDetails = $bankTransferRows($pi);
+	$hasBankTransferDetails = $isBankTransfer && count($bankTransferDetails) > 0;
 
 	// Decide which visual template to render (DB-driven or fallback)
 	$template = $invoice->template->view ?? 'modern.v1.aurora';
@@ -99,31 +186,17 @@
 		  }
 	  }
 
-	$paymentInfo = function(object $pi, string $baseClass = 'paymentinfo') {
-        $html = "<ul class='".$baseClass."'>";
-		switch($pi->payment_method) {
-			case 'bank_transfer':
-				$html .= "<li><span class='label'>Bank Name: </span><span class='value'>{$pi->bank_name}</span></li>";
-				$html .= "<li><span class='label'>Account Name: </span><span class='value'>{$pi->account_name}</span></li>";
-				$html .= "<li><span class='label'>Account Number: </span><span class='value'>{$pi->account_number}</span></li>";
-				$html .= "<li><span class='label'>Routing Number: </span><span class='value'>{$pi->routing_number}</span></li>";
-				if ($pi->iban) {
-					$html .= "<li><span class='label'>IBAN: </span><span class='value'>{$pi->iban}</span></li>";
-				}
-				if ($pi->swift_code) {
-					$html .= "<li><span class='label'>Swift Code: </span><span class='value'>{$pi->swift_code}</span></li>";
-				}
-				break;
-			case 'paypal':
-				$html .= "<li><span class='label'>PayPal Email: </span><span class='value'>{$pi->paypal_email}</span></li>";
-				break;
-			case 'stripe':
-				$html .= "<li><span class='label'>Stripe Payment Link: </span><span class='value'>{$pi->stripe_payment_link}</span></li>";
-				break;
-			case 'cash_app':
-				$html .= "<li><span class='label'>Cash App: </span><span class='value'>{$pi->cash_app}</span></li>";
-				break;
+	$paymentInfo = function(object $pi, string $baseClass = 'paymentinfo') use ($bankTransferRows, $paymentMethodKey) {
+		if ($paymentMethodKey($pi) !== 'bank_transfer') {
+			return '';
 		}
+
+        $html = "<ul class='".e($baseClass)."'>";
+
+		foreach ($bankTransferRows($pi) as $label => $value) {
+			$html .= "<li><span class='label'>".e($label).": </span><span class='value'>".e($value)."</span></li>";
+		}
+
 		$html .= "</ul>";
 
 		return $html;
@@ -141,8 +214,6 @@
 
 		return $html;
 	};
-	$hasLineDiscount = ($invoice->discount_mode ?? null) === 'per-line';
-
 	$fmtRate = function($value) {
 		$num = (float) ($value ?? 0);
 
@@ -152,6 +223,24 @@
 
 		return rtrim(rtrim(number_format($num, 2), '0'), '.').'%';
 	  };
+	$discountLabel = 'Discount'.((float)($invoice->discount_rate ?? 0) > 0 ? ' ('.$fmtRate($invoice->discount_rate).')' : '');
+	$fmtQuantity = function($item) {
+		$value = data_get($item, 'quantity', 0);
+
+		if (is_numeric($value)) {
+			$quantity = rtrim(rtrim(number_format((float) $value, 4, '.', ''), '0'), '.');
+		} else {
+			$quantity = trim((string) $value);
+		}
+
+		$unit = trim((string) data_get($item, 'unit', ''));
+
+		return trim(($quantity === '' ? '0' : $quantity).($unit !== '' ? ' '.$unit : ''));
+	};
+	$fmtItemUnitPrice = fn($item) => $fmtMoney(data_get($item, 'unit_price_cents', 0), $currency);
+	$fmtItemTaxRate = fn($item) => $fmtRate(data_get($item, 'tax_rate', 0));
+	$fmtItemLineDiscount = fn($item) => $fmtPercent(data_get($item, 'line_discount_rate', 0));
+	$fmtItemLineTotal = fn($item) => $fmtMoney(data_get($item, 'line_total_cents', 0), $currency);
 
 @endphp
 

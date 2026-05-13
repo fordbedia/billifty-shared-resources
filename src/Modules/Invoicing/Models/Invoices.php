@@ -66,7 +66,7 @@ class Invoices extends Model
 	{
 		return [
 			'workspace.user',
-			'businessProfile.paymentInformation',
+			'businessProfile.paymentInformations',
 			'paymentLink',
 			'client',
 			'items',

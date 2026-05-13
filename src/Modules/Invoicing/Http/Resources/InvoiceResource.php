@@ -32,10 +32,11 @@ class InvoiceResource extends JsonResource
 
 		$businessProfile = $this->businessProfile->toArray();
 
-		if ($this->businessProfile->relationLoaded('paymentInformation')) {
-			$businessProfile['paymentInformation'] = $this->businessProfile->paymentInformation
-				? PaymentInformationResource::make($this->businessProfile->paymentInformation)->toArray($request)
-				: null;
+		if ($this->businessProfile->relationLoaded('paymentInformations')) {
+			$businessProfile['paymentInformations'] = $this->businessProfile->paymentInformations
+				->map(fn ($paymentInfo) => PaymentInformationResource::make($paymentInfo)->toArray($request))
+				->values()
+				->all();
 		}
 
 		return $businessProfile;
@@ -56,9 +57,13 @@ class InvoiceResource extends JsonResource
 			'client' => $this->relationArray('client'),
 			'template' => $this->relationArray('template'),
 			'colorScheme' => $this->relationArray('colorScheme'),
-            'paymentInformation' => $this->resource->relationLoaded('paymentInformation') && $this->paymentInformation
-				? PaymentInformationResource::make($this->paymentInformation)->toArray($request)
-				: null,
+            'paymentInformations' => $this->resource->relationLoaded('businessProfile')
+				&& $this->businessProfile?->relationLoaded('paymentInformations')
+				? $this->businessProfile->paymentInformations
+					->map(fn ($paymentInfo) => PaymentInformationResource::make($paymentInfo)->toArray($request))
+					->values()
+					->all()
+				: [],
 			'paymentLink' => $this->relationArray('paymentLink'),
 			'items' => $this->relationArray('items'),
 			'invoice_number' => $this->invoice_number,

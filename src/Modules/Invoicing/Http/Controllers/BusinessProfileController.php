@@ -36,9 +36,9 @@ class BusinessProfileController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(
+	public function store(
 		BusinessProfileRequest    $request,
-		PaymentInformationRequest $paymentInformationRequest,
+		PaymentInformationRequest $paymentInfoRequest,
 		BusinessProfileContract   $businessProfileRepo
 	) {
 		$data = $request->validated();
@@ -54,7 +54,7 @@ class BusinessProfileController extends Controller
 			$data['logo_disk'] = $logo['logo_disk'];
 		}
 
-		$paymentInfoData = $paymentInformationRequest->validated();
+		$paymentInfoData = $paymentInfoRequest->validated();
 
 		$profile = $businessProfileRepo->createWithPaymentInfo($data, $paymentInfoData);
 
@@ -66,7 +66,7 @@ class BusinessProfileController extends Controller
      */
     public function show(int $id, BusinessProfileContract $businessProfile)
     {
-        return $businessProfile->findById($id)->load(['paymentInformation']);
+        return $businessProfile->findById($id)->load(['paymentInformations']);
     }
 
     /**
@@ -75,11 +75,11 @@ class BusinessProfileController extends Controller
 	public function update(
 		string                    $id,
 		BusinessProfileRequest    $businessProfileRequest,
-		PaymentInformationRequest $paymentInformationRequest,
+		PaymentInformationRequest $paymentInfoRequest,
 		BusinessProfileContract   $businessProfileRepo
 	) {
 		$data = $businessProfileRequest->validated();
-		$paymentInfoData = $paymentInformationRequest->validated();
+		$paymentInfoData = $paymentInfoRequest->validated();
 
 		// Get current profile so we can handle old logo deletion
 		$profile = $businessProfileRepo->findById((int) $id);
