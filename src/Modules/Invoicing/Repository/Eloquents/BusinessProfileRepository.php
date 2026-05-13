@@ -294,7 +294,10 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
 					$query->where('business_profile_id', $businessProfileId);
 
 					if ($existingPaymentInformationId) {
-						$query->orWhereKey($existingPaymentInformationId);
+						$query->orWhere(
+							$query->getModel()->getQualifiedKeyName(),
+							(int) $existingPaymentInformationId
+						);
 					}
 				});
 			}
