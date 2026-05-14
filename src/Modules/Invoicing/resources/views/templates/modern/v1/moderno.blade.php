@@ -148,11 +148,6 @@
             <span>Total</span>
             <strong>{{ $fmtMoney($totalDue, $currency) }}</strong>
           </div>
-          @if($hasOnlinePaymentMethod && $payUrl)
-            <a href="{{ $payUrl }}" class="pay-button">Pay Invoice Securely</a>
-          @else
-            <div class="pay-button">Pay Invoice Securely</div>
-          @endif
         </div>
       </div>
     </div>

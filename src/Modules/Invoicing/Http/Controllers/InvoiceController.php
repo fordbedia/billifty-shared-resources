@@ -23,6 +23,10 @@ use Illuminate\Support\Facades\Mail;
 
 class InvoiceController extends Controller
 {
+	protected array $lockedColumns = [
+		''
+	];
+
 	public function __construct()
 	{
 		$this->middleware(['plan.limit:max_invoices_per_month'])->only(['store', 'generate', 'sendToBusinessProfile', 'sendToClient']);;

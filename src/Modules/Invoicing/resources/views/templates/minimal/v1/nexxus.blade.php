@@ -58,13 +58,6 @@
         @if($cl?->tax_id)<div>Tax ID: {{ $cl->tax_id }}</div>@endif
         @if($cl?->license_no)<div>License No: {{ $cl->license_no }}</div>@endif
       </div>
-
-      <div class="party-cell party-right">
-        <div class="section-label">Project Details</div>
-        <div>Project: {{ $projectTitle }}</div>
-        @if($projectReference)<div>PO Number: {{ $projectReference }}</div>@endif
-        @if($invoice->terms)<div>Terms: {{ $invoice->terms }}</div>@endif
-      </div>
     </section>
 
     <section class="items-grid{{ $hasLineDiscount ? ' has-line-discount' : '' }}">

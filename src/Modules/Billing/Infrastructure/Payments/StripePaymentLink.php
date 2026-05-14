@@ -7,6 +7,7 @@ use BilliftySDK\SharedResources\Modules\Billing\Application\Ports\InvoicePayment
 use BilliftySDK\SharedResources\Modules\Billing\Application\Ports\StripeInvoicePaymentLink;
 use BilliftySDK\SharedResources\Modules\Billing\DTO\CreateInvoicePaymentLinkData;
 use BilliftySDK\SharedResources\Modules\Billing\DTO\PaymentLinkResult;
+use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Eloquents\InvoiceRepository;
 use Stripe\StripeClient;
 
@@ -51,37 +52,45 @@ class StripePaymentLink implements InvoicePaymentLinkGateway
 
 		$currencyCode = strtolower($invoice->currency?->code ?? 'usd');
 
-		$lineItems = $invoice->items->map(function ($item) use ($currencyCode, $invoice) {
-			$quantity = (int)$item->quantity;
+		$lineItems = $this->buildLineItems($invoice, $currencyCode);
 
-			$unitAmountCents = isset($item->unit_price_cents)
-				? (int)$item->unit_price_cents
-				: (int)round(((float)$item->unit_price) * 100);
+		$metadata = [
+			'invoice_id' => (string)$invoice->id,
+		];
+		if ($data->businessProfileId !== null) {
+			$metadata['business_profile_id'] = (string)$data->businessProfileId;
+		}
 
-			return [
-				'quantity' => max($quantity, 1),
-				'price_data' => [
-					'currency' => $currencyCode,
-					'unit_amount' => $unitAmountCents,
-					'product_data' => [
-						'name' => str($item->description ?: 'Invoice item')->limit(60)->toString(),
-						'description' => 'Invoice #' . $invoice->invoice_number,
-					],
-				],
-			];
-		})->values()->all();
-
-		$session = $this->stripe->checkout->sessions->create([
+		$sessionPayload = [
 			'mode' => 'payment',
 			'customer_email' => $invoice?->client?->email,
 			'success_url' => $data->successUrl,
 			'cancel_url' => $data->cancelUrl,
 			'line_items' => $lineItems,
-			'metadata' => [
-				'invoice_id' => $invoice->id,
-				'business_profile_id' => $data->businessProfileId,
+			'metadata' => $metadata,
+			'payment_intent_data' => [
+				'metadata' => $metadata,
 			],
-		], [
+		];
+
+		$discountCents = $this->checkoutDiscountCents($invoice, $lineItems);
+		if ($discountCents > 0) {
+			$coupon = $this->stripe->coupons->create([
+				'amount_off' => $discountCents,
+				'currency' => $currencyCode,
+				'duration' => 'once',
+				'name' => str($this->invoiceLabel($invoice) . ' discount')->limit(60)->toString(),
+				'metadata' => $metadata,
+			], [
+				'stripe_account' => $stripeAcctId,
+			]);
+
+			$sessionPayload['discounts'] = [
+				['coupon' => $coupon->id],
+			];
+		}
+
+		$session = $this->stripe->checkout->sessions->create($sessionPayload, [
 			'stripe_account' => $stripeAcctId,
 		]);
 
@@ -93,5 +102,136 @@ class StripePaymentLink implements InvoicePaymentLinkGateway
 				'checkout_session_id' => $session->id,
 			],
 		);
+	}
+
+	protected function buildLineItems(Invoices $invoice, string $currencyCode): array
+	{
+		$invoiceLabel = $this->invoiceLabel($invoice);
+		$lineItems = collect($invoice->items ?? [])
+			->map(fn($item) => $this->buildInvoiceItemLineItem($item, $currencyCode, $invoiceLabel))
+			->filter()
+			->values()
+			->all();
+
+		$shippingCents = max((int)$invoice->shipping_cents, 0) + max((int)$invoice->shipping_tax_cents, 0);
+		if ($shippingCents > 0) {
+			$lineItems[] = $this->buildLineItem(
+				$currencyCode,
+				$shippingCents,
+				'Shipping',
+				$invoiceLabel
+			);
+		}
+
+		$totalCents = $this->invoiceTotalCents($invoice);
+		$lineItemsTotal = $this->lineItemsTotal($lineItems);
+
+		if ($lineItemsTotal < $totalCents) {
+			$lineItems[] = $this->buildLineItem(
+				$currencyCode,
+				$totalCents - $lineItemsTotal,
+				'Invoice adjustment',
+				$invoiceLabel
+			);
+		}
+
+		if ($lineItems === []) {
+			$lineItems[] = $this->buildLineItem(
+				$currencyCode,
+				$totalCents,
+				$invoiceLabel,
+				'Payment for ' . $invoiceLabel
+			);
+		}
+
+		return $lineItems;
+	}
+
+	protected function buildInvoiceItemLineItem(mixed $item, string $currencyCode, string $invoiceLabel): ?array
+	{
+		$amountCents = $this->invoiceItemAmountCents($item);
+
+		if ($amountCents <= 0) {
+			return null;
+		}
+
+		$name = data_get($item, 'name') ?: data_get($item, 'description') ?: 'Invoice item';
+		$quantity = data_get($item, 'quantity');
+		$description = $invoiceLabel;
+
+		if (is_numeric($quantity)) {
+			$description .= '; Qty: ' . rtrim(rtrim((string)$quantity, '0'), '.');
+		}
+
+		return $this->buildLineItem(
+			$currencyCode,
+			$amountCents,
+			$name,
+			$description
+		);
+	}
+
+	protected function buildLineItem(
+		string $currencyCode,
+		int $unitAmountCents,
+		string $name,
+		string $description,
+	): array {
+		return [
+			'quantity' => 1,
+			'price_data' => [
+				'currency' => $currencyCode,
+				'unit_amount' => max($unitAmountCents, 0),
+				'product_data' => [
+					'name' => str($name)->limit(60)->toString(),
+					'description' => $description,
+				],
+			],
+		];
+	}
+
+	protected function invoiceItemAmountCents(mixed $item): int
+	{
+		$lineTotalCents = data_get($item, 'line_total_cents');
+
+		if (is_numeric($lineTotalCents) && (int)$lineTotalCents > 0) {
+			return (int)$lineTotalCents;
+		}
+
+		$quantity = data_get($item, 'quantity', 1);
+		$quantity = is_numeric($quantity) ? (float)$quantity : 1.0;
+
+		$unitAmountCents = data_get($item, 'unit_price_cents');
+		if (!is_numeric($unitAmountCents) || (int)$unitAmountCents <= 0) {
+			$unitAmount = data_get($item, 'unit_price', 0);
+			$unitAmountCents = is_numeric($unitAmount) ? (int)round((float)$unitAmount * 100) : 0;
+		}
+
+		return max((int)round($quantity * (int)$unitAmountCents), 0);
+	}
+
+	protected function checkoutDiscountCents(Invoices $invoice, array $lineItems): int
+	{
+		return max($this->lineItemsTotal($lineItems) - $this->invoiceTotalCents($invoice), 0);
+	}
+
+	protected function lineItemsTotal(array $lineItems): int
+	{
+		return collect($lineItems)->sum(function (array $lineItem): int {
+			$quantity = max((int)($lineItem['quantity'] ?? 1), 1);
+			$unitAmountCents = (int)data_get($lineItem, 'price_data.unit_amount', 0);
+
+			return $quantity * $unitAmountCents;
+		});
+	}
+
+	protected function invoiceTotalCents(Invoices $invoice): int
+	{
+		return max((int)$invoice->total_cents, 0);
+	}
+
+	protected function invoiceLabel(Invoices $invoice): string
+	{
+		return 'Invoice #' . ($invoice->invoice_number ?: $invoice->id);
 	}
 }

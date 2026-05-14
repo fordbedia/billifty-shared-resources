@@ -6,6 +6,7 @@ use BilliftySDK\SharedResources\Modules\Invoicing\Domain\InvoiceAction;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\InvoiceContracts;
 use BilliftySDK\SharedResources\Modules\Invoicing\Services\InvoiceCalculator;
+use BilliftySDK\SharedResources\Modules\Invoicing\Services\InvoicePaymentLinkServices;
 use BilliftySDK\SharedResources\Modules\Invoicing\Services\InvoiceService;
 use BilliftySDK\SharedResources\TestCase\BaseTest;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +23,7 @@ class InvoiceServiceTest extends BaseTest
         $invoice = $this->makePersistedInvoice();
         $repo = new InMemoryInvoiceRepository($invoice);
 
-        $service = new InvoiceService(new InvoiceCalculator(), $repo);
+        $service = $this->makeService($repo);
 
         $result = $service->upsert($this->basePayload([
             'subtotal_cents' => 2000,
@@ -48,7 +49,7 @@ class InvoiceServiceTest extends BaseTest
         $invoice = $this->makePersistedInvoice();
         $repo = new InMemoryInvoiceRepository($invoice);
 
-        $service = new InvoiceService(new InvoiceCalculator(), $repo);
+        $service = $this->makeService($repo);
 
         $result = $service->upsert($this->basePayload([
             'subtotal_cents' => 2001,
@@ -70,7 +71,7 @@ class InvoiceServiceTest extends BaseTest
         $invoice = $this->makePersistedInvoice();
         $repo = new InMemoryInvoiceRepository($invoice);
 
-        $service = new InvoiceService(new InvoiceCalculator(), $repo);
+        $service = $this->makeService($repo);
 
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Invoice total mismatch: frontend subtotal=1, backend subtotal=2000; frontend total=1, backend total=2000');
@@ -98,6 +99,11 @@ class InvoiceServiceTest extends BaseTest
 
         return $invoice;
     }
+
+	private function makeService(InvoiceContracts $repo): InvoiceService
+	{
+		return new InvoiceService(new InvoiceCalculator(), $repo, new FakeInvoicePaymentLinkServices());
+	}
 
     private function basePayload(array $overrides = []): array
     {
@@ -174,4 +180,23 @@ class InMemoryInvoiceRepository implements InvoiceContracts
     public function queuePdfGeneration(Invoices $invoice): void
     {
     }
+}
+
+class FakeInvoicePaymentLinkServices extends InvoicePaymentLinkServices
+{
+	public array $createdLinks = [];
+
+	public function __construct()
+	{
+	}
+
+	public function createForInvoice(Invoices $invoices, array $payload): void
+	{
+		$this->createdLinks[] = [$invoices, $payload];
+	}
+
+	public function generateExpireAt()
+	{
+		return '2099-01-01 00:00:00';
+	}
 }

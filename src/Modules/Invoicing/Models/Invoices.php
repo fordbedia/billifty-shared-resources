@@ -14,7 +14,7 @@ class Invoices extends Model
 {
 	use SoftDeletes;
 
-    protected $table = 'invoices';
+	protected $table = 'invoices';
 	protected $guarded = [];
 
 	protected $hidden = [
@@ -22,9 +22,12 @@ class Invoices extends Model
 	];
 
 	protected $appends = [
-        'pdf_url',
+		'pdf_url',
 		'user_id',
-    ];
+		'is_issued',
+		'is_draft',
+		'is_paid'
+	];
 
 	protected $casts = [
 		'workspace_id' => 'integer',
@@ -92,13 +95,13 @@ class Invoices extends Model
 	}
 
 	public function getPdfUrlAttribute(): ?string
-    {
-        if (!$this->pdf_path || !$this->pdf_disk) {
-            return null;
-        }
+	{
+		if (!$this->pdf_path || !$this->pdf_disk) {
+			return null;
+		}
 
-        return Storage::disk($this->pdf_disk)->url($this->pdf_path);
-    }
+		return Storage::disk($this->pdf_disk)->url($this->pdf_path);
+	}
 
 	public function paymentLink()
 	{
@@ -108,5 +111,20 @@ class Invoices extends Model
 	public function paymentRecord()
 	{
 		return $this->hasOne(PaymentRecord::class, 'invoice_id', 'id');
+	}
+
+	public function getIsIssuedAttribute()
+	{
+		return $this->status === 'issued';
+	}
+
+	public function getIsDraftAttribute()
+	{
+		return $this->status === 'draft';
+	}
+
+	public function getIsPaidAttribute()
+	{
+		return $this->status === 'paid';
 	}
 }

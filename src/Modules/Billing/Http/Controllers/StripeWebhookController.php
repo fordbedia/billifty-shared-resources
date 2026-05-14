@@ -42,22 +42,28 @@ class StripeWebhookController extends Controller
 
 		$payload = $request->getContent();
 		$sigHeader = $request->header('Stripe-Signature');
-		$secret = config('services.stripe.webhook_secret');
+		$secrets = array_values(array_unique(array_filter(array_map(
+			fn ($secret) => is_string($secret) ? trim($secret) : null,
+			[
+				config('services.stripe.webhook_secret'),
+				config('services.stripe.connect_webhook_secret'),
+			]
+		))));
 
-		if (!$secret) {
+		if (empty($secrets)) {
 			Log::error('StripeWebhookController.missing_webhook_secret');
 			return response('Webhook secret missing', 500);
 		}
 
 		try {
-			$event = Webhook::constructEvent($payload, $sigHeader, $secret);
+			$event = $this->constructEventWithConfiguredSecrets($payload, $sigHeader, $secrets);
 		} catch (\UnexpectedValueException $e) {
 			Log::warning('StripeWebhookController.invalid_payload', ['err' => $e->getMessage()]);
 			return response('Invalid payload', 400);
 		} catch (SignatureVerificationException $e) {
 			Log::warning('StripeWebhookController.invalid_signature', [
 				'err' => $e->getMessage(),
-				'secret_prefix' => substr($secret, 0, 10) . '...',
+				'configured_secret_count' => count($secrets),
 			]);
 			return response('Invalid signature', 400);
 		}
@@ -128,9 +134,26 @@ class StripeWebhookController extends Controller
 
 
 			if ($invoiceId) {
-				$this->processSuceessPayment($event, $session, $invoiceId);
+				Log::info('StripeWebhookController.invoice_checkout_received', [
+					'event_id' => $event->id,
+					'event_type' => $event->type,
+					'session_id' => $session?->id ?? null,
+					'invoice_id' => $invoiceId,
+					'account' => $event->account ?? null,
+				]);
+
+				$this->processSuccessPayment($event, $session, $invoiceId);
 				return response('OK', 200);
 			}
+
+			Log::warning('StripeWebhookController.invoice_checkout_missing_invoice_id', [
+				'event_id' => $event->id,
+				'event_type' => $event->type,
+				'session_id' => $session?->id ?? null,
+				'payment_status' => $session?->payment_status ?? null,
+				'metadata' => (array) ($session?->metadata ?? []),
+				'account' => $event->account ?? null,
+			]);
 		}
 
 		// Determine subscription ID depending on event type
@@ -267,6 +290,28 @@ class StripeWebhookController extends Controller
 		}
 
 		return response('OK', 200);
+	}
+
+	private function constructEventWithConfiguredSecrets(
+		string $payload,
+		?string $sigHeader,
+		array $secrets
+	): object {
+		$lastSignatureException = null;
+
+		foreach ($secrets as $secret) {
+			try {
+				return Webhook::constructEvent($payload, $sigHeader, $secret);
+			} catch (SignatureVerificationException $e) {
+				$lastSignatureException = $e;
+			}
+		}
+
+		if ($lastSignatureException) {
+			throw $lastSignatureException;
+		}
+
+		throw new \UnexpectedValueException('No Stripe webhook signing secrets configured.');
 	}
 
 	private function priceIdToPlanAndCycle(string $priceId): ?array
@@ -448,9 +493,20 @@ class StripeWebhookController extends Controller
 		});
 	}
 
-	private function processSuceessPayment(object $event, object $session, int $invoiceId): void
+	private function processSuccessPayment(object $event, object $session, int $invoiceId): void
 	{
 		$invoice = Invoices::query()->find($invoiceId);
+
+		if (!$invoice) {
+			Log::warning('StripeWebhookController.invoice_not_found_for_success_payment', [
+				'event_id' => $event->id ?? null,
+				'session_id' => $session->id ?? null,
+				'invoice_id' => $invoiceId,
+			]);
+
+			return;
+		}
+
 		$data = $this->retrievePaymentData($event, $session, $invoice);
 
 		if ($event->type === 'checkout.session.async_payment_failed') {
