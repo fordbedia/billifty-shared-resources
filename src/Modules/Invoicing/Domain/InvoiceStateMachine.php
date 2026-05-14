@@ -12,6 +12,7 @@ final class InvoiceStateMachine
 		'business_profile_id',
 		'client_id',
 		'currency_id',
+		'invoice_template_id',
 		'issued_on',
 		'due_on',
 		'shipping_address',
