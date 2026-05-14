@@ -495,6 +495,14 @@ class StripeWebhookController extends Controller
 
 	private function processSuccessPayment(object $event, object $session, int $invoiceId): void
 	{
+		Log::info('StripeWebhookController.invoice_payment_processing', [
+			'event_id' => $event->id ?? null,
+			'event_type' => $event->type ?? null,
+			'session_id' => $session->id ?? null,
+			'invoice_id' => $invoiceId,
+			'account' => $event->account ?? null,
+		]);
+
 		$invoice = Invoices::query()->find($invoiceId);
 
 		if (!$invoice) {
@@ -515,12 +523,23 @@ class StripeWebhookController extends Controller
 			$this->markInvoicePaid($session);
 		}
 
-		PaymentRecord::create([
+		$paymentRecord = PaymentRecord::updateOrCreate(
+			['invoice_id' => $invoiceId],
+			[
+				'payment_method' => $data['invoice_payment_method'],
+				'data' => $data,
+				'token' => $data['token'],
+			]
+		);
+
+		Log::info('StripeWebhookController.payment_record_saved', [
+			'event_id' => $event->id ?? null,
+			'session_id' => $session->id ?? null,
 			'invoice_id' => $invoiceId,
-			'payment_method' => $data['invoice_payment_method'],
-			'data' => $data,
-			'token' => $data['token'],
+			'payment_record_id' => $paymentRecord->id,
+			'created' => $paymentRecord->wasRecentlyCreated,
 		]);
+
 		Mail::to($invoice->businessProfile?->email)
 			->send(new PaymentSuccessNotificationForBusinessProfileMail($invoice, $data));
 		Mail::to($invoice->client?->email)
