@@ -153,6 +153,7 @@
           <div class="total-label">Total Amount Due</div>
           <div class="total-amount">{{ $fmtMoney($totalDue, $currency) }}</div>
           <div class="currency-pill">{{ is_object($currency) ? $currency->code : $currency }}</div>
+          @include('invoicing::templates.paid-stamp')
         </div>
       </aside>
     </section>

@@ -70,6 +70,8 @@ class InvoiceResource extends JsonResource
 			'reference' => $this->reference,
 			'currency' => $this->relationArray('currency'),
 			'issued_on' => $this->issued_on,
+			'is_paid' => $this->is_paid,
+			'is_issued' => $this->is_issued,
 			'due_on' => $this->due_on,
 			'paid_at' => $this->paid_at,
 			'status' =>  $this->status,

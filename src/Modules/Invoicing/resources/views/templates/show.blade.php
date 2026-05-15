@@ -127,6 +127,7 @@
 	$hasOnlinePaymentMethod = $paymentInformations->contains(
 		fn ($paymentInfo) => in_array($paymentMethodKey($paymentInfo), $onlinePaymentMethodKeys, true)
 	);
+	$isPaid = $invoice->is_paid;
 	$bankTransferRows = function($paymentInfo) {
 		if (!$paymentInfo) {
 			return [];
@@ -370,6 +371,36 @@
 		.watermark {
 			text-align: center;
 			font-size: 18px;
+		}
+
+		.invoice-paid-stamp-wrap {
+			display: flex;
+			justify-content: flex-end;
+			clear: both;
+			min-height: 70px;
+			margin-top: 13px;
+		}
+
+		.invoice-paid-stamp {
+			position: relative;
+			box-sizing: border-box;
+			width: 112px;
+			height: 46px;
+			border: 4px double rgba(202, 24, 29, 0.82);
+			border-radius: 5px;
+			color: rgba(202, 24, 29, 0.82);
+			font-family: "DejaVu Sans", Arial, sans-serif;
+			font-size: 40px;
+			font-weight: 900;
+			line-height: 38px;
+			letter-spacing: 0.08em;
+			text-align: center;
+			text-transform: uppercase;
+			transform: rotate(-12deg);
+			transform-origin: center;
+			background: transparent;
+			opacity: 0.92;
+			pointer-events: none;
 		}
 
 		/**------------------------- PDF Safe ------------------------*/

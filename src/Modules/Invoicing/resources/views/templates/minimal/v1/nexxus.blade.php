@@ -128,6 +128,7 @@
             <span>Total Due</span>
             <strong>{{ $fmtMoney($totalDue, $currency) }}</strong>
           </div>
+          @include('invoicing::templates.paid-stamp')
         </div>
       </div>
     </section>
