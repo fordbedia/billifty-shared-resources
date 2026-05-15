@@ -60,8 +60,7 @@ final class InvoiceStateMachine
 
 	public static function assertMutableFields(Invoices $existing, array $incoming): void
 	{
-		if ($existing->status !== InvoiceStatus::ISSUED->value || $existing->status !== InvoiceStatus::PAID) return;
-
+		if ($existing->status !== InvoiceStatus::ISSUED->value && $existing->status !== InvoiceStatus::PAID) return;
 		foreach (self::IMMUTABLE_AFTER_ISSUE as $key) {
 			if (array_key_exists($key, $incoming) && (string)$incoming[$key] !== (string)$existing->{$key}) {
 				throw new DomainException("Field ".\Str::headline($key)." cannot be modified after issuing.");
