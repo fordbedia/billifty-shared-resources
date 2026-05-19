@@ -280,6 +280,14 @@
         $paymentData['card_brand'] ?? $paymentData['payment_method'] ?? null,
         !empty($paymentData['card_last4'] ?? null) ? 'ending in ' . $paymentData['card_last4'] : null,
     ])->filter()->implode(' '));
+    $paymentProviderRaw = $paymentData['invoice_payment_method'] ?? $paymentData['payment_method'] ?? '';
+    $paymentProviderRaw = $paymentProviderRaw instanceof \BackedEnum ? $paymentProviderRaw->value : $paymentProviderRaw;
+    $paymentProviderKey = strtolower(str_replace([' ', '-'], '_', (string) $paymentProviderRaw));
+    $paymentProvider = [
+        'paypal' => 'PayPal',
+        'stripe' => 'Stripe',
+        'cash_app' => 'Cash App',
+    ][$paymentProviderKey] ?? null;
 @endphp
 <div class="wrapper">
     <div class="container">
@@ -347,6 +355,13 @@
                         <div class="detail-row">
                             <div class="detail-label">Client email</div>
                             <div class="detail-value">{{ $clientEmail }}</div>
+                        </div>
+                    @endif
+
+                    @if($paymentProvider)
+                        <div class="detail-row">
+                            <div class="detail-label">Payment provider</div>
+                            <div class="detail-value">{{ $paymentProvider }}</div>
                         </div>
                     @endif
 
