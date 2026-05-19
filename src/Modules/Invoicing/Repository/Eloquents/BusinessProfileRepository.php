@@ -31,6 +31,8 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
 		],
 		'paypal' => [
 			'paypal_email',
+			'paypal_merchant_id',
+			'paypal_payer_id',
 		],
 		'stripe' => [
 			'stripe_account_id',
@@ -48,6 +50,8 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
 		'iban',
 		'swift_code',
 		'paypal_email',
+		'paypal_merchant_id',
+		'paypal_payer_id',
 		'stripe_account_id',
 		'cash_app',
 	];
@@ -92,17 +96,11 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
 	{
 		return DB::transaction(function () use ($data, $paymentInfoData) {
 			$data['user_id'] = auth()->id();
-			unset($data['payment_information_id']);
 
 			/** @var BusinessProfiles $profile */
 			$profile = $this->getModelByAuthUser()->create($data);
 
-			$paymentInfo = $this->savePaymentInformation(null, $paymentInfoData, $profile->id);
-
-			if ($paymentInfo) {
-				$profile->payment_information_id = $paymentInfo->id;
-				$profile->save();
-			}
+			$this->savePaymentInformation($paymentInfoData, $profile->id);
 
 			return $profile->fresh(['paymentInformations']);
 		});
@@ -120,17 +118,7 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
 			/** @var BusinessProfiles $profile */
 			$profile = $this->findById($id);
 
-			$paymentInfo = $this->savePaymentInformation(
-				$profile->payment_information_id,
-				$paymentInfoData,
-				$profile->id
-			);
-
-			if ($paymentInfo) {
-				$data['payment_information_id'] = $paymentInfo->id;
-			} elseif ($this->paymentInfoSelectionWasSubmitted($paymentInfoData)) {
-				$data['payment_information_id'] = null;
-			}
+			$this->savePaymentInformation($paymentInfoData, $profile->id);
 
 			$profile->fill($data);
 			$profile->save();
@@ -141,11 +129,9 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
 
 	/**
      * Upsert payment information.
-     * - Existing single payment information still updates in place.
      * - Multiple selected methods create/update one row per method.
      */
     protected function savePaymentInformation(
-        ?int $existingPaymentInformationId,
         array $paymentInfoData,
 		?int $businessProfileId = null
     ): ?PaymentInformation {
@@ -166,7 +152,6 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
 		if (empty($selectedMethods)) {
 			$this->deleteUnselectedPaymentInformation(
 				$businessProfileId,
-				$existingPaymentInformationId,
 				[],
 				[]
 			);
@@ -180,8 +165,7 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
 			$paymentInfo = $this->findPaymentInformationForMethod(
 				$method,
 				$paymentInfoData['payment_information_ids'] ?? [],
-				$businessProfileId,
-				$existingPaymentInformationId
+				$businessProfileId
 			);
 
 			$payload = $this->paymentInfoPayload($method, $paymentInfoData, $businessProfileId);
@@ -198,23 +182,12 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
 
 		$this->deleteUnselectedPaymentInformation(
 			$businessProfileId,
-			$existingPaymentInformationId,
 			$selectedMethods,
 			array_map(fn (PaymentInformation $paymentInfo) => $paymentInfo->id, $savedPaymentInformation)
 		);
 
 		return $savedPaymentInformation[$selectedMethods[0]] ?? null;
     }
-
-	protected function paymentInfoSelectionWasSubmitted(array $paymentInfoData): bool
-	{
-		if (isset($paymentInfoData['paymentInfo'])) {
-			$paymentInfoData = $paymentInfoData['paymentInfo'];
-		}
-
-		return array_key_exists('payment_methods', $paymentInfoData)
-			|| array_key_exists('payment_method', $paymentInfoData);
-	}
 
 	protected function normalizePaymentInformationData(array $paymentInfoData): array
 	{
@@ -281,8 +254,7 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
 	protected function findPaymentInformationForMethod(
 		string $method,
 		array $paymentInfoIds,
-		?int $businessProfileId,
-		?int $existingPaymentInformationId
+		?int $businessProfileId
 	): ?PaymentInformation {
 		$paymentInfoId = $paymentInfoIds[$method] ?? null;
 
@@ -290,16 +262,7 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
 			$query = PaymentInformation::whereKey((int) $paymentInfoId);
 
 			if ($businessProfileId) {
-				$query->where(function ($query) use ($businessProfileId, $existingPaymentInformationId) {
-					$query->where('business_profile_id', $businessProfileId);
-
-					if ($existingPaymentInformationId) {
-						$query->orWhere(
-							$query->getModel()->getQualifiedKeyName(),
-							(int) $existingPaymentInformationId
-						);
-					}
-				});
+				$query->where('business_profile_id', $businessProfileId);
 			}
 
 			$paymentInfo = $query->first();
@@ -315,14 +278,6 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
 				->first();
 
 			if ($paymentInfo) {
-				return $paymentInfo;
-			}
-		}
-
-		if ($existingPaymentInformationId) {
-			$paymentInfo = PaymentInformation::find($existingPaymentInformationId);
-
-			if ($paymentInfo && $this->normalizePaymentMethod($paymentInfo->payment_method) === $method) {
 				return $paymentInfo;
 			}
 		}
@@ -359,7 +314,6 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
 
 	protected function deleteUnselectedPaymentInformation(
 		?int $businessProfileId,
-		?int $existingPaymentInformationId,
 		array $selectedMethods,
 		array $savedPaymentInformationIds
 	): void {
@@ -375,13 +329,6 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
 			}
 
 			$query->delete();
-		}
-
-		if (
-			$existingPaymentInformationId
-			&& !in_array($existingPaymentInformationId, $savedPaymentInformationIds, true)
-		) {
-			PaymentInformation::whereKey($existingPaymentInformationId)->delete();
 		}
 	}
 

@@ -47,7 +47,7 @@ class BusinessProfileController extends Controller
 		if ($request->hasFile('logo_path')) {
 			$file = $request->file('logo_path');
 
-			// 👇 Let the repo + LogoImageProcessor handle resize & storage
+			// Let the repo + LogoImageProcessor handle resize & storage
 			$logo = $businessProfileRepo->storeResizedLogo($file, $disk);
 
 			$data['logo_path'] = $logo['logo_path'];

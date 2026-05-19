@@ -17,4 +17,9 @@ class BusinessProfiles extends Model
 	{
 		return $this->hasMany(PaymentInformation::class, 'business_profile_id')->orderBy('id');
 	}
+
+	public function paypalInformation()
+	{
+		return $this->hasOne(PaymentInformation::class, 'business_profile_id')->where('payment_method', 'paypal');
+	}
 }

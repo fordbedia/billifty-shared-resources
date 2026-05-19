@@ -105,7 +105,7 @@ class TestInvoiceSeeder extends MakeSeeder
 			]);
 
 			foreach($this->businessProfile as $businessProfile) {
-				BusinessProfiles::updateOrCreate(array_merge($businessProfile, ['user_id' => $user->id, 'payment_information_id' => $paymentInfo->id]));
+				BusinessProfiles::updateOrCreate(array_merge($businessProfile, ['user_id' => $user->id]));
 			}
 			$businessProfile = BusinessProfiles::where('email', 'test_company_llc@gmail.com')->first();
 

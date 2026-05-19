@@ -92,6 +92,18 @@ class PaymentInformationRequest extends FormRequest
 				'string',
 			],
 
+			'paymentInfo.paypal_merchant_id' => [
+				Rule::requiredIf(fn () => $this->isPaymentMethodSelected('paypal')),
+				'nullable',
+				'string',
+			],
+
+			'paymentInfo.paypal_payer_id' => [
+				Rule::requiredIf(fn () => $this->isPaymentMethodSelected('paypal')),
+				'nullable',
+				'string',
+			],
+
 			// Cash App
 			'paymentInfo.cash_app' => [
 				Rule::requiredIf(fn () => $this->isPaymentMethodSelected('cash_app')),
@@ -175,6 +187,8 @@ class PaymentInformationRequest extends FormRequest
 
 			// PayPal
 			'paymentInfo.paypal_email.required' => 'PayPal Email is required when PayPal is selected.',
+			'paymentInfopaypal_merchant_id.required' => 'PayPal Merchant ID is required when PayPal is selected.',
+			'paymentInfopaypal_merchant_id.paypal_payer_id.required' => 'PayPal Payer ID is required when PayPal is selected.',
 
 			// Cash App
 			'paymentInfo.cash_app.required' => 'Cash App is required when Cash App is selected.',

@@ -17,19 +17,6 @@ return new class extends Migration {
 				$table->index(['business_profile_id', 'payment_method'], 'payment_information_profile_method_index');
 			}
 		});
-
-		DB::table('business_profiles')
-			->whereNotNull('payment_information_id')
-			->orderBy('id')
-			->select(['id', 'payment_information_id'])
-			->chunkById(100, function ($businessProfiles) {
-				foreach ($businessProfiles as $businessProfile) {
-					DB::table('payment_information')
-						->where('id', $businessProfile->payment_information_id)
-						->whereNull('business_profile_id')
-						->update(['business_profile_id' => $businessProfile->id]);
-				}
-			});
 	}
 
 	/**

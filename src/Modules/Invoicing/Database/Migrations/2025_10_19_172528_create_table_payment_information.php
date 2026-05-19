@@ -24,7 +24,14 @@ return new class extends Migration {
 			$table->string('routing_number')->nullable();
 			$table->string('iban')->nullable();
 			$table->string('swift_code')->nullable();
+			$table->string('paypal_merchant_id')->nullable();
+			$table->string('paypal_payer_id')->nullable();
 			$table->string('paypal_email')->nullable();
+			$table->boolean('paypal_enabled')->default(false);
+			$table->boolean('paypal_payments_receivable')->default(false);
+			$table->boolean('paypal_primary_email_confirmed')->default(false);
+			$table->timestamp('paypal_onboarded_at')->nullable();
+			$table->timestamp('paypal_disconnected_at')->nullable();
 			$table->string('stripe_account_id')->nullable();
 			$table->timestamp('stripe_connected_at')->nullable();
 			$table->string('cash_app')->nullable();

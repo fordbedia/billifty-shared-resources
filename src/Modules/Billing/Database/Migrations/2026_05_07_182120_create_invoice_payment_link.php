@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
 			$table->foreignId('invoice_id')->constrained('invoices')->cascadeOnDelete();
 			$table->string('token')->unique();
+			$table->string('paypal_order_id')->nullable()->index();
+			$table->string('paypal_capture_id')->nullable()->index();
 			$table->timestamp('expires_at');
 			$table->softDeletes();
             $table->timestamps();

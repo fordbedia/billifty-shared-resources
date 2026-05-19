@@ -26,7 +26,6 @@ class StoreInvoiceRequest extends FormRequest
             'client_id'           => ['required','integer','exists:clients,id'],
 			'invoice_template_id' => ['required','integer','exists:invoice_templates,id'],
 			'color_scheme_id'      => ['required','integer','exists:color_scheme,id'],
-			'payment_information_id' => ['nullable', 'integer','exists:payment_information,id'],
 			'invoice_number'		=> ['required','string','max:100'],
 			'reference'				=> ['nullable','string','max:100'],
 			'currency_id'			=> ['required','integer','max:100'],
@@ -74,7 +73,6 @@ class StoreInvoiceRequest extends FormRequest
 		return [
 			'business_profile_id' => 'Business Profile',
             'client_id'           => 'Client',
-			// 'payment_information_id' => ['nullable', 'integer','exists:payment_information,id'],
 			'invoice_number'		=> 'Invoice Number',
 			// 'reference'				=> ['nullable','string','max:100'],
 			'currency_id'			=> 'Currency',

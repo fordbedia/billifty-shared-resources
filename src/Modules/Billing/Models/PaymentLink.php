@@ -10,6 +10,7 @@ class PaymentLink extends Model
 {
     protected $table = 'payment_link';
     protected $guarded = [];
+	public $appends = ['payment_methods'];
 
 	public function invoice()
 	{
@@ -21,9 +22,16 @@ class PaymentLink extends Model
 		return [
 			'invoice',
 			'invoice.client',
-			'invoice.businessProfile',
+			'invoice.businessProfile.paymentInformations',
 			'invoice.currency'
 		];
+	}
+
+	public function getPaymentMethodsAttribute()
+	{
+		return $this->invoice->businessProfile?->paymentInformations->map(function ($paymentInfo) {
+			return $paymentInfo->payment_method;
+		});
 	}
 
 }
