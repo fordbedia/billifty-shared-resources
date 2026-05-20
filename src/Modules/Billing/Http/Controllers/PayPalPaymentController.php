@@ -324,6 +324,9 @@ class PayPalPaymentController extends Controller
 
 	protected function frontendPaymentUrl(string $paymentToken, string $status): string
 	{
+		if ($status === 'payment-cancelled') {
+			return rtrim((string)config('app.frontend_url'), '/') . "/app/invoices/{$paymentToken}/paypal/{$status}";
+		}
 		return rtrim((string)config('app.frontend_url'), '/') . "/app/invoices/{$paymentToken}/{$status}";
 	}
 }
