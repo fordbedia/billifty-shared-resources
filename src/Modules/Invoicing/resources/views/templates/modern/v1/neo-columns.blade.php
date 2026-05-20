@@ -277,7 +277,7 @@
 
 		.logo {
 			background: #ffffff;
-			width: 160px;
+			width: 130px;
 			max-width: 100%;
 			height: auto;
 			object-fit: contain;

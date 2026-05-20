@@ -240,7 +240,7 @@
 		}
 
 		.aurora-root .logo {
-			width: 140px;
+			width: 130px;
 			max-width: 100%;
 			height: auto;
 			object-fit: contain;
