@@ -234,11 +234,13 @@
 		.ledger-root .brand-lockup {
 			display: flex;
 			align-items: flex-start;
+			flex-wrap: wrap;
 		}
 
 		.ledger-root .brand-mark-cell {
-			flex: 0 0 36px;
+			flex: 0 0 auto;
 			padding-top: 1px;
+			padding-bottom: 5px;
 		}
 
 		.ledger-root .brand-copy {
@@ -247,9 +249,10 @@
 
 		.ledger-root .logo {
 			display: block;
-			width: 27px;
+			width: 140px;
+			max-width: 100%;
 			height: auto;
-			max-height: 27px;
+			object-fit: contain;
 			/*border-radius:4px;*/
 		}
 
