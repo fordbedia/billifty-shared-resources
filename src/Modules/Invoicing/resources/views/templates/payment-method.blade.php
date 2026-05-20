@@ -13,41 +13,56 @@
 	$paymentToken = $paymentToken ?? null;
 	$payUrl = $payUrl ?? null;
 	$paymentAccent = data_get($scheme ?? null, 'main.code', '#111827') ?: '#111827';
+	$onlinePaymentMethodLabels = [
+		'stripe' => 'Stripe',
+		'paypal' => 'PayPal',
+		'cash_app' => 'Cash App',
+	];
 
-	$paymentMethodBlocks = $paymentInfos
-		->filter(fn ($paymentInfo) => in_array($paymentMethodKey($paymentInfo), ['stripe', 'paypal', 'cash_app'], true))
-		->map(function ($paymentInfo) use ($paymentMethodKey, $payUrl) {
-			$paymentMethod = $paymentMethodKey($paymentInfo);
-			$hasOnlinePaymentLink = (bool) $payUrl;
-			$qrCodeSrc = null;
-
-			if ($hasOnlinePaymentLink) {
-				try {
-					$qrCodeSvg = QrCode::size(86)->format('svg')->generate($payUrl);
-					$qrCodeSrc = 'data:image/svg+xml;base64,' . base64_encode($qrCodeSvg);
-				} catch (\Throwable $e) {
-					$qrCodeSrc = null;
-				}
-			}
-
-			$detailRows = [];
-
-			return [
-				'method' => $paymentMethod,
-				'label' => match ($paymentMethod) {
-					'paypal' => 'PayPal',
-					'stripe' => 'Stripe',
-					'cash_app' => 'Cash App',
-					default => 'Payment Information',
-				},
-				'hasOnlinePaymentLink' => $hasOnlinePaymentLink,
-				'qrCodeSrc' => $qrCodeSrc,
-				'detailRows' => $detailRows,
-				'shouldRender' => $hasOnlinePaymentLink || count($detailRows) > 0,
-			];
-		})
-		->filter(fn ($paymentMethodBlock) => $paymentMethodBlock['shouldRender'])
+	$configuredOnlinePaymentMethods = $paymentInfos
+		->map(fn ($paymentInfo) => $paymentMethodKey($paymentInfo))
+		->filter(fn ($paymentMethod) => array_key_exists($paymentMethod, $onlinePaymentMethodLabels))
+		->unique()
 		->values();
+
+	$onlinePaymentMethods = collect(array_keys($onlinePaymentMethodLabels))
+		->filter(fn ($paymentMethod) => $configuredOnlinePaymentMethods->contains($paymentMethod))
+		->values();
+
+	$onlinePaymentLabels = $onlinePaymentMethods
+		->map(fn ($paymentMethod) => $onlinePaymentMethodLabels[$paymentMethod])
+		->values();
+
+	$onlinePaymentLabelCount = $onlinePaymentLabels->count();
+	$onlinePaymentSummary = match (true) {
+		$onlinePaymentLabelCount === 1 => $onlinePaymentLabels->first(),
+		$onlinePaymentLabelCount === 2 => $onlinePaymentLabels->implode(' or '),
+		$onlinePaymentLabelCount > 2 => $onlinePaymentLabels->slice(0, -1)->implode(', ') . ', or ' . $onlinePaymentLabels->last(),
+		default => null,
+	};
+
+	$paymentMethodBlocks = collect();
+
+	if ($payUrl && $onlinePaymentSummary) {
+		$qrCodeSrc = null;
+
+		try {
+			$qrCodeSvg = QrCode::size(86)->format('svg')->generate($payUrl);
+			$qrCodeSrc = 'data:image/svg+xml;base64,' . base64_encode($qrCodeSvg);
+		} catch (\Throwable $e) {
+			$qrCodeSrc = null;
+		}
+
+		$paymentMethodBlocks = collect([[
+			'method' => 'online',
+			'label' => 'Payment Link',
+			'onlinePaymentSummary' => $onlinePaymentSummary,
+			'hasOnlinePaymentLink' => true,
+			'qrCodeSrc' => $qrCodeSrc,
+			'detailRows' => [],
+			'shouldRender' => true,
+		]]);
+	}
 @endphp
 
 @if($paymentMethodBlocks->isNotEmpty())
@@ -71,7 +86,7 @@
 					/>
 				@endif
 				<div class="payment-method-link-copy">
-					<div class="payment-method-title">Pay online</div>
+					<div class="payment-method-title">Pay with {{ $paymentMethodBlock['onlinePaymentSummary'] }}</div>
 					<div class="payment-method-text">Scan the QR code or open the secure payment link.</div>
 					<a class="payment-method-link" target="_blank" rel="noopener noreferrer" href="{{ $payUrl }}">
 						Open Payment Link
