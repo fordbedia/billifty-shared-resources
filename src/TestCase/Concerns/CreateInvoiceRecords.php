@@ -6,7 +6,7 @@ use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 
 trait CreateInvoiceRecords
 {
-	public function create(
+	public function createInvoiceRecord(
 		?Workspace $workspace = null,
 		?BusinessProfiles $businessProfile = null,
 		?Clients $client = null,

@@ -9,7 +9,7 @@ class InvoiceItemsBuilder
 	use CreateInvoiceItemRecords;
 
 	public function __construct(
-		protected int $invoiceId,
+		protected ?int $invoiceId = null,
 		protected int $position = 1,
 		protected ?string $name = null,
 		protected ?string $description = null,
@@ -25,7 +25,7 @@ class InvoiceItemsBuilder
 	{}
 
 	public static function make(
-		int $invoiceId,
+		?int $invoiceId = null,
 		int $position = 1,
 		?string $name = null,
 		?string $description = null,
@@ -39,7 +39,7 @@ class InvoiceItemsBuilder
 		int $lineTotalCents = 0
 	) {
 		return new self(
-			$invoicId,
+			$invoiceId,
 			$position,
 			$name,
 			$description,
@@ -48,6 +48,9 @@ class InvoiceItemsBuilder
 			$unitPriceCents,
 			$lineDiscountCents,
 			$lineDiscountRate,
+			$taxRate,
+			$taxCents,
+			$lineTotalCents,
 		);
 	}
 }

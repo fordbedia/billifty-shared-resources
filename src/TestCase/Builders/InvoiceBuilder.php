@@ -16,6 +16,11 @@ class InvoiceBuilder
 {
 	use CreateInvoiceRecords;
 
+	/**
+	 * @var InvoiceItemsBuilder[]
+	 */
+	protected array $items = [];
+
 	public function __construct(
 		protected Workspace $workspace,
 		protected BusinessProfiles $businessProfile,
@@ -105,15 +110,32 @@ class InvoiceBuilder
 
 	/**
 	 * @param InvoiceItemsBuilder[] $items
-	 * @return $this
 	 */
-	public static function addItems(array $items)
+	public function addItems(array $items): self
 	{
 		foreach ($items as $item) {
 			if (!($item instanceof InvoiceItemsBuilder)) {
 				abort(500, 'Invalid item type');
 			}
-			$item->create();
 		}
+
+		$this->items = array_merge($this->items, $items);
+
+		return $this;
+	}
+
+	public function create(...$arguments)
+	{
+		$invoice = $this->createInvoiceRecord(...$arguments);
+
+		foreach ($this->items as $item) {
+			$item->create(invoiceId: $invoice->id);
+		}
+
+		if ($this->items !== []) {
+			$invoice->load('items');
+		}
+
+		return $invoice;
 	}
 }

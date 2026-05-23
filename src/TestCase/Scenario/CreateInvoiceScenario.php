@@ -36,27 +36,21 @@ class CreateInvoiceScenario
 			colorScheme: $colorScheme,
 			currency: $currency,
 			invoiceNumber: 'INV-00001',
-		)->create();
-
-		InvoiceBuilder::addItems([
+		)->addItems([
 			new InvoiceItemsBuilder(
-				invoiceId: $invoice->id,
 				position: 1,
 				description: 'Logo Design',
 				quantity: 2,
 				unitPriceCents: 20000
 			),
 			new InvoiceItemsBuilder(
-				invoiceId: $invoice->id,
-				position: 1,
+				position: 2,
 				description: 'Web App Design',
 				quantity: 2,
 				unitPriceCents: 210000
 			)
-		]);
+		])->create();
 
-		dd($invoice->loadMissing('items'));
-
-		return compact('plan', 'user');
+		return compact('plan', 'user', 'workspace', 'businessProfile', 'client', 'invoice');
 	}
 }
