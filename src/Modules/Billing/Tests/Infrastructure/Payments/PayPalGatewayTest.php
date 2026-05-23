@@ -7,34 +7,35 @@ use BilliftySDK\SharedResources\Modules\Billing\DTO\CreateInvoicePaymentLinkData
 use BilliftySDK\SharedResources\Modules\Billing\Infrastructure\Payments\PayPalGateway;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\InvoiceItems;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
-use PHPUnit\Framework\TestCase;
+use BilliftySDK\SharedResources\TestCase\Migrations\BaseTest;
 use ReflectionClass;
 
-class PayPalGatewayTest extends TestCase
+class PayPalGatewayTest extends BaseTest
 {
 	/** @test */
 	public function it_builds_paypal_items_with_required_names_and_whole_number_quantities(): void
 	{
-		$invoice = new Invoices([
-			'id' => 2,
+		$this->assertDumpWasRestored();
+
+		$invoice = $this->createInvoice([
 			'invoice_number' => 'INV-2001',
 			'tax_cents' => 0,
 			'shipping_cents' => 0,
 			'shipping_tax_cents' => 0,
 			'total_cents' => 25000,
 		]);
-		$invoice->setRelation('items', collect([
-			new InvoiceItems([
-				'name' => null,
-				'description' => null,
-				'quantity' => '100.0000',
-				'unit_price_cents' => 250,
-				'tax_cents' => 0,
-				'line_total_cents' => 25000,
-			]),
-		]));
 
-		$payload = $this->buildOrderPayload($invoice);
+		InvoiceItems::create([
+			'invoice_id' => $invoice->id,
+			'name' => null,
+			'description' => null,
+			'quantity' => '100.0000',
+			'unit_price_cents' => 250,
+			'tax_cents' => 0,
+			'line_total_cents' => 25000,
+		]);
+
+		$payload = $this->buildOrderPayload($invoice->fresh('items'));
 		$item = $payload['purchase_units'][0]['items'][0];
 
 		$this->assertSame('Invoice item', $item['name']);
@@ -47,8 +48,9 @@ class PayPalGatewayTest extends TestCase
 	/** @test */
 	public function it_reconciles_paypal_breakdown_to_the_invoice_total(): void
 	{
-		$invoice = new Invoices([
-			'id' => 123,
+		$this->assertDumpWasRestored();
+
+		$invoice = $this->createInvoice([
 			'invoice_number' => 'INV-1001',
 			'tax_cents' => 300,
 			'discount_cents' => 500,
@@ -56,25 +58,27 @@ class PayPalGatewayTest extends TestCase
 			'shipping_tax_cents' => 83,
 			'total_cents' => 6883,
 		]);
-		$invoice->setRelation('items', collect([
-			new InvoiceItems([
-				'name' => 'Consulting',
-				'description' => 'Strategy session',
-				'quantity' => 2,
-				'unit_price_cents' => 1500,
-				'tax_cents' => 300,
-				'line_total_cents' => 3300,
-			]),
-			new InvoiceItems([
-				'name' => 'Implementation',
-				'quantity' => 1.5,
-				'unit_price_cents' => 2000,
-				'tax_cents' => 0,
-				'line_total_cents' => 3000,
-			]),
-		]));
 
-		$payload = $this->buildOrderPayload($invoice);
+		InvoiceItems::create([
+			'invoice_id' => $invoice->id,
+			'name' => 'Consulting',
+			'description' => 'Strategy session',
+			'quantity' => 2,
+			'unit_price_cents' => 1500,
+			'tax_cents' => 300,
+			'line_total_cents' => 3300,
+		]);
+
+		InvoiceItems::create([
+			'invoice_id' => $invoice->id,
+			'name' => 'Implementation',
+			'quantity' => 1.5,
+			'unit_price_cents' => 2000,
+			'tax_cents' => 0,
+			'line_total_cents' => 3000,
+		]);
+
+		$payload = $this->buildOrderPayload($invoice->fresh('items'));
 		$purchaseUnit = $payload['purchase_units'][0];
 
 		$this->assertSame('68.83', $purchaseUnit['amount']['value']);
@@ -86,6 +90,37 @@ class PayPalGatewayTest extends TestCase
 		$this->assertSame('Strategy session; Qty: 2', $purchaseUnit['items'][0]['description']);
 		$this->assertSame('30.00', $purchaseUnit['items'][1]['unit_amount']['value']);
 		$this->assertSame('Invoice #INV-1001; Qty: 1.5', $purchaseUnit['items'][1]['description']);
+	}
+
+	private function assertDumpWasRestored(): void
+	{
+		$this->assertDatabaseHas('invoices', [
+			'id' => 2,
+			'invoice_number' => 'RPL-00001',
+		]);
+	}
+
+	private function createInvoice(array $attributes): Invoices
+	{
+		return Invoices::create(array_merge([
+			'workspace_id' => 6,
+			'business_profile_id' => 4,
+			'client_id' => 3,
+			'invoice_template_id' => 1,
+			'color_scheme_id' => 2,
+			'currency_id' => 1,
+			'status' => 'issued',
+			'subtotal_cents' => 0,
+			'discount_mode' => 'none',
+			'discount_cents' => 0,
+			'discount_rate' => 0,
+			'tax_cents' => 0,
+			'shipping_cents' => 0,
+			'shipping_tax_rate' => 0,
+			'shipping_tax_cents' => 0,
+			'total_cents' => 0,
+			'amount_due_cents' => 0,
+		], $attributes));
 	}
 
 	private function buildOrderPayload(Invoices $invoice): array

@@ -18,7 +18,8 @@ abstract class BaseTest extends Orchestra
     {
         parent::setUp();
 
-        // Only execute if the test class uses the RefreshDatabase trait
+        // Restore the snapshot dump only when the test opts in with
+        // BilliftySDK\SharedResources\TestCase\Extras\RefreshDatabase.
         if (method_exists($this, 'refreshDatabase')) {
             $this->refreshDatabase();
         }
@@ -26,15 +27,19 @@ abstract class BaseTest extends Orchestra
 
 	protected function getEnvironmentSetUp($app): void
 	{
-		$app['config']->set('database.default', 'testing');
+		$testingDatabase = env('BILLIFTY_MYSQL_TEST_DB_DATABASE', 'billifty_test');
+		$applicationDatabase = env('DB_DATABASE');
 
+		$this->assertTestingDatabaseIsSafe($testingDatabase, $applicationDatabase);
+
+		$app['config']->set('database.default', 'testing');
 		$app['config']->set('database.connections.testing', [
 			'driver' => 'mysql',
-			'host' => env('TEST_DB_HOST', env('DB_HOST', 'mysql')),
-			'port' => env('TEST_DB_PORT', env('DB_PORT', '3306')),
-			'database' => env('TEST_DB_DATABASE', env('DB_DATABASE', 'app_db')),
-			'username' => env('TEST_DB_USERNAME', env('DB_USERNAME', 'billifty_u')),
-			'password' => env('TEST_DB_PASSWORD', env('DB_PASSWORD', 'b1ll1iftykamikalara0213')),
+			'host' => env('BILLIFTY_MYSQL_TEST_DB_HOST', 'mysql'),
+			'port' => env('BILLIFTY_MYSQL_TEST_DB_PORT', '3306'),
+			'database' => $testingDatabase,
+			'username' => env('BILLIFTY_MYSQL_TEST_DB_USERNAME', 'billifty_u'),
+			'password' => env('BILLIFTY_MYSQL_TEST_DB_PASSWORD', 'b1ll1iftykamikalara0213'),
 
 			'charset' => 'utf8mb4',
 			'collation' => 'utf8mb4_unicode_ci',
@@ -47,6 +52,26 @@ abstract class BaseTest extends Orchestra
 				\PDO::MYSQL_ATTR_INIT_COMMAND => "SET sql_mode='STRICT_TRANS_TABLES'",
 			]) : [],
 		]);
+	}
+
+	private function assertTestingDatabaseIsSafe(string $testingDatabase, ?string $applicationDatabase): void
+	{
+		if ($testingDatabase === '') {
+			throw new \RuntimeException('BILLIFTY_MYSQL_TEST_DB_DATABASE must name a dedicated test database.');
+		}
+
+		if ($applicationDatabase !== null && $testingDatabase === $applicationDatabase) {
+			throw new \RuntimeException(
+				"Refusing to run tests against application database [{$testingDatabase}]. " .
+				'Set BILLIFTY_MYSQL_TEST_DB_DATABASE to a dedicated test database.'
+			);
+		}
+
+		if (!str_contains(strtolower($testingDatabase), 'test')) {
+			throw new \RuntimeException(
+				"Refusing to run tests against database [{$testingDatabase}] because its name does not contain [test]."
+			);
+		}
 	}
 
 }

@@ -7,7 +7,7 @@
   "autoload": {
     "psr-4": {
       "BilliftySDK\\SharedResources\\": "src/",
-       "BilliftySDK\\SharedResources\\TestCase\\": "TestCase/"
+       "BilliftySDK\\SharedResources\\TestCase\\": "src/TestCase/"
     }
   },
   "extra": {

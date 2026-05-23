@@ -6,8 +6,8 @@ trait RefreshDatabase
 {
 	protected function refreshDatabase(): void
 	{
-		$root = dirname(__DIR__, 2);
-		$dumpRelPath = env('TEST_DB_SNAPSHOT_FILE', 'src/TestCase/sqldumps/billifty.mysql.sql');
+		$root = dirname(__DIR__, 3);
+		$dumpRelPath = env('BILLIFTY_MYSQL_TEST_DB_SNAPSHOT_FILE', 'src/TestCase/sqldumps/billifty.mysql.sql');
 		$dumpPath = $root . '/' . ltrim($dumpRelPath, '/');
 
 		if (!$dumpPath || !file_exists($dumpPath)) {
@@ -17,13 +17,25 @@ trait RefreshDatabase
 			);
 		}
 
-		$db   = env('TEST_DB_DATABASE', env('DB_DATABASE', 'app_db'));
-		$user = env('TEST_DB_USERNAME', env('DB_USERNAME', 'billifty_u'));
-		$pass = env('TEST_DB_PASSWORD', env('DB_PASSWORD', ''));
-		$host = env('TEST_DB_HOST', env('DB_HOST', 'mysql'));
-		$port = env('TEST_DB_PORT', env('DB_PORT', '3306'));
+		$connection = config('database.connections.testing');
+		$db = (string) data_get($connection, 'database', '');
+		$user = (string) data_get($connection, 'username', '');
+		$pass = (string) data_get($connection, 'password', '');
+		$host = (string) data_get($connection, 'host', '');
+		$port = (string) data_get($connection, 'port', '3306');
+
+		$this->assertSnapshotTargetIsSafe($db);
 
 		$this->restoreMySqlDump($host, $port, $db, $user, $pass, $dumpPath);
+	}
+
+	private function assertSnapshotTargetIsSafe(string $database): void
+	{
+		if (!str_contains(strtolower($database), 'test')) {
+			throw new \RuntimeException(
+				"Refusing to restore a test snapshot into database [{$database}]."
+			);
+		}
 	}
 
 	private function restoreMySqlDump(
@@ -47,7 +59,7 @@ trait RefreshDatabase
 			),
 		];
 
-		$process = new \Symfony\Component\Process\Process($cmd, base_path('../../')); // adjust if needed
+		$process = new \Symfony\Component\Process\Process($cmd, base_path('../../'));
 		$process->setTimeout(180);
 		$process->run();
 
@@ -55,5 +67,4 @@ trait RefreshDatabase
 			throw new \RuntimeException("mysql restore failed:\n" . $process->getErrorOutput() . $process->getOutput());
 		}
 	}
-
 }
