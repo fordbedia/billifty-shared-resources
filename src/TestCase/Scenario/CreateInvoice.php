@@ -14,9 +14,9 @@ use BilliftySDK\SharedResources\TestCase\Builders\PlanBuilder;
 use BilliftySDK\SharedResources\TestCase\Builders\UserBuilder;
 use BilliftySDK\SharedResources\TestCase\Builders\WorkspaceBuilder;
 
-class CreateInvoiceScenario
+class CreateInvoice extends BaseScenario
 {
-	public static function make(): array
+	public function handle(): array
 	{
 		$plan = PlanBuilder::make()->createFreePlan();
 		$user = UserBuilder::make($plan)->create();
@@ -36,6 +36,7 @@ class CreateInvoiceScenario
 			colorScheme: $colorScheme,
 			currency: $currency,
 			invoiceNumber: 'INV-00001',
+			status: $this->status,
 		)->addItems([
 			new InvoiceItemsBuilder(
 				position: 1,

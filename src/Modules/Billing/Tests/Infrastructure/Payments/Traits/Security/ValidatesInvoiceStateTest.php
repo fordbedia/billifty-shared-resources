@@ -6,14 +6,14 @@ use BilliftySDK\SharedResources\Modules\Billing\Infrastructure\Payments\Traits\S
 use BilliftySDK\SharedResources\Modules\Invoicing\Domain\InvoiceStatus;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use BilliftySDK\SharedResources\TestCase\Migrations\BaseTest;
-use BilliftySDK\SharedResources\TestCase\Scenario\CreateInvoiceScenario;
+use BilliftySDK\SharedResources\TestCase\Scenario\CreateInvoice;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class ValidatesInvoiceStateTest extends BaseTest
 {
 	public function test_it_restricts_payment_links_if_invoice_is_not_issued(): void
 	{
-		$scenario = CreateInvoiceScenario::make();
+		$scenario = CreateInvoice::make();
 
 		$this->assertDatabaseHas('plans', [
 			'id' => $scenario['plan']->id,
