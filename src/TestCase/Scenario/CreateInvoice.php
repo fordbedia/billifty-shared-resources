@@ -13,6 +13,7 @@ use BilliftySDK\SharedResources\TestCase\Builders\InvoiceTemplateCategoryBuilder
 use BilliftySDK\SharedResources\TestCase\Builders\PlanBuilder;
 use BilliftySDK\SharedResources\TestCase\Builders\UserBuilder;
 use BilliftySDK\SharedResources\TestCase\Builders\WorkspaceBuilder;
+use Illuminate\Support\Facades\Auth;
 
 class CreateInvoice extends BaseScenario
 {
@@ -20,13 +21,15 @@ class CreateInvoice extends BaseScenario
 	{
 		$plan = PlanBuilder::make()->{$this->planType}();
 		$user = UserBuilder::make($plan)->create();
-		$workspace = WorkspaceBuilder::make($user)->create();
+		$workspace = $user->defaultWorkspace;
 		$businessProfile = BusinessProfileBuilder::make($user)->create();
 		$client = ClientBuilder::make($user)->create();
 		$invoiceTemplateCategory = InvoiceTemplateCategoryBuilder::make()->createModernCategory();
 		$invoiceTemplate = InvoiceTemplateBuilder::make($invoiceTemplateCategory)->createInvoiceTemplateModerno();
 		$colorScheme = ColorSchemeBuilder::make()->createColorSchemeOcean();
 		$currency = CurrencyBuilder::make('usd', 'USD', '$')->create();
+
+		Auth::login($user);
 
 		$invoice = InvoiceBuilder::make(
 			workspace: $workspace,
