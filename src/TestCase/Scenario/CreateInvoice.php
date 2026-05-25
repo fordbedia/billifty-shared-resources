@@ -16,9 +16,9 @@ use BilliftySDK\SharedResources\TestCase\Builders\WorkspaceBuilder;
 
 class CreateInvoice extends BaseScenario
 {
-	public function handle(): array
+	public function handle(): TestScenarioCollection
 	{
-		$plan = PlanBuilder::make()->createFreePlan();
+		$plan = PlanBuilder::make()->{$this->planType}();
 		$user = UserBuilder::make($plan)->create();
 		$workspace = WorkspaceBuilder::make($user)->create();
 		$businessProfile = BusinessProfileBuilder::make($user)->create();
@@ -52,6 +52,6 @@ class CreateInvoice extends BaseScenario
 			)
 		])->create();
 
-		return compact('plan', 'user', 'workspace', 'businessProfile', 'client', 'invoice');
+		return $this->collect(compact('plan', 'user', 'workspace', 'businessProfile', 'client', 'invoice'));
 	}
 }

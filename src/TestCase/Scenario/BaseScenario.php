@@ -25,4 +25,9 @@ abstract class BaseScenario
 	}
 
 	abstract public function handle(): mixed;
+
+	public function collect(array $data)
+	{
+		return TestScenarioCollection::make($data);
+	}
 }

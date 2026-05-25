@@ -13,7 +13,7 @@ class ValidatesInvoiceStateTest extends BaseTest
 {
 	public function test_it_restricts_payment_links_if_invoice_is_not_issued(): void
 	{
-		$scenario = CreateInvoice::make();
+		$scenario = CreateInvoice::make(planType: 'free');
 
 		$this->assertDatabaseHas('plans', [
 			'id' => $scenario['plan']->id,

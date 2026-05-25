@@ -6,7 +6,7 @@ use BilliftySDK\SharedResources\Modules\User\Models\Plan;
 
 trait CreatePlanRecords
 {
-	public function createFreePlan()
+	public function free()
 	{
 		return Plan::updateOrCreate(['code' => 'free'], [
 			'name' => 'Free',
@@ -18,7 +18,7 @@ trait CreatePlanRecords
 		]);
 	}
 
-	public function createProPlan()
+	public function pro()
 	{
 		return Plan::updateOrCreate(['code' => 'pro'], [
 			'name' => 'Pro',
@@ -30,7 +30,7 @@ trait CreatePlanRecords
 		]);
 	}
 
-	public function createPremiumPlan()
+	public function premium()
 	{
 		return Plan::updateOrCreate(['code' => 'premium'], [
 			'name' => 'Premium',
