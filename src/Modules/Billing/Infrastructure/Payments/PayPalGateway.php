@@ -4,262 +4,300 @@ namespace BilliftySDK\SharedResources\Modules\Billing\Infrastructure\Payments;
 
 use BilliftySDK\SharedResources\Modules\Billing\DTO\CreateInvoicePaymentLinkData;
 use BilliftySDK\SharedResources\Modules\Billing\Infrastructure\Payments\Traits\Security\ValidatesInvoiceState;
-use Srmklive\PayPal\Services\PayPal as PayPalClient;
-use RuntimeException;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use RuntimeException;
+use Srmklive\PayPal\Services\PayPal as PayPalClient;
 
 class PayPalGateway
 {
-	use ValidatesInvoiceState;
+    use ValidatesInvoiceState;
 
-	public function createPaymentLink(
-		Invoices $invoice,
-		CreateInvoicePaymentLinkData $data
-	): string {
-		$invoice->loadMissing(['items', 'paymentLink', 'businessProfile.paypalInformation']);
+    public function createPaymentLink(
+        Invoices $invoice,
+        CreateInvoicePaymentLinkData $data
+    ): string {
+        $invoice->loadMissing(['items', 'paymentLink', 'businessProfile.paypalInformation']);
 
-		$this->invoiceIssued($invoice);
+        $this->invoiceIssued($invoice);
 
-		$businessProfile = $invoice->businessProfile?->paypalInformation;
+        $businessProfile = $invoice->businessProfile?->paypalInformation;
 
-		if (!$businessProfile?->paypal_merchant_id) {
-			throw new RuntimeException('Business profile does not have a PayPal merchant ID.');
-		}
+        if (! $businessProfile?->paypal_merchant_id) {
+            throw new RuntimeException('Business profile does not have a PayPal merchant ID.');
+        }
 
-		$provider = new PayPalClient;
-		$provider->setApiCredentials(config('paypal'));
-		$provider->getAccessToken();
+        $provider = new PayPalClient;
+        $provider->setApiCredentials(config('paypal'));
+        $provider->getAccessToken();
 
-		$currency = strtoupper($invoice->currency?->code ?? 'USD');
+        $currency = strtoupper($invoice->currency?->code ?? 'USD');
 
-		$response = $provider->createOrder($this->buildOrderPayload(
-			$invoice,
-			$data,
-			$currency,
-			$businessProfile->paypal_merchant_id
-		));
+        $response = $provider->createOrder($this->buildOrderPayload(
+            $invoice,
+            $data,
+            $currency,
+            $businessProfile->paypal_merchant_id
+        ));
 
-		if (!isset($response['id'])) {
-			throw new RuntimeException('Failed to create PayPal order.');
-		}
+        if (! isset($response['id'])) {
+            throw new RuntimeException('Failed to create PayPal order.');
+        }
 
-		$invoice->paymentLink?->update([
-			'paypal_order_id' => $response['id'],
-		]);
+        $invoice->paymentLink?->update([
+            'paypal_order_id' => $response['id'],
+        ]);
 
-		foreach ($response['links'] ?? [] as $link) {
-			if (($link['rel'] ?? null) === 'approve') {
-				return $link['href'];
-			}
-		}
+        foreach ($response['links'] ?? [] as $link) {
+            if (($link['rel'] ?? null) === 'approve') {
+                return $link['href'];
+            }
+        }
 
-		throw new RuntimeException('PayPal approval link not found.');
-	}
+        throw new RuntimeException('PayPal approval link not found.');
+    }
 
-	protected function buildOrderPayload(
-		Invoices $invoice,
-		CreateInvoicePaymentLinkData $data,
-		string $currency,
-		string $merchantId
-	): array {
-		$items = $this->buildItems($invoice, $currency);
-		$itemTotalCents = $this->itemsTotalCents($items);
-		$taxTotalCents = max((int)$invoice->tax_cents, 0) + max((int)$invoice->shipping_tax_cents, 0);
-		$shippingCents = max((int)$invoice->shipping_cents, 0);
-		$totalCents = max((int)$invoice->total_cents, 0);
+    protected function buildOrderPayload(
+        Invoices $invoice,
+        CreateInvoicePaymentLinkData $data,
+        string $currency,
+        string $merchantId
+    ): array {
+        $items = $this->buildItems($invoice, $currency);
+        $itemTotalCents = $this->itemsTotalCents($items);
+        $taxTotalCents = max((int) $invoice->tax_cents, 0) + max((int) $invoice->shipping_tax_cents, 0);
+        $shippingCents = max((int) $invoice->shipping_cents, 0);
+        $totalCents = max((int) $invoice->total_cents, 0);
 
-		$subtotalBeforeDiscountCents = $itemTotalCents + $taxTotalCents + $shippingCents;
-		$discountCents = max($subtotalBeforeDiscountCents - $totalCents, 0);
-		$reconciledTotalCents = $subtotalBeforeDiscountCents - $discountCents;
+        $subtotalBeforeDiscountCents = $itemTotalCents + $taxTotalCents + $shippingCents;
+        $discountCents = max($subtotalBeforeDiscountCents - $totalCents, 0);
+        $reconciledTotalCents = $subtotalBeforeDiscountCents - $discountCents;
 
-		if ($reconciledTotalCents < $totalCents) {
-			$adjustmentCents = $totalCents - $reconciledTotalCents;
-			$items[] = $this->buildItem(
-				$currency,
-				$adjustmentCents,
-				'Invoice adjustment',
-				$this->invoiceLabel($invoice)
-			);
-			$itemTotalCents += $adjustmentCents;
-		}
+        if ($reconciledTotalCents < $totalCents) {
+            $adjustmentCents = $totalCents - $reconciledTotalCents;
+            $items[] = $this->buildItem(
+                $currency,
+                $adjustmentCents,
+                'Invoice adjustment',
+                $this->invoiceLabel($invoice)
+            );
+            $itemTotalCents += $adjustmentCents;
+        }
 
-		$amountBreakdown = [
-			'tax_total' => [
-				'currency_code' => $currency,
-				'value' => $this->money($taxTotalCents),
-			],
-			'shipping' => [
-				'currency_code' => $currency,
-				'value' => $this->money($shippingCents),
-			],
-			'discount' => [
-				'currency_code' => $currency,
-				'value' => $this->money($discountCents),
-			],
-		];
+        $amountBreakdown = [
+            'tax_total' => [
+                'currency_code' => $currency,
+                'value' => $this->money($taxTotalCents),
+            ],
+            'shipping' => [
+                'currency_code' => $currency,
+                'value' => $this->money($shippingCents),
+            ],
+            'discount' => [
+                'currency_code' => $currency,
+                'value' => $this->money($discountCents),
+            ],
+        ];
 
-		if ($items !== []) {
-			$amountBreakdown = [
-				'item_total' => [
-					'currency_code' => $currency,
-					'value' => $this->money($itemTotalCents),
-				],
-			] + $amountBreakdown;
-		}
+        if ($items !== []) {
+            $amountBreakdown = [
+                'item_total' => [
+                    'currency_code' => $currency,
+                    'value' => $this->money($itemTotalCents),
+                ],
+            ] + $amountBreakdown;
+        }
 
-		$purchaseUnit = [
-			'reference_id' => (string)$invoice->id,
-			'custom_id' => (string)$invoice->id,
-			'invoice_id' => (string)$invoice->invoice_number,
-			'description' => $this->paypalText('Invoice #' . $invoice->invoice_number, 127, $this->invoiceLabel($invoice)),
+        $purchaseUnit = [
+            'reference_id' => (string) $invoice->id,
+            'custom_id' => (string) $invoice->id,
+            'invoice_id' => (string) $invoice->invoice_number,
+            'description' => $this->paypalText('Invoice #'.$invoice->invoice_number, 127, $this->invoiceLabel($invoice)),
 
-			'payee' => [
-				'merchant_id' => $merchantId,
-			],
+            'payee' => [
+                'merchant_id' => $merchantId,
+            ],
 
-			'amount' => [
-				'currency_code' => $currency,
-				'value' => $this->money($totalCents),
-				'breakdown' => $amountBreakdown,
-			],
-		];
+            'amount' => [
+                'currency_code' => $currency,
+                'value' => $this->money($totalCents),
+                'breakdown' => $amountBreakdown,
+            ],
+        ];
 
-		if ($items !== []) {
-			$purchaseUnit['items'] = $items;
-		}
+        if ($items !== []) {
+            $purchaseUnit['items'] = $items;
+        }
 
-		return [
-			'intent' => 'CAPTURE',
+        return [
+            'intent' => 'CAPTURE',
 
-			'application_context' => [
-				'brand_name' => 'Billifty',
-				'return_url' => $this->callbackUrl("pay/paypal/return/{$data->token}"),
-				'cancel_url' => $this->callbackUrl("pay/paypal/cancel/{$data->token}"),
-				'user_action' => 'PAY_NOW',
-				'shipping_preference' => 'NO_SHIPPING',
-			],
+            'application_context' => [
+                'brand_name' => 'Billifty',
+                'return_url' => $this->callbackUrl("pay/paypal/return/{$data->token}"),
+                'cancel_url' => $this->callbackUrl("pay/paypal/cancel/{$data->token}"),
+                'user_action' => 'PAY_NOW',
+                'shipping_preference' => 'NO_SHIPPING',
+            ],
 
-			'purchase_units' => [
-				$purchaseUnit,
-			],
-		];
-	}
+            'purchase_units' => [
+                $purchaseUnit,
+            ],
+        ];
+    }
 
-	public function capturePayment(string $token): array
-	{
-		$provider = new PayPalClient;
-		$provider->setApiCredentials(config('paypal'));
-		$provider->getAccessToken();
+    public function capturePayment(string $token): array
+    {
+        $provider = new PayPalClient;
+        $provider->setApiCredentials(config('paypal'));
+        $provider->getAccessToken();
 
-		return $provider->capturePaymentOrder($token);
-	}
+        return $provider->capturePaymentOrder($token);
+    }
 
-	private function money(int $cents): string
-	{
-		return number_format($cents / 100, 2, '.', '');
-	}
+    public function verifyWebhookSignature(Request $request): bool
+    {
+        $webhookId = trim((string) config('paypal.webhook_id', ''));
 
-	protected function buildItems(Invoices $invoice, string $currency): array
-	{
-		$invoiceLabel = $this->invoiceLabel($invoice);
+        if ($webhookId === '') {
+            Log::error('PayPalGateway.webhook_signature_missing_webhook_id');
 
-		return collect($invoice->items ?? [])
-			->map(fn($item) => $this->buildInvoiceItem($item, $currency, $invoiceLabel))
-			->filter()
-			->values()
-			->all();
-	}
+            return false;
+        }
 
-	protected function buildInvoiceItem(mixed $item, string $currency, string $invoiceLabel): ?array
-	{
-		$amountCents = $this->invoiceItemSubtotalCents($item);
+        try {
+            $provider = new PayPalClient;
+            $provider->setApiCredentials(config('paypal'));
+            $provider->getAccessToken();
 
-		if ($amountCents <= 0) {
-			return null;
-		}
+            $result = $provider->setWebHookID($webhookId)->verifyIPN($request);
+        } catch (\Throwable $e) {
+            Log::error('PayPalGateway.webhook_signature_verification_failed', [
+                'err' => $e->getMessage(),
+            ]);
 
-		$name = data_get($item, 'name') ?: data_get($item, 'description') ?: 'Invoice item';
-		$description = data_get($item, 'description') ?: $invoiceLabel;
-		$quantity = data_get($item, 'quantity');
+            return false;
+        }
 
-		if (is_numeric($quantity)) {
-			$description .= '; Qty: ' . $this->formatQuantity($quantity);
-		}
+        if (data_get($result, 'verification_status') !== 'SUCCESS') {
+            Log::warning('PayPalGateway.webhook_signature_not_verified', [
+                'verification_status' => data_get($result, 'verification_status'),
+                'error' => data_get($result, 'error'),
+            ]);
 
-		return $this->buildItem($currency, $amountCents, $name, $description);
-	}
+            return false;
+        }
 
-	protected function buildItem(string $currency, int $amountCents, string $name, string $description): array
-	{
-		return [
-			'name' => $this->paypalText($name, 127, 'Invoice item'),
-			'description' => $this->paypalText($description, 127, 'Invoice item'),
-			'quantity' => '1',
-			'unit_amount' => [
-				'currency_code' => $currency,
-				'value' => $this->money(max($amountCents, 0)),
-			],
-		];
-	}
+        return true;
+    }
 
-	protected function invoiceItemSubtotalCents(mixed $item): int
-	{
-		$lineTotalCents = data_get($item, 'line_total_cents');
-		$taxCents = data_get($item, 'tax_cents', 0);
+    private function money(int $cents): string
+    {
+        return number_format($cents / 100, 2, '.', '');
+    }
 
-		if (is_numeric($lineTotalCents) && (int)$lineTotalCents > 0) {
-			return max((int)$lineTotalCents - (int)(is_numeric($taxCents) ? $taxCents : 0), 0);
-		}
+    protected function buildItems(Invoices $invoice, string $currency): array
+    {
+        $invoiceLabel = $this->invoiceLabel($invoice);
 
-		$quantity = data_get($item, 'quantity', 1);
-		$quantity = is_numeric($quantity) ? (float)$quantity : 1.0;
+        return collect($invoice->items ?? [])
+            ->map(fn ($item) => $this->buildInvoiceItem($item, $currency, $invoiceLabel))
+            ->filter()
+            ->values()
+            ->all();
+    }
 
-		$unitAmountCents = data_get($item, 'unit_price_cents', 0);
-		$unitAmountCents = is_numeric($unitAmountCents) ? (int)$unitAmountCents : 0;
+    protected function buildInvoiceItem(mixed $item, string $currency, string $invoiceLabel): ?array
+    {
+        $amountCents = $this->invoiceItemSubtotalCents($item);
 
-		return max((int)round($quantity * $unitAmountCents), 0);
-	}
+        if ($amountCents <= 0) {
+            return null;
+        }
 
-	protected function itemsTotalCents(array $items): int
-	{
-		return collect($items)->sum(function (array $item): int {
-			$quantity = max((int)($item['quantity'] ?? 1), 1);
-			$unitAmount = data_get($item, 'unit_amount.value', '0.00');
+        $name = data_get($item, 'name') ?: data_get($item, 'description') ?: 'Invoice item';
+        $description = data_get($item, 'description') ?: $invoiceLabel;
+        $quantity = data_get($item, 'quantity');
 
-			return $quantity * (int)round((float)$unitAmount * 100);
-		});
-	}
+        if (is_numeric($quantity)) {
+            $description .= '; Qty: '.$this->formatQuantity($quantity);
+        }
 
-	protected function invoiceLabel(Invoices $invoice): string
-	{
-		return 'Invoice #' . ($invoice->invoice_number ?: $invoice->id);
-	}
+        return $this->buildItem($currency, $amountCents, $name, $description);
+    }
 
-	private function paypalText(?string $value, int $maxLength, string $fallback): string
-	{
-		$text = trim((string)$value);
-		$text = preg_replace('/\s+/', ' ', $text) ?: '';
+    protected function buildItem(string $currency, int $amountCents, string $name, string $description): array
+    {
+        return [
+            'name' => $this->paypalText($name, 127, 'Invoice item'),
+            'description' => $this->paypalText($description, 127, 'Invoice item'),
+            'quantity' => '1',
+            'unit_amount' => [
+                'currency_code' => $currency,
+                'value' => $this->money(max($amountCents, 0)),
+            ],
+        ];
+    }
 
-		if ($text === '') {
-			$text = $fallback;
-		}
+    protected function invoiceItemSubtotalCents(mixed $item): int
+    {
+        $lineTotalCents = data_get($item, 'line_total_cents');
+        $taxCents = data_get($item, 'tax_cents', 0);
 
-		return substr($text, 0, $maxLength);
-	}
+        if (is_numeric($lineTotalCents) && (int) $lineTotalCents > 0) {
+            return max((int) $lineTotalCents - (int) (is_numeric($taxCents) ? $taxCents : 0), 0);
+        }
 
-	private function formatQuantity(mixed $quantity): string
-	{
-		return rtrim(rtrim(number_format((float)$quantity, 4, '.', ''), '0'), '.');
-	}
+        $quantity = data_get($item, 'quantity', 1);
+        $quantity = is_numeric($quantity) ? (float) $quantity : 1.0;
 
-	private function callbackUrl(string $path): string
-	{
-		$path = ltrim($path, '/');
+        $unitAmountCents = data_get($item, 'unit_price_cents', 0);
+        $unitAmountCents = is_numeric($unitAmountCents) ? (int) $unitAmountCents : 0;
 
-		if (function_exists('app') && app()->bound('url')) {
-			return url($path);
-		}
+        return max((int) round($quantity * $unitAmountCents), 0);
+    }
 
-		return '/' . $path;
-	}
+    protected function itemsTotalCents(array $items): int
+    {
+        return collect($items)->sum(function (array $item): int {
+            $quantity = max((int) ($item['quantity'] ?? 1), 1);
+            $unitAmount = data_get($item, 'unit_amount.value', '0.00');
+
+            return $quantity * (int) round((float) $unitAmount * 100);
+        });
+    }
+
+    protected function invoiceLabel(Invoices $invoice): string
+    {
+        return 'Invoice #'.($invoice->invoice_number ?: $invoice->id);
+    }
+
+    private function paypalText(?string $value, int $maxLength, string $fallback): string
+    {
+        $text = trim((string) $value);
+        $text = preg_replace('/\s+/', ' ', $text) ?: '';
+
+        if ($text === '') {
+            $text = $fallback;
+        }
+
+        return substr($text, 0, $maxLength);
+    }
+
+    private function formatQuantity(mixed $quantity): string
+    {
+        return rtrim(rtrim(number_format((float) $quantity, 4, '.', ''), '0'), '.');
+    }
+
+    private function callbackUrl(string $path): string
+    {
+        $path = ltrim($path, '/');
+
+        if (function_exists('app') && app()->bound('url')) {
+            return url($path);
+        }
+
+        return '/'.$path;
+    }
 }

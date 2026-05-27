@@ -9,324 +9,416 @@ use BilliftySDK\SharedResources\Modules\Billing\Mail\PaymentSuccessNotificationF
 use BilliftySDK\SharedResources\Modules\Billing\Mail\PaymentSuccessNotificationForClientMail;
 use BilliftySDK\SharedResources\Modules\Billing\Models\PaymentLink;
 use BilliftySDK\SharedResources\Modules\Billing\Models\PaymentRecord;
+use BilliftySDK\SharedResources\Modules\Billing\Models\PayPalWebhookEvent;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class PayPalPaymentController extends Controller
 {
-	public function create(
-		Invoice       $invoice,
-		PayPalGateway $paypal
-	)
-	{
-		$paymentUrl = $paypal->createPaymentLink($invoice);
+    public function create(
+        Invoice $invoice,
+        PayPalGateway $paypal
+    ) {
+        $paymentUrl = $paypal->createPaymentLink($invoice);
 
-		return response()->json([
-			'payment_url' => $paymentUrl,
-		]);
-	}
+        return response()->json([
+            'payment_url' => $paymentUrl,
+        ]);
+    }
 
-	public function handleWebhook(Request $request, PayPalGateway $paypal): JsonResponse
-	{
-		$payload = $request->all();
-		$eventType = data_get($payload, 'event_type');
+    public function handleWebhook(Request $request, PayPalGateway $paypal): JsonResponse
+    {
+        $payload = $request->all();
+        $eventType = data_get($payload, 'event_type');
+        $eventId = data_get($payload, 'id');
 
-		Log::info('PayPalPaymentController.webhook_received', [
-			'event_id' => data_get($payload, 'id'),
-			'event_type' => $eventType,
-			'resource_id' => data_get($payload, 'resource.id'),
-		]);
+        Log::info('PayPalPaymentController.webhook_received', [
+            'event_id' => $eventId,
+            'event_type' => $eventType,
+            'resource_id' => data_get($payload, 'resource.id'),
+        ]);
 
-		if ($eventType === 'CHECKOUT.ORDER.APPROVED') {
-			return $this->handleApprovedOrderWebhook($payload, $paypal);
-		}
+        if (! $paypal->verifyWebhookSignature($request)) {
+            Log::warning('PayPalPaymentController.invalid_webhook_signature', [
+                'event_id' => $eventId,
+                'event_type' => $eventType,
+            ]);
 
-		if ($eventType === 'PAYMENT.CAPTURE.COMPLETED') {
-			return $this->handleCompletedCaptureWebhook($payload);
-		}
+            return response()->json(['status' => 'invalid_signature'], 400);
+        }
 
-		Log::info('PayPalPaymentController.webhook_ignored', [
-			'event_id' => data_get($payload, 'id'),
-			'event_type' => $eventType,
-		]);
+        if (! $eventId) {
+            Log::warning('PayPalPaymentController.webhook_missing_event_id', [
+                'event_type' => $eventType,
+                'resource_id' => data_get($payload, 'resource.id'),
+            ]);
 
-		return response()->json(['status' => 'ignored']);
-	}
+            return response()->json(['status' => 'missing_event_id'], 400);
+        }
 
-	public function handleReturn(Request $request, PayPalGateway $paypal, string $paymentToken): RedirectResponse
-	{
-		$paymentLink = $this->paymentLinkForToken($paymentToken);
-		$invoice = $paymentLink?->invoice;
+        $eventStoreResponse = $this->storeWebhookEvent($payload, (string) $eventId, (string) $eventType);
+        if ($eventStoreResponse) {
+            return $eventStoreResponse;
+        }
 
-		if (!$paymentLink || !$invoice) {
-			Log::warning('PayPalPaymentController.return_payment_link_not_found', [
-				'payment_token' => $paymentToken,
-				'paypal_order_id' => $request->query('token'),
-			]);
+        try {
+            if ($eventType === 'CHECKOUT.ORDER.APPROVED') {
+                return $this->handleApprovedOrderWebhook($payload, $paypal);
+            }
 
-			return redirect($this->frontendPaymentUrl($paymentToken, 'payment-cancelled'));
-		}
+            if ($eventType === 'PAYMENT.CAPTURE.COMPLETED') {
+                return $this->handleCompletedCaptureWebhook($payload);
+            }
 
-		if ($invoice->status === 'paid') {
-			return redirect($this->frontendPaymentUrl($paymentToken, 'payment-success'));
-		}
+            Log::info('PayPalPaymentController.webhook_ignored', [
+                'event_id' => $eventId,
+                'event_type' => $eventType,
+            ]);
+        } catch (\Throwable $e) {
+            PayPalWebhookEvent::query()->where('event_id', $eventId)->delete();
 
-		$orderId = $request->query('token') ?: $paymentLink->paypal_order_id;
+            Log::error('PayPalPaymentController.webhook_processing_failed', [
+                'event_id' => $eventId,
+                'event_type' => $eventType,
+                'err' => $e->getMessage(),
+            ]);
 
-		if (!$orderId) {
-			Log::warning('PayPalPaymentController.return_missing_order_id', [
-				'payment_token' => $paymentToken,
-				'payment_link_id' => $paymentLink->id,
-			]);
+            return response()->json(['status' => 'processing_failed'], 500);
+        }
 
-			return redirect($this->frontendPaymentUrl($paymentToken, 'payment-cancelled'));
-		}
+        return response()->json(['status' => 'ignored']);
+    }
 
-		$response = $paypal->capturePayment($orderId);
+    public function handleReturn(Request $request, PayPalGateway $paypal, string $paymentToken): RedirectResponse
+    {
+        $paymentLink = $this->paymentLinkForToken($paymentToken);
+        $invoice = $paymentLink?->invoice;
 
-		Log::info('PayPalPaymentController.return_capture_response', [
-			'payment_token' => $paymentToken,
-			'payment_link_id' => $paymentLink->id,
-			'invoice_id' => $invoice->id,
-			'order_id' => $orderId,
-			'status' => data_get($response, 'status'),
-			'capture_id' => $this->captureIdFromCaptureResponse($response),
-		]);
+        if (! $paymentLink || ! $invoice) {
+            Log::warning('PayPalPaymentController.return_payment_link_not_found', [
+                'payment_token' => $paymentToken,
+                'paypal_order_id' => $request->query('token'),
+            ]);
 
-		if (data_get($response, 'status') !== 'COMPLETED') {
-			return redirect($this->frontendPaymentUrl($paymentToken, 'payment-cancelled'));
-		}
+            return redirect($this->frontendPaymentUrl($paymentToken, 'payment-cancelled'));
+        }
 
-		$this->completeInvoicePayment($invoice, $response, [
-			'event_type' => 'PAYPAL.RETURN.CAPTURE',
-			'resource' => ['id' => $orderId],
-		]);
+        if ($invoice->status === 'paid') {
+            return redirect($this->frontendPaymentUrl($paymentToken, 'payment-success'));
+        }
 
-		return redirect($this->frontendPaymentUrl($paymentToken, 'payment-success'));
-	}
+        $orderId = $request->query('token') ?: $paymentLink->paypal_order_id;
 
-	public function handleCancel(string $paymentToken): RedirectResponse
-	{
-		return redirect($this->frontendPaymentUrl($paymentToken, 'payment-cancelled'));
-	}
+        if (! $orderId) {
+            Log::warning('PayPalPaymentController.return_missing_order_id', [
+                'payment_token' => $paymentToken,
+                'payment_link_id' => $paymentLink->id,
+            ]);
 
-	protected function handleApprovedOrderWebhook(array $payload, PayPalGateway $paypal): JsonResponse
-	{
-		$orderId = data_get($payload, 'resource.id');
+            return redirect($this->frontendPaymentUrl($paymentToken, 'payment-cancelled'));
+        }
 
-		if (!$orderId) {
-			Log::warning('PayPalPaymentController.approved_order_missing_order_id', [
-				'event_id' => data_get($payload, 'id'),
-			]);
+        $response = $paypal->capturePayment($orderId);
 
-			return response()->json(['status' => 'ignored']);
-		}
+        Log::info('PayPalPaymentController.return_capture_response', [
+            'payment_token' => $paymentToken,
+            'payment_link_id' => $paymentLink->id,
+            'invoice_id' => $invoice->id,
+            'order_id' => $orderId,
+            'status' => data_get($response, 'status'),
+            'capture_id' => $this->captureIdFromCaptureResponse($response),
+        ]);
 
-		$existingInvoice = $this->resolveInvoiceFromPayPalPayload($payload);
+        if (data_get($response, 'status') !== 'COMPLETED') {
+            return redirect($this->frontendPaymentUrl($paymentToken, 'payment-cancelled'));
+        }
 
-		if ($existingInvoice?->status === 'paid') {
-			return response()->json(['status' => 'already_completed']);
-		}
+        $this->completeInvoicePayment($invoice, $response, [
+            'event_type' => 'PAYPAL.RETURN.CAPTURE',
+            'resource' => ['id' => $orderId],
+        ]);
 
-		$response = $paypal->capturePayment($orderId);
+        return redirect($this->frontendPaymentUrl($paymentToken, 'payment-success'));
+    }
 
-		Log::info('PayPalPaymentController.capture_payment_response', [
-			'event_id' => data_get($payload, 'id'),
-			'order_id' => $orderId,
-			'status' => data_get($response, 'status'),
-			'capture_id' => $this->captureIdFromCaptureResponse($response),
-		]);
+    public function handleCancel(string $paymentToken): RedirectResponse
+    {
+        return redirect($this->frontendPaymentUrl($paymentToken, 'payment-cancelled'));
+    }
 
-		if (data_get($response, 'status') !== 'COMPLETED') {
-			return response()->json([
-				'status' => 'capture_not_completed',
-				'paypal_status' => data_get($response, 'status'),
-			]);
-		}
+    protected function handleApprovedOrderWebhook(array $payload, PayPalGateway $paypal): JsonResponse
+    {
+        $orderId = data_get($payload, 'resource.id');
 
-		$invoice = $this->resolveInvoiceFromPayPalPayload($payload, $response);
+        if (! $orderId) {
+            Log::warning('PayPalPaymentController.approved_order_missing_order_id', [
+                'event_id' => data_get($payload, 'id'),
+            ]);
 
-		if (!$invoice) {
-			Log::warning('PayPalPaymentController.invoice_not_found_for_capture', [
-				'event_id' => data_get($payload, 'id'),
-				'order_id' => $orderId,
-				'invoice_id' => $this->invoiceIdFromPayPalPayload($payload, $response),
-			]);
+            return response()->json(['status' => 'ignored']);
+        }
 
-			return response()->json(['status' => 'invoice_not_found']);
-		}
+        $existingInvoice = $this->resolveInvoiceFromPayPalPayload($payload);
 
-		$this->completeInvoicePayment($invoice, $response, $payload);
+        if ($existingInvoice?->status === 'paid') {
+            return response()->json(['status' => 'already_completed']);
+        }
 
-		return response()->json(['status' => 'captured']);
-	}
+        $response = $paypal->capturePayment($orderId);
 
-	protected function handleCompletedCaptureWebhook(array $payload): JsonResponse
-	{
-		if (data_get($payload, 'resource.status') !== 'COMPLETED') {
-			return response()->json([
-				'status' => 'capture_not_completed',
-				'paypal_status' => data_get($payload, 'resource.status'),
-			]);
-		}
+        Log::info('PayPalPaymentController.capture_payment_response', [
+            'event_id' => data_get($payload, 'id'),
+            'order_id' => $orderId,
+            'status' => data_get($response, 'status'),
+            'capture_id' => $this->captureIdFromCaptureResponse($response),
+        ]);
 
-		$invoice = $this->resolveInvoiceFromPayPalPayload($payload);
+        if (data_get($response, 'status') !== 'COMPLETED') {
+            return response()->json([
+                'status' => 'capture_not_completed',
+                'paypal_status' => data_get($response, 'status'),
+            ]);
+        }
 
-		if (!$invoice) {
-			Log::warning('PayPalPaymentController.invoice_not_found_for_completed_capture', [
-				'event_id' => data_get($payload, 'id'),
-				'capture_id' => data_get($payload, 'resource.id'),
-				'order_id' => $this->orderIdFromPayPalPayload($payload),
-				'invoice_id' => $this->invoiceIdFromPayPalPayload($payload),
-			]);
+        $invoice = $this->resolveInvoiceFromPayPalPayload($payload, $response);
 
-			return response()->json(['status' => 'invoice_not_found']);
-		}
+        if (! $invoice) {
+            Log::warning('PayPalPaymentController.invoice_not_found_for_capture', [
+                'event_id' => data_get($payload, 'id'),
+                'order_id' => $orderId,
+                'invoice_id' => $this->invoiceIdFromPayPalPayload($payload, $response),
+            ]);
 
-		$this->completeInvoicePayment($invoice, $payload, $payload);
+            return response()->json(['status' => 'invoice_not_found']);
+        }
 
-		return response()->json(['status' => 'completed']);
-	}
+        $this->completeInvoicePayment($invoice, $response, $payload);
 
-	protected function resolveInvoiceFromPayPalPayload(array $payload, ?array $captureResponse = null): ?Invoices
-	{
-		$invoiceId = $this->invoiceIdFromPayPalPayload($payload, $captureResponse);
+        return response()->json(['status' => 'captured']);
+    }
 
-		if ($invoiceId) {
-			return Invoices::query()->find($invoiceId);
-		}
+    protected function handleCompletedCaptureWebhook(array $payload): JsonResponse
+    {
+        if (data_get($payload, 'resource.status') !== 'COMPLETED') {
+            return response()->json([
+                'status' => 'capture_not_completed',
+                'paypal_status' => data_get($payload, 'resource.status'),
+            ]);
+        }
 
-		$orderId = $this->orderIdFromPayPalPayload($payload, $captureResponse);
+        $invoice = $this->resolveInvoiceFromPayPalPayload($payload);
 
-		if ($orderId) {
-			return PaymentLink::query()
-				->where('paypal_order_id', $orderId)
-				->first()
-				?->invoice;
-		}
+        if (! $invoice) {
+            Log::warning('PayPalPaymentController.invoice_not_found_for_completed_capture', [
+                'event_id' => data_get($payload, 'id'),
+                'capture_id' => data_get($payload, 'resource.id'),
+                'order_id' => $this->orderIdFromPayPalPayload($payload),
+                'invoice_id' => $this->invoiceIdFromPayPalPayload($payload),
+            ]);
 
-		return null;
-	}
+            return response()->json(['status' => 'invoice_not_found']);
+        }
 
-	protected function completeInvoicePayment(Invoices $invoice, array $captureData, array $webhookPayload = []): void
-	{
-		$invoice->loadMissing(['paymentLink', 'currency']);
+        $this->completeInvoicePayment($invoice, $payload, $payload);
 
-		$captureId = $this->captureIdFromCaptureResponse($captureData)
-			?? data_get($captureData, 'resource.id');
-		$orderId = $this->orderIdFromPayPalPayload($webhookPayload, $captureData);
-		$paymentData = $this->paymentData($invoice, $captureData, $webhookPayload, $orderId, $captureId);
+        return response()->json(['status' => 'completed']);
+    }
 
-		$invoice->update([
-			'status' => 'paid',
-			'amount_due_cents' => 0,
-			'paid_at' => now(),
-		]);
+    protected function resolveInvoiceFromPayPalPayload(array $payload, ?array $captureResponse = null): ?Invoices
+    {
+        $invoiceId = $this->invoiceIdFromPayPalPayload($payload, $captureResponse);
 
-		$invoice->paymentLink?->update([
-			'paypal_order_id' => $orderId,
-			'paypal_capture_id' => $captureId,
-		]);
+        if ($invoiceId) {
+            return Invoices::query()->find($invoiceId);
+        }
 
-		PaymentRecord::updateOrCreate(
-			['invoice_id' => $invoice->id],
-			[
-				'payment_method' => PaymentProvider::PAYPAL->value,
-				'data' => $paymentData,
-				'token' => $paymentData['token'],
-			]
-		);
-		Mail::to($invoice->businessProfile?->email)
-			->send(new PaymentSuccessNotificationForBusinessProfileMail($invoice, $paymentData));
-		Mail::to($invoice->client?->email)
-			->send(new PaymentSuccessNotificationForClientMail($invoice, $paymentData));
+        $orderId = $this->orderIdFromPayPalPayload($payload, $captureResponse);
 
-		Log::info('PayPalPaymentController.invoice_payment_completed', [
-			'invoice_id' => $invoice->id,
-			'order_id' => $orderId,
-			'capture_id' => $captureId,
-		]);
-	}
+        if ($orderId) {
+            return PaymentLink::query()
+                ->where('paypal_order_id', $orderId)
+                ->first()
+                ?->invoice;
+        }
 
-	protected function invoiceIdFromPayPalPayload(array $payload, ?array $captureResponse = null): ?int
-	{
-		$invoiceId = data_get($captureResponse, 'purchase_units.0.custom_id')
-			?? data_get($captureResponse, 'purchase_units.0.payments.captures.0.custom_id')
-			?? data_get($payload, 'resource.purchase_units.0.custom_id')
-			?? data_get($payload, 'resource.custom_id');
+        return null;
+    }
 
-		return is_numeric($invoiceId) ? (int)$invoiceId : null;
-	}
+    protected function completeInvoicePayment(Invoices $invoice, array $captureData, array $webhookPayload = []): void
+    {
+        $invoice->loadMissing(['paymentLink', 'currency']);
 
-	protected function orderIdFromPayPalPayload(array $payload, ?array $captureResponse = null): ?string
-	{
-		$orderId = data_get($payload, 'resource.id');
+        if ($invoice->status === 'paid') {
+            Log::info('PayPalPaymentController.invoice_already_paid_skipped', [
+                'invoice_id' => $invoice->id,
+                'event_id' => data_get($webhookPayload, 'id'),
+                'order_id' => $this->orderIdFromPayPalPayload($webhookPayload, $captureData),
+            ]);
 
-		if (data_get($payload, 'event_type') === 'PAYMENT.CAPTURE.COMPLETED') {
-			$orderId = data_get($payload, 'resource.supplementary_data.related_ids.order_id')
-				?? data_get($payload, 'resource.invoice_id')
-				?? data_get($payload, 'resource.id');
-		}
+            return;
+        }
 
-		$captureResponseOrderId = data_get($captureResponse, 'event_type')
-			? null
-			: data_get($captureResponse, 'id');
+        $captureId = $this->captureIdFromCaptureResponse($captureData)
+            ?? data_get($captureData, 'resource.id');
+        $orderId = $this->orderIdFromPayPalPayload($webhookPayload, $captureData);
+        $paymentData = $this->paymentData($invoice, $captureData, $webhookPayload, $orderId, $captureId);
 
-		return $captureResponseOrderId
-			?? data_get($captureResponse, 'purchase_units.0.payments.captures.0.supplementary_data.related_ids.order_id')
-			?? $orderId;
-	}
+        $invoice->update([
+            'status' => 'paid',
+            'amount_due_cents' => 0,
+            'paid_at' => now(),
+        ]);
 
-	protected function captureIdFromCaptureResponse(array $captureData): ?string
-	{
-		return data_get($captureData, 'purchase_units.0.payments.captures.0.id')
-			?? data_get($captureData, 'resource.id');
-	}
+        $invoice->paymentLink?->update([
+            'paypal_order_id' => $orderId,
+            'paypal_capture_id' => $captureId,
+        ]);
 
-	protected function paymentData(
-		Invoices $invoice,
-		array $captureData,
-		array $webhookPayload,
-		?string $orderId,
-		?string $captureId
-	): array {
-		$amountValue = data_get($captureData, 'purchase_units.0.payments.captures.0.amount.value')
-			?? data_get($captureData, 'resource.amount.value');
-		$currency = data_get($captureData, 'purchase_units.0.payments.captures.0.amount.currency_code')
-			?? data_get($captureData, 'resource.amount.currency_code')
-			?? $invoice->currency?->code;
+        PaymentRecord::updateOrCreate(
+            ['invoice_id' => $invoice->id],
+            [
+                'payment_method' => PaymentProvider::PAYPAL->value,
+                'data' => $paymentData,
+                'token' => $paymentData['token'],
+            ]
+        );
+        Mail::to($invoice->businessProfile?->email)
+            ->send(new PaymentSuccessNotificationForBusinessProfileMail($invoice, $paymentData));
+        Mail::to($invoice->client?->email)
+            ->send(new PaymentSuccessNotificationForClientMail($invoice, $paymentData));
 
-		return [
-			'invoice_number' => $invoice->invoice_number,
-			'invoice_payment_method' => PaymentProvider::PAYPAL->value,
-			'paypal_order_id' => $orderId,
-			'paypal_capture_id' => $captureId,
-			'amount_paid' => is_numeric($amountValue) ? (int)round((float)$amountValue * 100) : null,
-			'currency' => $currency,
-			'payment_date' => now(),
-			'token' => (string)($invoice->paymentLink?->token ?? ''),
-			'webhook_event_id' => data_get($webhookPayload, 'id'),
-			'webhook_event_type' => data_get($webhookPayload, 'event_type'),
-		];
-	}
+        Log::info('PayPalPaymentController.invoice_payment_completed', [
+            'invoice_id' => $invoice->id,
+            'order_id' => $orderId,
+            'capture_id' => $captureId,
+        ]);
+    }
 
-	protected function paymentLinkForToken(string $paymentToken): ?PaymentLink
-	{
-		return PaymentLink::query()
-			->with(['invoice.paymentLink', 'invoice.currency'])
-			->where('token', $paymentToken)
-			->first();
-	}
+    protected function storeWebhookEvent(array $payload, string $eventId, string $eventType): ?JsonResponse
+    {
+        try {
+            PayPalWebhookEvent::create([
+                'event_id' => $eventId,
+                'type' => $eventType,
+                'resource_id' => data_get($payload, 'resource.id'),
+                'payload' => $payload,
+                'received_at' => now(),
+            ]);
+        } catch (QueryException $e) {
+            if ($this->isDuplicateEventException($e)) {
+                Log::info('PayPalPaymentController.duplicate_event_skipped', [
+                    'event_id' => $eventId,
+                    'event_type' => $eventType,
+                ]);
 
-	protected function frontendPaymentUrl(string $paymentToken, string $status): string
-	{
-		if ($status === 'payment-cancelled') {
-			return rtrim((string)config('app.frontend_url'), '/') . "/app/invoices/{$paymentToken}/paypal/{$status}";
-		}
-		return rtrim((string)config('app.frontend_url'), '/') . "/app/invoices/{$paymentToken}/{$status}";
-	}
+                return response()->json(['status' => 'duplicate']);
+            }
+
+            Log::error('PayPalPaymentController.event_persist_failed', [
+                'event_id' => $eventId,
+                'event_type' => $eventType,
+                'err' => $e->getMessage(),
+            ]);
+
+            return response()->json(['status' => 'event_persist_failed'], 500);
+        }
+
+        return null;
+    }
+
+    private function isDuplicateEventException(QueryException $e): bool
+    {
+        $sqlState = (string) ($e->errorInfo[0] ?? '');
+        $driverCode = (string) ($e->errorInfo[1] ?? $e->getCode());
+        $message = strtolower($e->getMessage());
+
+        return $sqlState === '23505'
+            || in_array($driverCode, ['1062', '2067'], true)
+            || (($sqlState === '23000' || $driverCode === '19')
+                && (str_contains($message, 'duplicate') || str_contains($message, 'unique')));
+    }
+
+    protected function invoiceIdFromPayPalPayload(array $payload, ?array $captureResponse = null): ?int
+    {
+        $invoiceId = data_get($captureResponse, 'purchase_units.0.custom_id')
+            ?? data_get($captureResponse, 'purchase_units.0.payments.captures.0.custom_id')
+            ?? data_get($payload, 'resource.purchase_units.0.custom_id')
+            ?? data_get($payload, 'resource.custom_id');
+
+        return is_numeric($invoiceId) ? (int) $invoiceId : null;
+    }
+
+    protected function orderIdFromPayPalPayload(array $payload, ?array $captureResponse = null): ?string
+    {
+        $orderId = data_get($payload, 'resource.id');
+
+        if (data_get($payload, 'event_type') === 'PAYMENT.CAPTURE.COMPLETED') {
+            $orderId = data_get($payload, 'resource.supplementary_data.related_ids.order_id')
+                ?? data_get($payload, 'resource.invoice_id')
+                ?? data_get($payload, 'resource.id');
+        }
+
+        $captureResponseOrderId = data_get($captureResponse, 'event_type')
+            ? null
+            : data_get($captureResponse, 'id');
+
+        return $captureResponseOrderId
+            ?? data_get($captureResponse, 'purchase_units.0.payments.captures.0.supplementary_data.related_ids.order_id')
+            ?? $orderId;
+    }
+
+    protected function captureIdFromCaptureResponse(array $captureData): ?string
+    {
+        return data_get($captureData, 'purchase_units.0.payments.captures.0.id')
+            ?? data_get($captureData, 'resource.id');
+    }
+
+    protected function paymentData(
+        Invoices $invoice,
+        array $captureData,
+        array $webhookPayload,
+        ?string $orderId,
+        ?string $captureId
+    ): array {
+        $amountValue = data_get($captureData, 'purchase_units.0.payments.captures.0.amount.value')
+            ?? data_get($captureData, 'resource.amount.value');
+        $currency = data_get($captureData, 'purchase_units.0.payments.captures.0.amount.currency_code')
+            ?? data_get($captureData, 'resource.amount.currency_code')
+            ?? $invoice->currency?->code;
+
+        return [
+            'invoice_number' => $invoice->invoice_number,
+            'invoice_payment_method' => PaymentProvider::PAYPAL->value,
+            'paypal_order_id' => $orderId,
+            'paypal_capture_id' => $captureId,
+            'amount_paid' => is_numeric($amountValue) ? (int) round((float) $amountValue * 100) : null,
+            'currency' => $currency,
+            'payment_date' => now(),
+            'token' => (string) ($invoice->paymentLink?->token ?? ''),
+            'webhook_event_id' => data_get($webhookPayload, 'id'),
+            'webhook_event_type' => data_get($webhookPayload, 'event_type'),
+        ];
+    }
+
+    protected function paymentLinkForToken(string $paymentToken): ?PaymentLink
+    {
+        return PaymentLink::query()
+            ->with(['invoice.paymentLink', 'invoice.currency'])
+            ->where('token', $paymentToken)
+            ->first();
+    }
+
+    protected function frontendPaymentUrl(string $paymentToken, string $status): string
+    {
+        if ($status === 'payment-cancelled') {
+            return rtrim((string) config('app.frontend_url'), '/')."/app/invoices/{$paymentToken}/paypal/{$status}";
+        }
+
+        return rtrim((string) config('app.frontend_url'), '/')."/app/invoices/{$paymentToken}/{$status}";
+    }
 }

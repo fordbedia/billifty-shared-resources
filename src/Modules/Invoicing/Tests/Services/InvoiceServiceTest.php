@@ -8,11 +8,22 @@ use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\InvoiceCo
 use BilliftySDK\SharedResources\Modules\Invoicing\Services\InvoiceCalculator;
 use BilliftySDK\SharedResources\Modules\Invoicing\Services\InvoicePaymentLinkServices;
 use BilliftySDK\SharedResources\Modules\Invoicing\Services\InvoiceService;
-use BilliftySDK\SharedResources\TestCase\BaseTest;
+use BilliftySDK\SharedResources\TestCase\Migrations\BaseTest;
+use BilliftySDK\SharedResources\TestCase\Scenario\CreateInvoice;
+use DomainException;
 use Illuminate\Support\Facades\DB;
 
 class InvoiceServiceTest extends BaseTest
 {
+    protected $scenario;
+
+    public function setUp(): void
+    {
+        parent::setUp();
+
+        $this->scenario = (new CreateInvoice())();
+    }
+
     /** @test */
     public function it_accepts_matching_frontend_totals_and_syncs_computed_items(): void
     {
@@ -22,13 +33,14 @@ class InvoiceServiceTest extends BaseTest
 
         $invoice = $this->makePersistedInvoice();
         $repo = new InMemoryInvoiceRepository($invoice);
+        $paymentLinkServices = new FakeInvoicePaymentLinkServices();
 
-        $service = $this->makeService($repo);
+        $service = $this->makeService($repo, $paymentLinkServices);
 
         $result = $service->upsert($this->basePayload([
             'subtotal_cents' => 2000,
             'total_cents' => 2000,
-        ]), InvoiceAction::SaveChanges, 99);
+        ]), InvoiceAction::SaveChanges, $invoice->id);
 
         $this->assertSame(2000, $result->subtotal_cents);
         $this->assertSame(2000, $result->total_cents);
@@ -37,6 +49,9 @@ class InvoiceServiceTest extends BaseTest
         $this->assertSame(1, $repo->syncedItems[0]['position']);
         $this->assertSame(0, $repo->syncedItems[0]['tax_cents']);
         $this->assertSame(2000, $repo->syncedItems[0]['line_total_cents']);
+        $this->assertCount(1, $paymentLinkServices->createdLinks);
+        $this->assertSame($invoice->id, $paymentLinkServices->createdLinks[0][0]->id);
+        $this->assertSame('2099-01-01 00:00:00', $paymentLinkServices->createdLinks[0][1]['expires_at']);
     }
 
     /** @test */
@@ -54,7 +69,7 @@ class InvoiceServiceTest extends BaseTest
         $result = $service->upsert($this->basePayload([
             'subtotal_cents' => 2001,
             'total_cents' => 1999,
-        ]), InvoiceAction::SaveChanges, 99);
+        ]), InvoiceAction::SaveChanges, $invoice->id);
 
         $this->assertSame(2000, $result->subtotal_cents);
         $this->assertSame(2000, $result->total_cents);
@@ -80,19 +95,65 @@ class InvoiceServiceTest extends BaseTest
             $service->upsert($this->basePayload([
                 'subtotal_cents' => 1,
                 'total_cents' => 1,
-            ]), InvoiceAction::SaveChanges, 99);
+            ]), InvoiceAction::SaveChanges, $invoice->id);
         } finally {
             $this->assertFalse($invoice->save_called);
             $this->assertSame([], $repo->syncedItems);
         }
     }
 
+    /** @test */
+    public function it_rolls_back_when_invoice_number_is_duplicate(): void
+    {
+        DB::shouldReceive('beginTransaction')->once();
+        DB::shouldReceive('commit')->never();
+        DB::shouldReceive('rollback')->once();
+
+        $invoice = $this->makePersistedInvoice();
+        $duplicate = new Invoices(['id' => $invoice->id + 1]);
+        $duplicate->exists = true;
+        $repo = new InMemoryInvoiceRepository($invoice);
+        $repo->duplicateInvoice = $duplicate;
+
+        $this->expectException(DomainException::class);
+        $this->expectExceptionMessage('Invoice Number has duplicate. Please provide a unique invoice number.');
+
+        try {
+            $this->makeService($repo)->upsert($this->basePayload(), InvoiceAction::SaveChanges, $invoice->id);
+        } finally {
+            $this->assertFalse($invoice->save_called);
+            $this->assertSame([], $repo->syncedItems);
+        }
+    }
+
+    /** @test */
+    public function it_marks_the_invoice_as_issued_when_the_issue_action_is_used(): void
+    {
+        DB::shouldReceive('beginTransaction')->once();
+        DB::shouldReceive('commit')->once();
+        DB::shouldReceive('rollback')->never();
+
+        $invoice = $this->makePersistedInvoice();
+        $repo = new InMemoryInvoiceRepository($invoice);
+
+        $result = $this->makeService($repo)->upsert($this->basePayload([
+            'subtotal_cents' => 2000,
+            'total_cents' => 2000,
+        ]), InvoiceAction::Issue, $invoice->id);
+
+        $this->assertSame('issued', $result->status);
+        $this->assertNotNull($result->issued_at);
+        $this->assertSame(2, $invoice->save_count);
+    }
+
     private function makePersistedInvoice(): FakePersistedInvoice
     {
+        $scenarioInvoice = $this->scenario['invoice'];
         $invoice = new FakePersistedInvoice([
-            'id' => 99,
-            'status' => 'draft',
-            'invoice_number' => 'INV-99',
+            'id' => $scenarioInvoice->id,
+            'workspace_id' => $scenarioInvoice->workspace_id,
+            'status' => $scenarioInvoice->status,
+            'invoice_number' => $scenarioInvoice->invoice_number,
         ]);
 
         $invoice->exists = true;
@@ -100,15 +161,17 @@ class InvoiceServiceTest extends BaseTest
         return $invoice;
     }
 
-	private function makeService(InvoiceContracts $repo): InvoiceService
+	private function makeService(InvoiceContracts $repo, ?FakeInvoicePaymentLinkServices $paymentLinkServices = null): InvoiceService
 	{
-		return new InvoiceService(new InvoiceCalculator(), $repo, new FakeInvoicePaymentLinkServices());
+		return new InvoiceService(new InvoiceCalculator(), $repo, $paymentLinkServices ?? new FakeInvoicePaymentLinkServices());
 	}
 
     private function basePayload(array $overrides = []): array
     {
+        $scenarioInvoice = $this->scenario['invoice'];
+
         return array_merge([
-            'invoice_number' => 'INV-99',
+            'invoice_number' => $scenarioInvoice->invoice_number,
             'discount_mode' => 'none',
             'discount_cents' => 0,
             'discount_rate' => 0,
@@ -132,9 +195,12 @@ class FakePersistedInvoice extends Invoices
 {
     public bool $save_called = false;
 
+    public int $save_count = 0;
+
     public function save(array $options = []): bool
     {
         $this->save_called = true;
+        $this->save_count++;
 
         return true;
     }
@@ -150,6 +216,8 @@ class InMemoryInvoiceRepository implements InvoiceContracts
     /** @var array<int, array<string, mixed>> */
     public array $syncedItems = [];
 
+    public ?Invoices $duplicateInvoice = null;
+
     public function __construct(private readonly Invoices $invoice)
     {
     }
@@ -161,7 +229,7 @@ class InMemoryInvoiceRepository implements InvoiceContracts
 
     public function duplicateInvoice($invoiceNumber): ?Invoices
     {
-        return null;
+        return $this->duplicateInvoice;
     }
 
     public function syncItems(Invoices $invoice, iterable $items): void

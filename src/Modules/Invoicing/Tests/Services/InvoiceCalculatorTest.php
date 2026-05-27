@@ -4,10 +4,41 @@ namespace BilliftySDK\SharedResources\Modules\Invoicing\Tests\Services;
 
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use BilliftySDK\SharedResources\Modules\Invoicing\Services\InvoiceCalculator;
-use BilliftySDK\SharedResources\TestCase\BaseTest;
+use BilliftySDK\SharedResources\TestCase\Migrations\BaseTest;
+use BilliftySDK\SharedResources\TestCase\Scenario\CreateInvoice;
 
 class InvoiceCalculatorTest extends BaseTest
 {
+    protected $scenario;
+
+    public function setUp(): void
+    {
+        parent::setUp();
+
+        $this->scenario = (new CreateInvoice())();
+    }
+
+    /** @test */
+    public function it_computes_totals_for_the_created_invoice_scenario(): void
+    {
+        $invoice = $this->scenario['invoice']->load('items');
+
+        $computed = (new InvoiceCalculator())->compute($invoice);
+        $items = $computed->items->values();
+
+        $this->assertSame(460000, $computed->subtotal_cents);
+        $this->assertSame(0, $computed->tax_cents);
+        $this->assertSame(0, $computed->discount_cents);
+        $this->assertSame(0, $computed->shipping_tax_cents);
+        $this->assertSame(460000, $computed->total_cents);
+        $this->assertSame(460000, $computed->amount_due_cents);
+        $this->assertNull($computed->getAttribute('display_discount_row'));
+
+        $this->assertCount(2, $items);
+        $this->assertSame(40000, $items[0]->line_total_cents);
+        $this->assertSame(420000, $items[1]->line_total_cents);
+    }
+
     /** @test */
     public function it_computes_amount_discount_shipping_tax_and_item_totals_for_array_items(): void
     {
