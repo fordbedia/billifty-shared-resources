@@ -63,49 +63,56 @@
 			'shouldRender' => true,
 		]]);
 	}
+
+	$showComponentOnNonHtml = true;
+	if (isset($renderContext) && $renderContext === 'html') {
+		$showComponentOnNonHtml = false;
+	}
 @endphp
 
-@if($paymentMethodBlocks->isNotEmpty())
+@if($paymentMethodBlocks->isNotEmpty() && $showComponentOnNonHtml)
 	@foreach($paymentMethodBlocks as $paymentMethodBlock)
-	<section class="payment-method-block payment-method-{{ str_replace('_', '-', $paymentMethodBlock['method'] ?: 'generic') }}">
-		<h4 class="payment-method-heading">
-			@if($paymentMethodBlock['hasOnlinePaymentLink'])
-				Payment Link
-			@else
-				{{ $paymentMethodBlock['label'] }}
-			@endif
-		</h4>
-
-		@if($paymentMethodBlock['hasOnlinePaymentLink'])
-			<div class="payment-method-link-card">
-				@if($paymentMethodBlock['qrCodeSrc'])
-					<img
-						class="payment-method-qr"
-						src="{{ $paymentMethodBlock['qrCodeSrc'] }}"
-						alt="Invoice payment QR code"
-					/>
+		<section
+			class="payment-method-block payment-method-{{ str_replace('_', '-', $paymentMethodBlock['method'] ?: 'generic') }}">
+			<h4 class="payment-method-heading">
+				@if($paymentMethodBlock['hasOnlinePaymentLink'])
+					Payment Link
+				@else
+					{{ $paymentMethodBlock['label'] }}
 				@endif
-				<div class="payment-method-link-copy">
-					<div class="payment-method-title">Pay with {{ $paymentMethodBlock['onlinePaymentSummary'] }}</div>
-					<div class="payment-method-text">Scan the QR code or open the secure payment link.</div>
-					<a class="payment-method-link" target="_blank" rel="noopener noreferrer" href="{{ $payUrl }}">
-						Open Payment Link
-					</a>
-				</div>
-			</div>
-		@endif
+			</h4>
 
-		@if(count($paymentMethodBlock['detailRows']) > 0)
-			<dl class="payment-method-list">
-				@foreach($paymentMethodBlock['detailRows'] as $name => $value)
-					<div class="payment-method-row">
-						<dt>{{ $name }}</dt>
-						<dd>{{ $value }}</dd>
+			@if($paymentMethodBlock['hasOnlinePaymentLink'])
+				<div class="payment-method-link-card">
+					@if($paymentMethodBlock['qrCodeSrc'])
+						<img
+							class="payment-method-qr"
+							src="{{ $paymentMethodBlock['qrCodeSrc'] }}"
+							alt="Invoice payment QR code"
+						/>
+					@endif
+					<div class="payment-method-link-copy">
+						<div class="payment-method-title">Pay
+							with {{ $paymentMethodBlock['onlinePaymentSummary'] }}</div>
+						<div class="payment-method-text">Scan the QR code or open the secure payment link.</div>
+						<a class="payment-method-link" target="_blank" rel="noopener noreferrer" href="{{ $payUrl }}">
+							Open Payment Link
+						</a>
 					</div>
-				@endforeach
-			</dl>
-		@endif
-	</section>
+				</div>
+			@endif
+
+			@if(count($paymentMethodBlock['detailRows']) > 0)
+				<dl class="payment-method-list">
+					@foreach($paymentMethodBlock['detailRows'] as $name => $value)
+						<div class="payment-method-row">
+							<dt>{{ $name }}</dt>
+							<dd>{{ $value }}</dd>
+						</div>
+					@endforeach
+				</dl>
+			@endif
+		</section>
 	@endforeach
 
 	<style>

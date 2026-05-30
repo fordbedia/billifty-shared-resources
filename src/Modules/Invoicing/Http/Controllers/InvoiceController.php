@@ -2,6 +2,7 @@
 
 namespace BilliftySDK\SharedResources\Modules\Invoicing\Http\Controllers;
 
+use BilliftySDK\SharedResources\Modules\Invoicing\Http\Resources\InvoiceResource;
 use Illuminate\Routing\Controller;
 use BilliftySDK\SharedResources\Modules\Invoicing\Domain\InvoiceAction;
 use BilliftySDK\SharedResources\Modules\Invoicing\Http\Requests\StoreInvoiceRequest;
@@ -219,5 +220,31 @@ class InvoiceController extends Controller
 		return response()->json([
 			'message' => 'Invoice copy has been queued for sending to your email.',
 		]);
+	}
+
+	public function preview(
+		Request $request,
+		InvoiceContracts $invoice
+	)
+	{
+		$invoice = $invoice->findById($request->id)?->loadMissing(Invoices::relationships());
+
+		if ($invoice->colorScheme) {
+			$invoice->colorScheme->setRelation(
+				'colors',
+				$invoice->colorScheme->colors->keyBy('name')
+			);
+		}
+
+		$payload = (new InvoiceResource($invoice))->response()->getData();
+
+		return response()
+			->view('invoicing::templates.show', [
+				'invoiceModel' => $invoice,
+				'invoice' => $payload,
+				'category' => data_get($payload, 'template.category'),
+				'colorScheme' => data_get($payload, 'colorScheme'),
+				'renderContext' => 'html',
+			]);
 	}
 }

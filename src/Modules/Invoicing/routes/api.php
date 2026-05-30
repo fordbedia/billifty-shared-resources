@@ -29,7 +29,8 @@ Route::prefix('v1')->group(function () {
 			Route::post('/{invoice}/pdf/send-copy-to-business-profile', [InvoiceController::class, 'sendToBusinessProfile'])
                 ->name('invoices.pdf.send-copy-to-business-profile');
 			Route::post('/{invoice}/pdf/send-to-client', [InvoiceController::class, 'sendToClient'])
-                ->name('invoices.pdf.send-to-client');;
+                ->name('invoices.pdf.send-to-client');
+			Route::get('/{id}/preview/settings', [InvoiceController::class, 'preview']);
 		});
 
 		Route::get('business-profile/get-all', [BusinessProfileController::class, 'getAll']);

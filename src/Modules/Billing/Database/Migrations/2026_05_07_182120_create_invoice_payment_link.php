@@ -14,9 +14,11 @@ return new class extends Migration
         Schema::create('payment_link', function (Blueprint $table) {
             $table->id();
 			$table->foreignId('invoice_id')->constrained('invoices')->cascadeOnDelete();
-			$table->string('token')->unique();
+			$table->string('token')->unique()->index();
 			$table->string('paypal_order_id')->nullable()->index();
 			$table->string('paypal_capture_id')->nullable()->index();
+			$table->timestamp('public_token_expires_at')->nullable();
+			$table->timestamp('public_token_revoked_at')->nullable();
 			$table->timestamp('expires_at');
 			$table->softDeletes();
             $table->timestamps();
