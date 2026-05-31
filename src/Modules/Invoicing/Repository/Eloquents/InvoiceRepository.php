@@ -70,12 +70,12 @@ class InvoiceRepository extends BaseRepository implements InvoiceContracts
 		$existing = InvoiceItems::query()
 			->where('invoice_id', $invoiceId)
 			->get()
-			->keyBy(fn ($r) => $r->id);
+			->keyBy(fn($r) => $r->id);
 
 		$existingIds = [];
 
-		foreach($incoming as $row) {
-			$position = (int) ($row['position'] ?? 0);
+		foreach ($incoming as $row) {
+			$position = (int)($row['position'] ?? 0);
 			$existingItem = isset($row['id']) ? $existing->get($row['id']) : null;
 
 			if ($existingItem) {
@@ -93,7 +93,7 @@ class InvoiceRepository extends BaseRepository implements InvoiceContracts
 			}
 		}
 
-		$toDelete = $existing->filter(fn ($r) => !in_array($r->id, $existingIds))->pluck('id');
+		$toDelete = $existing->filter(fn($r) => !in_array($r->id, $existingIds))->pluck('id');
 		if ($toDelete->isNotEmpty()) {
 			InvoiceItems::query()->whereIn('id', $toDelete->toArray())->delete();
 		}
@@ -124,37 +124,45 @@ class InvoiceRepository extends BaseRepository implements InvoiceContracts
 	}
 
 	public function paginate(
-        $query = null,
-        int $perPage = 15,
-        array $columns = ['*'],
-        string $pageName = 'page',
-        int|null $page = null,
+		$query = null,
+		int $perPage = 15,
+		array $columns = ['*'],
+		string $pageName = 'page',
+		int|null $page = null,
 		$dateRange = null,
 		$search = null,
-    ) {
-        // Add custom condition(s)
-        $query = $this->getModelByAuthUser()->with(Invoices::relationships());
+	)
+	{
+		// Add custom condition(s)
+		$query = $this->getModelByAuthUser()->with(Invoices::relationships());
 
 		if ($dateRange) {
 			$query->whereBetween('issued_on', [$dateRange['start'], $dateRange['end']]);
 		}
 
 		if ($search) {
-			$query->whereHas('client', function ($q1) use ($search) {
-				$q1
-					->where('name', 'like', "%{$search}%")
-					->orWhere('email', 'like', "%{$search}%");
-			});
+			$query
+				->whereHas('client', function ($q1) use ($search) {
+					$q1
+						->where('name', 'like', "%{$search}%")
+						->orWhere('email', 'like', "%{$search}%");
+				})
+				->orWhere('invoice_number', 'like', "%{$search}%")
+				->orWhereHas('businessProfile', function ($q1) use ($search) {
+					$q1->where('name', 'like', "%{$search}%")
+						->orWhere('legal_name', 'like', "%{$search}%")
+						->orWhere('email', 'like', "%{$search}%");
+				});
 		}
 
-        // You can chain more: ->where('type', 'admin')->orderBy('name')
-        return parent::paginate($query, $perPage, $columns, $pageName, $page);
-    }
+		// You can chain more: ->where('type', 'admin')->orderBy('name')
+		return parent::paginate($query, $perPage, $columns, $pageName, $page);
+	}
 
 	public function findByKey(int $id): ?Invoices
-    {
-        /** @var Invoices|null $invoice */
-        $query = Invoices::with(Invoices::relationships());
+	{
+		/** @var Invoices|null $invoice */
+		$query = Invoices::with(Invoices::relationships());
 
 		if (Auth::check()) {
 			$query->whereHas('workspace', function (Builder $workspaceQuery): void {
@@ -162,10 +170,10 @@ class InvoiceRepository extends BaseRepository implements InvoiceContracts
 			});
 		}
 
-        $invoice = $query->find($id);
+		$invoice = $query->find($id);
 
-        return $invoice;
-    }
+		return $invoice;
+	}
 
 	public function getModelByAuthUser(): Builder
 	{
@@ -207,12 +215,13 @@ class InvoiceRepository extends BaseRepository implements InvoiceContracts
 	 * @param Invoices $invoice
 	 * @return void
 	 */
-    public function queuePdfGeneration(Invoices $invoice): void
-    {
-        GenerateInvoicePdfJob::dispatch($invoice->getKey());
-    }
+	public function queuePdfGeneration(Invoices $invoice): void
+	{
+		GenerateInvoicePdfJob::dispatch($invoice->getKey());
+	}
 
-	public function issue(Invoices $invoice) {
+	public function issue(Invoices $invoice)
+	{
 		InvoiceStateMachine::onIssue($invoice);
 		$invoice->save();
 	}

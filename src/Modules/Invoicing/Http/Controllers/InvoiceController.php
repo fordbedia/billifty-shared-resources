@@ -37,13 +37,12 @@ class InvoiceController extends Controller
 	{
 		return $invoice->autoInvoiceNumber();
 	}
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Request $request, InvoiceContracts $repo)
-    {
-//		 $this->authorize('viewAny', Invoices::class);
 
+	/**
+	 * Display a listing of the resource.
+	 */
+	public function index(Request $request, InvoiceContracts $repo)
+	{
 		$dateRange = null;
 		if ($request->start_date && $request->end_date) {
 			$dateRange = ['start' => $request->start_date, 'end' => $request->end_date];
@@ -53,17 +52,18 @@ class InvoiceController extends Controller
 			$search = $request->search;
 		}
 		return $repo->paginate(dateRange: $dateRange, search: $search);
-    }
+	}
 
 	/**
 	 * Store a newly created resource in storage.
 	 * @throws ApiException
 	 */
-    public function store(
+	public function store(
 		StoreInvoiceRequest $request,
-		InvoiceService $invoiceService
-	) {
-        $data = $request->validated();
+		InvoiceService      $invoiceService
+	)
+	{
+		$data = $request->validated();
 
 		try {
 			$action = InvoiceAction::from($data['action']); // save_draft typical here
@@ -73,29 +73,30 @@ class InvoiceController extends Controller
 			$errors = ['errors' => [$e->getCode() => $e->getMessage()]];
 			return response()->json($errors, Response::HTTP_INTERNAL_SERVER_ERROR);
 		}
-    }
+	}
 
 	/**
 	 * Display the specified resource.
 	 * @throws ApiException
 	 */
-    public function show(string $id, InvoiceContracts $repo)
-    {
+	public function show(string $id, InvoiceContracts $repo)
+	{
 		try {
 			return $repo->findById($id)?->loadMissing(Invoices::relationships());
 		} catch (\Throwable $exception) {
 			throw new ApiException($exception->getMessage(), 404);
 		}
-    }
+	}
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(
+	/**
+	 * Update the specified resource in storage.
+	 */
+	public function update(
 		StoreInvoiceRequest $request,
-		InvoiceService $svc,
-		string $id
-	) {
+		InvoiceService      $svc,
+		string              $id
+	)
+	{
 		$data = $request->validated();
 
 		try {
@@ -108,18 +109,19 @@ class InvoiceController extends Controller
 		}
 	}
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(int $id, InvoiceContracts $repo)
-    {
-        return $repo->deleteInvoice($id);
-    }
+	/**
+	 * Remove the specified resource from storage.
+	 */
+	public function destroy(int $id, InvoiceContracts $repo)
+	{
+		return $repo->deleteInvoice($id);
+	}
 
 	public function saveDraft(
 		StoreInvoiceRequest $storeInvoiceRequest,
-		InvoiceService $invoiceService
-	) {
+		InvoiceService      $invoiceService
+	)
+	{
 		$data = $storeInvoiceRequest->validated();
 
 		$invoiceService->create($data);
@@ -128,23 +130,24 @@ class InvoiceController extends Controller
 	}
 
 	public function generate(
-        int $id,
-        InvoiceContracts $invoices
-    ) {
-        $invoice = $invoices->findById($id); // user-scoped, with Auth
-        // ... mark as issued, save, etc.
+		int              $id,
+		InvoiceContracts $invoices
+	)
+	{
+		$invoice = $invoices->findById($id); // user-scoped, with Auth
+		// ... mark as issued, save, etc.
 		$invoice->forceFill([
 			'pdf_status' => 'queued',
-			'pdf_error'  => null,
+			'pdf_error' => null,
 		])->save();
 
-        // queue PDF generation
-		GenerateInvoicePdfJob::dispatch($invoice->id, false, (int) Auth::id());
+		// queue PDF generation
+		GenerateInvoicePdfJob::dispatch($invoice->id, false, (int)Auth::id());
 
-        return response()->json([
-            'data' => $invoice->fresh(), // or resource
-        ]);
-    }
+		return response()->json([
+			'data' => $invoice->fresh(), // or resource
+		]);
+	}
 
 	public function download(int $id, InvoiceContracts $invoices)
 	{
@@ -223,7 +226,7 @@ class InvoiceController extends Controller
 	}
 
 	public function preview(
-		Request $request,
+		Request          $request,
 		InvoiceContracts $invoice
 	)
 	{
