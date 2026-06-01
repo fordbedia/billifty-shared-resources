@@ -117,7 +117,7 @@ class InvoicePaymentController extends Controller
 		$invoice = $paymentLink->invoice->loadMissing(Invoices::relationships());
 
 		if ($paymentLink->public_token_revoked_at && Carbon::now()->isAfter(Carbon::parse($paymentLink->public_token_revoked_at))) {
-			abort(410, 'Payment link is revoked.');
+			return view('billing::error.error-invoice-not-found');
 		}
 
 		$userId = $invoice->workspace?->user_id;
