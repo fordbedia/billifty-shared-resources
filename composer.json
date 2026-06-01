@@ -10,6 +10,9 @@
        "BilliftySDK\\SharedResources\\TestCase\\": "src/TestCase/"
     }
   },
+  "scripts": {
+    "test": "@php bin/phpunit-by-class"
+  },
   "extra": {
     "laravel": {
       "providers": [

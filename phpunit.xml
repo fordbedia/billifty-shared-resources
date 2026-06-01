@@ -3,7 +3,7 @@
     bootstrap="vendor/autoload.php"
     testdox="true"
     colors="true"
-    executionOrder="depends,defects"
+    executionOrder="default"
 >
     <php>
         <!-- make sure Testbench runs in testing -->

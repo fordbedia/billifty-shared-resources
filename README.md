@@ -8,6 +8,20 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T mysql \
 
 ## and run the test on specific class
 
+Run every module test class one class at a time:
+
+```shell
+composer test
+```
+
+Or:
+
+```shell
+./bin/phpunit-by-class
+```
+
+Run a specific class through PHPUnit:
+
 ```shell
 ./vendor/bin/phpunit --filter=UserSubscriptionTest
 ```
