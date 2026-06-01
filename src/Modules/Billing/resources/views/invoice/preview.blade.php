@@ -325,7 +325,7 @@
 			<h1 id="invoice-preview-title">Invoice Preview</h1>
 		</div>
 		<div class="preview-actions">
-			<a class="pill-button secondary" href="#">
+			<a class="pill-button secondary" href="{{ route('invoice.preview.link.download', ['token' => request()->route('token')]) }}">
 				<svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
 					<path d="M12 3v11m0 0 4-4m-4 4-4-4M5 19h14" stroke="currentColor" stroke-width="2"
 						  stroke-linecap="round" stroke-linejoin="round"/>

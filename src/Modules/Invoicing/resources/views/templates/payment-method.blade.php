@@ -65,7 +65,7 @@
 	}
 
 	$showComponentOnNonHtml = true;
-	if (isset($renderContext) && $renderContext === 'html') {
+	if (isset($renderContext) && $renderContext === 'public-html') {
 		$showComponentOnNonHtml = false;
 	}
 @endphp

@@ -249,7 +249,7 @@ class InvoiceController extends Controller
 				'invoice' => $payload,
 				'category' => data_get($payload, 'template.category'),
 				'colorScheme' => data_get($payload, 'colorScheme'),
-				'renderContext' => 'html',
+				'renderContext' => 'public-html',
 			]);
 	}
 
