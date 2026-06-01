@@ -35,6 +35,7 @@ class UserJsonResource extends JsonResource
 			'email_verified_date' => $this->email_verified_at?->format('F j, Y'),
 			'created_at' => $this->created_at,
 			'updated_at' => $this->updated_at,
+			'over_all_usages' => $this->overAllUsages,
 		];
     }
 }

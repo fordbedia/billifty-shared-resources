@@ -41,4 +41,11 @@ class EloquentPaymentLinkRepository extends BaseRepository implements PaymentLin
 	{
 		return PaymentLink::whereToken($token)->first();
 	}
+
+	public function revoke(int $invoiceId): void
+	{
+		$link = $this->model->whereInvoiceId($invoiceId)->firstOrFail();
+		$link->public_token_revoked_at = now();
+		$link->save();
+	}
 }

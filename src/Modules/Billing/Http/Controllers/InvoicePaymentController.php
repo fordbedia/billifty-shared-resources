@@ -11,6 +11,7 @@ use BilliftySDK\SharedResources\Modules\Invoicing\Http\Resources\InvoiceResource
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\PaymentLinkRepository;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Eloquents\InvoiceRepository;
+use Carbon\Carbon;
 use http\Env\Url;
 use Illuminate\Http\Request;
 
@@ -66,6 +67,11 @@ class InvoicePaymentController extends Controller
 		$paymentLink = $paymentLinkRepository->findByToken($request->token)?->loadMissing(PaymentLink::relationships());
 
 		$invoice = $paymentLink->invoice->loadMissing(Invoices::relationships());
+
+		// Check if payment link is revoked
+		if($paymentLink->public_token_revoked_at && Carbon::now()->isAfter(Carbon::parse($paymentLink->public_token_revoked_at))) {
+			abort(500, "Payment link is revoked");
+		}
 
 		if ($invoice->colorScheme) {
 			$invoice->colorScheme->setRelation(

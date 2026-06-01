@@ -66,6 +66,9 @@ class InvoiceRepositoryTest extends BaseTest
 
 		$this->assertEquals($invoice->id, $userInvoice->id);
 		$this->assertInstanceOf(Invoices::class, $userInvoice);
+		$this->assertTrue($userInvoice->relationLoaded('items'));
+		$this->assertTrue($userInvoice->relationLoaded('workspace'));
+		$this->assertTrue($userInvoice->workspace->relationLoaded('user'));
 	}
 
 	public function test_sync_items_updates_creates_and_deletes_invoice_items(): void
@@ -202,6 +205,19 @@ class InvoiceRepositoryTest extends BaseTest
 
 		$this->assertContains($invoice->id, $ids);
 		$this->assertNotContains($otherInvoice->id, $ids);
+	}
+
+	public function test_get_model_by_workspace_scopes_to_the_authenticated_users_workspace(): void
+	{
+		$invoice = $this->scenario['invoice'];
+		$otherInvoice = $this->createInvoiceForAnotherUser();
+
+		$ownWorkspaceIds = $this->repo->getModelByWorkspace($this->scenario['workspace']->id)->pluck('id')->all();
+		$otherWorkspaceIds = $this->repo->getModelByWorkspace($otherInvoice->workspace_id)->pluck('id')->all();
+
+		$this->assertContains($invoice->id, $ownWorkspaceIds);
+		$this->assertNotContains($otherInvoice->id, $ownWorkspaceIds);
+		$this->assertSame([], $otherWorkspaceIds);
 	}
 
 	public function test_query_for_user_scopes_by_workspace_owner_and_empty_user_matches_nothing(): void

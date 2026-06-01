@@ -11,6 +11,7 @@ use BilliftySDK\SharedResources\Modules\Invoicing\Models\Workspace;
 use BilliftySDK\SharedResources\Modules\Invoicing\Support\ImageUrlTrait;
 use BilliftySDK\SharedResources\Modules\Billing\Support\PlanPermission;
 use BilliftySDK\SharedResources\Modules\User\Notifications\CustomVerifyEmail;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -145,5 +146,14 @@ class User extends Authenticatable implements MustVerifyEmail
 	public function getPlanCapabilitiesAttribute(): array
 	{
 		return PlanPermission::attempt($this)->toArray();
+	}
+
+	public function overAllUsages(): Attribute
+	{
+		return Attribute::make(get: fn () => [
+			'invoices' => $this->invoices()->count(),
+			'business_profiles' => $this->businessProfiles()->count(),
+			'clients' => $this->clients()->count(),
+		]);
 	}
 }

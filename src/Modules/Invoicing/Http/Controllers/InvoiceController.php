@@ -3,6 +3,8 @@
 namespace BilliftySDK\SharedResources\Modules\Invoicing\Http\Controllers;
 
 use BilliftySDK\SharedResources\Modules\Invoicing\Http\Resources\InvoiceResource;
+use BilliftySDK\SharedResources\Modules\Invoicing\Http\Resources\PaymentLinkResource;
+use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\PaymentLinkRepository;
 use Illuminate\Routing\Controller;
 use BilliftySDK\SharedResources\Modules\Invoicing\Domain\InvoiceAction;
 use BilliftySDK\SharedResources\Modules\Invoicing\Http\Requests\StoreInvoiceRequest;
@@ -249,5 +251,30 @@ class InvoiceController extends Controller
 				'colorScheme' => data_get($payload, 'colorScheme'),
 				'renderContext' => 'html',
 			]);
+	}
+
+	public function publicInvoiceLink(
+		Request          $request,
+		InvoiceContracts $invoice
+	)
+	{
+		$invoice = $invoice->findById($request->id)?->loadMissing(Invoices::relationships());
+
+		return new PaymentLinkResource($invoice->paymentLink);
+	}
+
+	public function revoke(
+		Request          $request,
+		InvoiceContracts $invoice,
+		PaymentLinkRepository $paymentLinkRepository
+	)
+	{
+		$invoice = $invoice->findById($request->id)?->loadMissing(Invoices::relationships());
+
+		if (!$invoice) {
+			abort(404, "Not Authorized to perform this action");
+		}
+
+		$paymentLinkRepository->revoke($request->id);
 	}
 }

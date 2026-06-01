@@ -133,8 +133,11 @@ class InvoiceRepository extends BaseRepository implements InvoiceContracts
 		$search = null,
 	)
 	{
+		// get user default workspace
+		$defaultWorkspace = Workspace::ensureDefaultForUser(Auth::id());
+
 		// Add custom condition(s)
-		$query = $this->getModelByAuthUser()->with(Invoices::relationships());
+		$query = $this->getModelByWorkspace($defaultWorkspace->id)->with(Invoices::relationships());
 
 		if ($dateRange) {
 			$query->whereBetween('issued_on', [$dateRange['start'], $dateRange['end']]);
@@ -178,6 +181,22 @@ class InvoiceRepository extends BaseRepository implements InvoiceContracts
 	public function getModelByAuthUser(): Builder
 	{
 		return $this->queryForUser(Auth::id());
+	}
+
+	public function getModelByWorkspace(int $workspaceId): Builder
+	{
+		return $this->queryForWorkspace($workspaceId, Auth::id());
+	}
+
+	protected function queryForWorkspace(int $workspaceId, int $userId): Builder
+	{
+		$query = $this->model->newQuery();
+
+		return $query
+			->whereHas('workspace', function ($q) use ($workspaceId, $userId) {
+				$q->where('id', $workspaceId)
+					->where('user_id', $userId);
+			});
 	}
 
 	protected function queryForUser(?int $userId): Builder
