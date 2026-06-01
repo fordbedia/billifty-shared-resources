@@ -32,7 +32,8 @@ Route::prefix('v1')->group(function () {
                 ->name('invoices.pdf.send-to-client');
 			Route::get('/{id}/preview/settings', [InvoiceController::class, 'preview']);
 			Route::get('/{id}/preview/public-invoice-link', [InvoiceController::class, 'publicInvoiceLink']);
-			Route::post('/{id}/preview/public-invoice-link/revoke', [InvoiceController::class, 'revoke']);
+			Route::post('/{id}/preview/public-invoice-link/revoke', [InvoiceController::class, 'revokeInvoicePublicLink']);
+			Route::post('/{id}/preview/public-invoice-link/renew', [InvoiceController::class, 'renewInvoicePublicLink']);
 		});
 
 		Route::get('business-profile/get-all', [BusinessProfileController::class, 'getAll']);

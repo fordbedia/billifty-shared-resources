@@ -66,6 +66,10 @@ class InvoicePaymentController extends Controller
 	{
 		$paymentLink = $paymentLinkRepository->findByToken($request->token)?->loadMissing(PaymentLink::relationships());
 
+		if (! $paymentLink) {
+			return view('billing::error.error-invoice-not-found');
+		}
+
 		$invoice = $paymentLink->invoice->loadMissing(Invoices::relationships());
 
 		// Check if payment link is revoked

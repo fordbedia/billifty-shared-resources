@@ -16,7 +16,8 @@ class PaymentLinkResource extends JsonResource
     {
         return [
 			'link' => config('app.frontend_url') . "/pay/preview/invoice/token/{$this->token}",
-			'public_token_revoked_at' => $this->public_token_revoked_at
+			'public_token_revoked_at' => $this->public_token_revoked_at,
+			'invoice_number' => $this->invoice->invoice_number,
 		];
     }
 }

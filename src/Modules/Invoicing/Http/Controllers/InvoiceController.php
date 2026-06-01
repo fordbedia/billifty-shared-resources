@@ -263,9 +263,9 @@ class InvoiceController extends Controller
 		return new PaymentLinkResource($invoice->paymentLink);
 	}
 
-	public function revoke(
-		Request          $request,
-		InvoiceContracts $invoice,
+	public function revokeInvoicePublicLink(
+		Request               $request,
+		InvoiceContracts      $invoice,
 		PaymentLinkRepository $paymentLinkRepository
 	)
 	{
@@ -276,5 +276,20 @@ class InvoiceController extends Controller
 		}
 
 		$paymentLinkRepository->revoke($request->id);
+	}
+
+	public function renewInvoicePublicLink(
+		Request               $request,
+		InvoiceContracts      $invoice,
+		PaymentLinkRepository $paymentLinkRepository
+	)
+	{
+		$invoice = $invoice->findById($request->id)?->loadMissing(Invoices::relationships());
+
+		if (!$invoice) {
+			abort(404, "Not Authorized to perform this action");
+		}
+
+		$paymentLinkRepository->renew($request->id);
 	}
 }

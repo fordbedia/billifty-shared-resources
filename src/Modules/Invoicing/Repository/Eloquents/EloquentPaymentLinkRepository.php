@@ -34,7 +34,7 @@ class EloquentPaymentLinkRepository extends BaseRepository implements PaymentLin
 	 */
 	public function generateToken(): string
 	{
-		return 'pay_' . Str::random('3'). '_' . Str::ulid();
+		return 'pay_' . Str::random('20') . '_' . Str::ulid();
 	}
 
 	public function findByToken(string $token): ?Model
@@ -47,5 +47,14 @@ class EloquentPaymentLinkRepository extends BaseRepository implements PaymentLin
 		$link = $this->model->whereInvoiceId($invoiceId)->firstOrFail();
 		$link->public_token_revoked_at = now();
 		$link->save();
+	}
+
+	public function renew(int $invoiceId): void
+	{
+		$this->model->whereInvoiceId($invoiceId)->firstOrFail()
+			->forceFill([
+				'public_token_revoked_at' => null,
+				'token' => $this->generateToken()
+			])->save();
 	}
 }
