@@ -31,6 +31,7 @@ class Invoices extends Model
 
 	protected $casts = [
 		'workspace_id' => 'integer',
+		'meta' => 'array',
 	];
 
 	public function businessProfile()

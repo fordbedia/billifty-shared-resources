@@ -17,7 +17,7 @@ class GenerateInvoicePdf
      * @param  int|Invoices  $invoice
      * @return array{invoice: Invoices, path: string, url: string}
      */
-    public function __invoke(int|Invoices $invoice): array
+    public function __invoke(int|Invoices $invoice, ?string $paymentLinkToken = null): array
     {
         // 1) Resolve invoice instance
         if (is_int($invoice)) {
@@ -36,6 +36,11 @@ class GenerateInvoicePdf
             );
         }
 
+		$paymentLinkToken ??= $invoice->paymentLink?->token;
+		$payUrl = $paymentLinkToken
+			? rtrim(config('app.frontend_url', config('app.url')), '/') . '/app/pay/' . $paymentLinkToken
+			: null;
+
         // 3) Build the same payload as your preview route
         //    ->getData(true) returns array instead of stdClass
         $payload = (new InvoiceResource($invoice))
@@ -47,7 +52,9 @@ class GenerateInvoicePdf
             'invoice'     => $payload,
             'category'    => data_get($payload, 'template.category'),
             'colorScheme' => data_get($payload, 'colorScheme'),
-				'renderContext' => 'pdf'
+			'renderContext' => 'pdf',
+			'paymentToken' => $paymentLinkToken,
+			'payUrl' => $payUrl,
         ])->render();
 
         // 5) Generate PDF from HTML through Playwright service
@@ -81,10 +88,23 @@ class GenerateInvoicePdf
         $disk = Storage::disk('public');
         $disk->put($relativePath, $binary);
 
+		$meta = $invoice->meta;
+		if (is_string($meta)) {
+			$meta = json_decode($meta, true) ?: [];
+		}
+		if (! is_array($meta)) {
+			$meta = [];
+		}
+
+		if ($paymentLinkToken) {
+			$meta['pdf_payment_link_token'] = $paymentLinkToken;
+		}
+
         // 8) (Optional but recommended) – persist where the PDF lives
         $invoice->forceFill([
             'pdf_path' => $relativePath,
             'pdf_disk' => 'public',
+			'meta' => $meta,
         ])->save();
 
         $url = $disk->url($relativePath);

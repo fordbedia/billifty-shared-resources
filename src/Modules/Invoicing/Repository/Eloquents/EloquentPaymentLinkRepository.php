@@ -51,10 +51,18 @@ class EloquentPaymentLinkRepository extends BaseRepository implements PaymentLin
 
 	public function renew(int $invoiceId): void
 	{
-		$this->model->whereInvoiceId($invoiceId)->firstOrFail()
-			->forceFill([
-				'public_token_revoked_at' => null,
-				'token' => $this->generateToken()
-			])->save();
+		$link = $this->model->whereInvoiceId($invoiceId)->firstOrFail();
+
+		$link->forceFill([
+			'public_token_revoked_at' => null,
+			'token' => $this->generateToken()
+		])->save();
+
+		$link->invoice?->forceFill([
+			'pdf_path' => null,
+			'pdf_status' => null,
+			'pdf_generated_at' => null,
+			'pdf_error' => null,
+		])->save();
 	}
 }

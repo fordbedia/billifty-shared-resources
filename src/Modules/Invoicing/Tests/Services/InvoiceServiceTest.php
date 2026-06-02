@@ -126,26 +126,6 @@ class InvoiceServiceTest extends BaseTest
         }
     }
 
-    /** @test */
-    public function it_marks_the_invoice_as_issued_when_the_issue_action_is_used(): void
-    {
-        DB::shouldReceive('beginTransaction')->once();
-        DB::shouldReceive('commit')->once();
-        DB::shouldReceive('rollback')->never();
-
-        $invoice = $this->makePersistedInvoice();
-        $repo = new InMemoryInvoiceRepository($invoice);
-
-        $result = $this->makeService($repo)->upsert($this->basePayload([
-            'subtotal_cents' => 2000,
-            'total_cents' => 2000,
-        ]), InvoiceAction::Issue, $invoice->id);
-
-        $this->assertSame('issued', $result->status);
-        $this->assertNotNull($result->issued_at);
-        $this->assertSame(2, $invoice->save_count);
-    }
-
     private function makePersistedInvoice(): FakePersistedInvoice
     {
         $scenarioInvoice = $this->scenario['invoice'];

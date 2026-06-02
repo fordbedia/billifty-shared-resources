@@ -119,10 +119,10 @@
 	$pi = $paymentInformations->first(fn ($paymentInfo) => $paymentMethodKey($paymentInfo) === 'bank_transfer');
 	$currentPaymentMethodKey = $pi ? $paymentMethodKey($pi) : null;
 	$isBankTransfer = $currentPaymentMethodKey === 'bank_transfer';
-	$paymentToken = data_get($invoice, 'paymentLink.token');
-	$payUrl = $paymentToken
+	$paymentToken = $paymentToken ?? data_get($invoice, 'paymentLink.token');
+	$payUrl = $payUrl ?? ($paymentToken
 		? rtrim(config('app.frontend_url', config('app.url')), '/') . '/app/pay/' . $paymentToken
-		: null;
+		: null);
 	$onlinePaymentMethodKeys = ['stripe', 'paypal', 'cash_app'];
 	$hasOnlinePaymentMethod = $paymentInformations->contains(
 		fn ($paymentInfo) => in_array($paymentMethodKey($paymentInfo), $onlinePaymentMethodKeys, true)

@@ -4,6 +4,7 @@ namespace BilliftySDK\SharedResources\Modules\Billing\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use BilliftySDK\SharedResources\Modules\Billing\Application\Enums\PaymentProvider;
+use BilliftySDK\SharedResources\Modules\Billing\Infrastructure\Payments\Traits\Security\ValidatesInvoiceState;
 use BilliftySDK\SharedResources\Modules\Billing\Models\PaymentLink;
 use BilliftySDK\SharedResources\Modules\Billing\Models\PaymentRecord;
 use BilliftySDK\SharedResources\Modules\Billing\Services\Billing\InvoicePaymentLinkService;
@@ -18,9 +19,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
+use function Symfony\Component\String\s;
 
 class InvoicePaymentController extends Controller
 {
+	use ValidatesInvoiceState;
+
 	public function getPaymentLink(
 		Request                   $request,
 		InvoicePaymentLinkService $paymentLinkService,
@@ -59,8 +63,13 @@ class InvoicePaymentController extends Controller
 		PaymentLinkRepository $paymentLinkRepository
 	): PaymentLink
 	{
-		return $paymentLinkRepository->findByToken($request->token)
-			->loadMissing(PaymentLink::relationships());
+		$paymentLink = $paymentLinkRepository->findByToken($request->token);
+
+		if (! $paymentLink) {
+			abort(404, 'Something went wrong. Payment link not found.');
+		}
+
+		return $paymentLink->loadMissing(PaymentLink::relationships());
 	}
 
 	public function preview(
@@ -75,10 +84,18 @@ class InvoicePaymentController extends Controller
 		}
 
 		$invoice = $paymentLink->invoice->loadMissing(Invoices::relationships());
+		$invoice->setRelation('paymentLink', $paymentLink);
 
-		// Check if payment link is revoked
+		// ----------------------------------------------------------------------------
+		// 1. Check if payment link is revoked
+		// 2. Check if invoices.status !== 'draft'
+		// ----------------------------------------------------------------------------
 		if($paymentLink->public_token_revoked_at && Carbon::now()->isAfter(Carbon::parse($paymentLink->public_token_revoked_at))) {
-			abort(500, "Payment link is revoked");
+			return view('billing::error.error-invoice-not-found');
+		}
+
+		if ($invoice->status === 'draft') {
+			return view('billing::error.error-invoice-not-found');
 		}
 
 		if ($invoice->colorScheme) {
@@ -115,6 +132,10 @@ class InvoicePaymentController extends Controller
 		}
 
 		$invoice = $paymentLink->invoice->loadMissing(Invoices::relationships());
+		$invoice->setRelation('paymentLink', $paymentLink);
+
+		// Check if invoice is valid for download.
+		$this->validateInvoiceState($invoice);
 
 		if ($paymentLink->public_token_revoked_at && Carbon::now()->isAfter(Carbon::parse($paymentLink->public_token_revoked_at))) {
 			return view('billing::error.error-invoice-not-found');
@@ -128,15 +149,16 @@ class InvoicePaymentController extends Controller
 
 		$disk = Storage::disk($invoice->pdf_disk ?? 'public');
 		$pdfExists = $invoice->pdf_path && $disk->exists($invoice->pdf_path);
+		$pdfMatchesCurrentToken = data_get($this->invoiceMeta($invoice), 'pdf_payment_link_token') === $paymentLink->token;
 
-		if ($invoice->pdf_status !== 'ready' || ! $pdfExists) {
+		if ($invoice->pdf_status !== 'ready' || ! $pdfExists || ! $pdfMatchesCurrentToken) {
 			$invoice->forceFill([
 				'pdf_status' => 'processing',
 				'pdf_error' => null,
 			])->save();
 
 			try {
-				['invoice' => $invoice] = $generateInvoicePdf($invoice);
+				['invoice' => $invoice] = $generateInvoicePdf($invoice, $paymentLink->token);
 
 				$invoice->forceFill([
 					'pdf_status' => 'ready',
@@ -156,5 +178,16 @@ class InvoicePaymentController extends Controller
 		Auth::onceUsingId((int) $userId);
 
 		return $invoiceController->download((int) $invoice->getKey(), $invoiceRepository);
+	}
+
+	private function invoiceMeta(Invoices $invoice): array
+	{
+		$meta = $invoice->meta;
+
+		if (is_string($meta)) {
+			return json_decode($meta, true) ?: [];
+		}
+
+		return is_array($meta) ? $meta : [];
 	}
 }

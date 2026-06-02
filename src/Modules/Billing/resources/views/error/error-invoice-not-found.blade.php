@@ -346,7 +346,6 @@
 		}
 
 		.help-copy p {
-			max-width: 560px;
 			margin: 8px 0 0;
 			color: #4b5563;
 			font-size: 17px;
@@ -581,7 +580,7 @@
 					<path d="M10 13a5 5 0 0 0 7.1 0l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
 					<path d="M14 11a5 5 0 0 0-7.1 0l-2 2A5 5 0 0 0 12 20.1l1.1-1.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
 				</svg>
-				<span>invoice.app/pub/xxxx-404</span>
+				<span>https://int.billifty.com/pay/preview/invoice/token/pay_10X_01KSXZKNJK4R911KD9P3T3KPJY</span>
 			</div>
 		</footer>
 	</section>
@@ -600,13 +599,6 @@
 				<p>The link you followed may be expired or incorrect. Reach out to the person who sent you this invoice and ask them to resend the correct link.</p>
 			</div>
 		</div>
-		<a class="contact-button" href="mailto:">
-			<svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
-				<path d="m22 2-7 20-4-9-9-4 20-7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-				<path d="M22 2 11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-			</svg>
-			Contact Sender
-		</a>
 	</section>
 
 	<div class="error-code">Error Code: <strong>404</strong> - Public Invoice Not Accessible</div>

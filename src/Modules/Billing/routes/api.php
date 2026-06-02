@@ -16,11 +16,12 @@ Route::prefix('v1')->group(function () {
         Route::post('billing/cancel', [BillingController::class, 'cancelMySubscription']);
 		Route::post('billing/confirm-checkout', [BillingController::class, 'confirmCheckout']);
 		Route::post('billing/confirm-subscription', [BillingController::class, 'confirmSubscription']);
-		Route::post('billing/invoice-success-payment', [InvoicePaymentController::class, 'invoiceSuccessPayment']);
-		Route::post('billing/invoice-payment-record', [InvoicePaymentController::class, 'paymentLinkData']);
     });
 
 	Route::post('billing/direction-flow', [PlanFlowRedirectionController::class, 'direction']);
     Route::post('stripe/webhook', [StripeWebhookController::class, 'handle']);
 	Route::post('paypal/webhook', [PayPalPaymentController::class, 'handleWebhook']);
+
+	Route::post('billing/invoice-success-payment', [InvoicePaymentController::class, 'invoiceSuccessPayment']);
+	Route::post('billing/invoice-payment-record', [InvoicePaymentController::class, 'paymentLinkData']);
 });

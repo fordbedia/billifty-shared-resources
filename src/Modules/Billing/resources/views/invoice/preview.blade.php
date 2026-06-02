@@ -151,6 +151,10 @@
 			box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02);
 		}
 
+		.invoice-preview-frame .invoice-page {
+			width: 100% !important;
+		}
+
 		.placeholder-content {
 			width: min(100% - 56px, 620px);
 			min-height: 390px;
@@ -325,17 +329,24 @@
 			<h1 id="invoice-preview-title">Invoice Preview</h1>
 		</div>
 		<div class="preview-actions">
-			<a class="pill-button secondary" href="{{ route('invoice.preview.link.download', ['token' => request()->route('token')]) }}">
-				<svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
-					<path d="M12 3v11m0 0 4-4m-4 4-4-4M5 19h14" stroke="currentColor" stroke-width="2"
-						  stroke-linecap="round" stroke-linejoin="round"/>
-				</svg>
-				Download PDF
-			</a>
+			@php
+				$invoiceStatus = $invoiceModel->status instanceof \BackedEnum
+					? $invoiceModel->status->value
+					: $invoiceModel->status;
+			@endphp
+			@if($invoiceStatus !== 'draft')
+				<a class="pill-button secondary" href="{{ route('invoice.preview.link.download', ['token' => request()->route('token'), 'v' => request()->route('token')]) }}">
+					<svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+						<path d="M12 3v11m0 0 4-4m-4 4-4-4M5 19h14" stroke="currentColor" stroke-width="2"
+							  stroke-linecap="round" stroke-linejoin="round"/>
+					</svg>
+					Download PDF
+				</a>
+			@endif
 		</div>
 	</section>
 
-	<section class="placeholder-card" aria-label="Invoice preview">
+	<section class="placeholder-card invoice-preview-frame" aria-label="Invoice preview">
 		@include('invoicing::templates.show', [
 			'invoice' => $invoice,
 			'category' => $category,

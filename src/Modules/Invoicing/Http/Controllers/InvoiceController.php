@@ -2,6 +2,7 @@
 
 namespace BilliftySDK\SharedResources\Modules\Invoicing\Http\Controllers;
 
+use BilliftySDK\SharedResources\Modules\Billing\Infrastructure\Payments\Traits\Security\ValidatesInvoiceState;
 use BilliftySDK\SharedResources\Modules\Invoicing\Http\Resources\InvoiceResource;
 use BilliftySDK\SharedResources\Modules\Invoicing\Http\Resources\PaymentLinkResource;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\PaymentLinkRepository;
@@ -26,6 +27,8 @@ use Illuminate\Support\Facades\Mail;
 
 class InvoiceController extends Controller
 {
+	use ValidatesInvoiceState;
+
 	protected array $lockedColumns = [
 		''
 	];
@@ -137,6 +140,10 @@ class InvoiceController extends Controller
 	)
 	{
 		$invoice = $invoices->findById($id); // user-scoped, with Auth
+
+		// Do not queue PDFs for invoices that are not allowed to be downloaded.
+		$this->validateInvoiceState($invoice);
+
 		// ... mark as issued, save, etc.
 		$invoice->forceFill([
 			'pdf_status' => 'queued',
@@ -154,6 +161,9 @@ class InvoiceController extends Controller
 	public function download(int $id, InvoiceContracts $invoices)
 	{
 		$invoice = $invoices->findById($id); // user-scoped
+
+		// Check if invoice is valid for download.
+		$this->validateInvoiceState($invoice);
 
 		if ($invoice->pdf_status !== 'ready' || !$invoice->pdf_path) {
 			abort(404, 'Invoice PDF not ready yet.');
@@ -179,6 +189,9 @@ class InvoiceController extends Controller
 
 		return response()->download($absolutePath, $filename, [
 			'Content-Type' => 'application/pdf',
+			'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+			'Pragma' => 'no-cache',
+			'Expires' => '0',
 		]);
 	}
 

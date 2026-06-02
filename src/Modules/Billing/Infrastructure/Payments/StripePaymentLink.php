@@ -41,7 +41,7 @@ class StripePaymentLink implements InvoicePaymentLinkGateway
 			})
 			->first();
 
-		$this->invoiceIssued($invoice);
+		$this->validateInvoiceState($invoice);
 
 		$stripePaymentInfo = $invoice?->businessProfile?->paymentInformations?->first(function ($paymentInfo) {
 			$paymentMethod = $paymentInfo?->payment_method;

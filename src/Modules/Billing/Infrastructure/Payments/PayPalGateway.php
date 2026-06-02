@@ -20,7 +20,7 @@ class PayPalGateway
     ): string {
         $invoice->loadMissing(['items', 'paymentLink', 'businessProfile.paypalInformation']);
 
-        $this->invoiceIssued($invoice);
+        $this->validateInvoiceState($invoice);
 
         $businessProfile = $invoice->businessProfile?->paypalInformation;
 

@@ -114,11 +114,6 @@ class InvoiceService
 			'expires_at' => $this->paymentLinkServices->generateExpireAt(),
 		]);
 
-		if ($action === InvoiceAction::Issue) {
-			InvoiceStateMachine::onIssue($invoice);
-			$invoice->save();
-		}
-
 		if ($displayDiscountRow !== null) {
 			$invoice->setAttribute('display_discount_row', $displayDiscountRow);
 		}

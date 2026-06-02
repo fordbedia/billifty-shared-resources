@@ -25,9 +25,7 @@ class InvoiceObserver
      */
     public function updated(Invoices $invoice): void
     {
-        if ($invoice->pdf_path && $invoice->status !== 'issued') {
-			 $this->invoiceRepo->issue($invoice);
-		}
+		//
     }
 
     /**
