@@ -268,11 +268,15 @@ class PayPalPaymentController extends Controller
         $orderId = $this->orderIdFromPayPalPayload($webhookPayload, $captureData);
         $paymentData = $this->paymentData($invoice, $captureData, $webhookPayload, $orderId, $captureId);
 
-        $invoice->update([
-            'status' => 'paid',
-            'amount_due_cents' => 0,
-            'paid_at' => now(),
-        ]);
+		$invoice->update([
+			'status' => 'paid',
+			'amount_due_cents' => 0,
+			'paid_at' => now(),
+			'pdf_path' => null,
+			'pdf_status' => null,
+			'pdf_generated_at' => null,
+			'pdf_error' => null,
+		]);
 
         $invoice->paymentLink?->update([
             'paypal_order_id' => $orderId,

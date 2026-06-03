@@ -48,7 +48,11 @@
 	$itemCount = $items instanceof \Illuminate\Support\Collection ? $items->count() : (is_countable($items) ? count($items) : 0);
 	$firstItem = $items instanceof \Illuminate\Support\Collection ? $items->first() : (is_array($items) ? reset($items) : null);
 	$currency = $invoice->currency ?? 'USD';
-	$totalDue = $invoice->amount_due_cents ?? $invoice->total_cents ?? 0;
+	// Invoice templates use total_cents as the display source of truth for totals.
+	// amount_due_cents represents remaining balance after payments and may be 0 on paid invoices.
+	$invoiceTotal = $invoice->total_cents ?? 0;
+	$amountDue = $invoice->amount_due_cents ?? $invoiceTotal;
+	$totalDue = $invoiceTotal;
 	$subtotalCents = $invoice->subtotal_cents ?? 0;
 	$taxCents = $invoice->tax_cents ?? 0;
 	$discountCents = $invoice->discount_cents ?? 0;

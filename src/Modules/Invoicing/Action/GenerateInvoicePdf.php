@@ -99,6 +99,8 @@ class GenerateInvoicePdf
 		if ($paymentLinkToken) {
 			$meta['pdf_payment_link_token'] = $paymentLinkToken;
 		}
+		$meta['pdf_total_cents'] = (int) ($invoice->total_cents ?? 0);
+		$meta['pdf_amount_due_cents'] = (int) ($invoice->amount_due_cents ?? 0);
 
         // 8) (Optional but recommended) – persist where the PDF lives
         $invoice->forceFill([

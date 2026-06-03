@@ -465,12 +465,16 @@ class StripeWebhookController extends Controller
             return;
         }
 
-        $invoice->update([
-            'status' => 'paid',
-            'amount_due_cents' => 0,
-            'paid_at' => now(),
-        ]);
-    }
+		$invoice->update([
+			'status' => 'paid',
+			'amount_due_cents' => 0,
+			'paid_at' => now(),
+			'pdf_path' => null,
+			'pdf_status' => null,
+			'pdf_generated_at' => null,
+			'pdf_error' => null,
+		]);
+	}
 
     private function markInvoicePaymentFailed(object $session): void
     {

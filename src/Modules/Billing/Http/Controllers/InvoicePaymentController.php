@@ -149,9 +149,18 @@ class InvoicePaymentController extends Controller
 
 		$disk = Storage::disk($invoice->pdf_disk ?? 'public');
 		$pdfExists = $invoice->pdf_path && $disk->exists($invoice->pdf_path);
-		$pdfMatchesCurrentToken = data_get($this->invoiceMeta($invoice), 'pdf_payment_link_token') === $paymentLink->token;
 
-		if ($invoice->pdf_status !== 'ready' || ! $pdfExists || ! $pdfMatchesCurrentToken) {
+		// ----------------------------------------------------------------------------
+		// A ready PDF can still be stale. Public invoice PDFs embed the payment-link
+		// token in the QR code and render the invoice total from total_cents. Reuse the
+		// stored PDF only when both values match the current invoice/link; otherwise
+		// regenerate so renewed links or edited totals do not serve outdated PDFs.
+		// ----------------------------------------------------------------------------
+		$invoiceMeta = $this->invoiceMeta($invoice);
+		$pdfMatchesCurrentToken = data_get($invoiceMeta, 'pdf_payment_link_token') === $paymentLink->token;
+		$pdfMatchesCurrentTotal = (int) data_get($invoiceMeta, 'pdf_total_cents', -1) === (int) ($invoice->total_cents ?? 0);
+
+		if ($invoice->pdf_status !== 'ready' || ! $pdfExists || ! $pdfMatchesCurrentToken || ! $pdfMatchesCurrentTotal) {
 			$invoice->forceFill([
 				'pdf_status' => 'processing',
 				'pdf_error' => null,

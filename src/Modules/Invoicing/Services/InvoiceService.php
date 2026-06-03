@@ -105,6 +105,13 @@ class InvoiceService
 		unset($invoice->display_discount_row);
 		unset($invoice->action);
 
+		$invoice->forceFill([
+			'pdf_path' => null,
+			'pdf_status' => null,
+			'pdf_generated_at' => null,
+			'pdf_error' => null,
+		]);
+
 		$invoice->save();
 
 		$this->repo->syncItems($invoice, $invoice->items);
@@ -116,6 +123,11 @@ class InvoiceService
 
 		if ($displayDiscountRow !== null) {
 			$invoice->setAttribute('display_discount_row', $displayDiscountRow);
+		}
+
+		if ($action === InvoiceAction::Issue) {
+			InvoiceStateMachine::onIssue($invoice);
+			$invoice->save();
 		}
 
 		DB::commit();

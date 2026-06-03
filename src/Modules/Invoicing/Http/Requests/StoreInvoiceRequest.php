@@ -6,6 +6,42 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class StoreInvoiceRequest extends FormRequest
 {
+	protected function prepareForValidation(): void
+	{
+		$data = $this->all();
+
+		if (array_key_exists('meta', $data)) {
+			$data['meta'] = $this->normalizeJsonValue($data['meta']);
+		}
+
+		if (isset($data['invoice_items']) && is_array($data['invoice_items'])) {
+			$data['invoice_items'] = array_map(function ($item) {
+				if (is_array($item) && array_key_exists('meta', $item)) {
+					$item['meta'] = $this->normalizeJsonValue($item['meta']);
+				}
+
+				return $item;
+			}, $data['invoice_items']);
+		}
+
+		$this->replace($data);
+	}
+
+	private function normalizeJsonValue(mixed $value): mixed
+	{
+		if ($value === '') {
+			return null;
+		}
+
+		if (is_string($value)) {
+			$decoded = json_decode($value, true);
+
+			return json_last_error() === JSON_ERROR_NONE ? $decoded : $value;
+		}
+
+		return $value;
+	}
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -43,7 +79,7 @@ class StoreInvoiceRequest extends FormRequest
 			'terms'					=> ['nullable','string'],
 			'pdf_url'				=> ['nullable','string'],
 			'render_snapshot_html'	=> ['nullable','string'],
-			'meta'					=> ['nullable','json'],
+			'meta'					=> ['nullable'],
 			'discount_mode'  => ['nullable','in:none,amount,percent,per-line'],
 			'discount_cents' => ['nullable','integer','min:0','required_if:discount_mode,amount'],
 			'discount_rate'  => ['nullable','numeric','min:0','max:100','required_if:discount_mode,percent'],
@@ -63,7 +99,7 @@ class StoreInvoiceRequest extends FormRequest
             'invoice_items.*.line_discount_cents' => ['nullable','integer','min:0'],
 			'invoice_items.*.tax_cents'          => ['nullable','integer','min:0'],
 			'invoice_items.*.line_total_cents'   => ['nullable','numeric','min:0'],
-			'invoice_items.*.meta'        		=> 'nullable|json',
+			'invoice_items.*.meta'        		=> ['nullable'],
 			'action' => 'required|string'
         ];
     }
