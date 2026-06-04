@@ -5,9 +5,10 @@ namespace BilliftySDK\SharedResources\Modules\Invoicing\Repository\Eloquents;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Clients;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\BaseRepository;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\ClientsContract;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 class ClientsRepository extends BaseRepository implements ClientsContract
 {
@@ -26,24 +27,50 @@ class ClientsRepository extends BaseRepository implements ClientsContract
 		return $this->getModelByAuthUser()->whereKey($id)->firstOrFail();
 	}
 
-	public function save(array $data, int $id = null): Model
+	public function getModelByAuthUser(): Builder
 	{
-		DB::beginTransaction();
-		if ($id && $id === (int)$data['id']) {
-			$model = $this->getModelByAuthUser()->findOrFail($id);
-		} else {
-			$model = new Clients($data);
+		$workspaceId = $this->defaultWorkspaceIdForAuthUser();
+		$query = $this->model->newQuery();
+
+		if (!$workspaceId) {
+			return $query->whereRaw('1 = 0');
 		}
 
-		$model->user_id = Auth::user()->id;
+		// Name retained for repository compatibility; ownership now resolves through workspace_id.
+		return $query->where('workspace_id', $workspaceId);
+	}
 
-		if ($model->exists()) {
+	public function save(array $data, ?int $id = null): Model
+	{
+		return DB::transaction(function () use ($data, $id): Model {
+			$data = $this->withoutOwnershipFields($data);
+
+			if ($id) {
+				$model = $this->getModelByAuthUser()->findOrFail($id);
+			} else {
+				$workspaceId = $this->defaultWorkspaceIdForAuthUser();
+
+				if (!$workspaceId) {
+					throw new RuntimeException('Cannot create a client without an authenticated workspace.');
+				}
+
+				$model = new Clients();
+				// Client ownership is assigned server-side to prevent spoofed workspace changes.
+				$model->workspace_id = $workspaceId;
+			}
+
 			$model->fill($data);
-		}
+			$model->save();
 
-		$model->save();
-		DB::commit();
-		return $model->refresh();
+			return $model->refresh();
+		});
+	}
+
+	protected function withoutOwnershipFields(array $data): array
+	{
+		unset($data['user_id'], $data['workspace_id']);
+
+		return $data;
 	}
 
 	public function paginate(

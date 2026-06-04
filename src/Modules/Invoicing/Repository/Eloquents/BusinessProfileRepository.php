@@ -7,9 +7,11 @@ use BilliftySDK\SharedResources\Modules\Invoicing\Models\PaymentInformation;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\BaseRepository;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\BusinessProfileContract;
 use BilliftySDK\SharedResources\Modules\Invoicing\Support\LogoImageProcessor;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 class BusinessProfileRepository extends BaseRepository implements BusinessProfileContract
 {
@@ -66,6 +68,19 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
 		return $this->getModelByAuthUser()->with(['paymentInformations'])->findOrFail($id);
 	}
 
+	public function getModelByAuthUser(): Builder
+	{
+		$workspaceId = $this->defaultWorkspaceIdForAuthUser();
+		$query = $this->model->newQuery();
+
+		if (!$workspaceId) {
+			return $query->whereRaw('1 = 0');
+		}
+
+		// Name retained for repository compatibility; ownership now resolves through workspace_id.
+		return $query->where('workspace_id', $workspaceId);
+	}
+
 	public function makeModel(): string
 	{
 		return BusinessProfiles::class;
@@ -95,7 +110,15 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
 	public function createWithPaymentInfo(array $data, array $paymentInfoData): BusinessProfiles
 	{
 		return DB::transaction(function () use ($data, $paymentInfoData) {
-			$data['user_id'] = auth()->id();
+			$workspaceId = $this->defaultWorkspaceIdForAuthUser();
+
+			if (!$workspaceId) {
+				throw new RuntimeException('Cannot create a business profile without an authenticated workspace.');
+			}
+
+			$data = $this->withoutOwnershipFields($data);
+			// Business profile ownership is assigned server-side to prevent spoofed workspace changes.
+			$data['workspace_id'] = $workspaceId;
 
 			/** @var BusinessProfiles $profile */
 			$profile = $this->getModelByAuthUser()->create($data);
@@ -117,6 +140,7 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
 		return DB::transaction(function () use ($id, $data, $paymentInfoData) {
 			/** @var BusinessProfiles $profile */
 			$profile = $this->findById($id);
+			$data = $this->withoutOwnershipFields($data);
 
 			$this->savePaymentInformation($paymentInfoData, $profile->id);
 
@@ -126,6 +150,13 @@ class BusinessProfileRepository extends BaseRepository implements BusinessProfil
 			return $profile->fresh(['paymentInformations']);
 		});
     }
+
+	protected function withoutOwnershipFields(array $data): array
+	{
+		unset($data['user_id'], $data['workspace_id']);
+
+		return $data;
+	}
 
 	/**
      * Upsert payment information.

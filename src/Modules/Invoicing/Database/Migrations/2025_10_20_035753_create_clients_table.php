@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::create('clients', function (Blueprint $table) {
             $table->id();
-			$table->unsignedBigInteger('user_id');
+			// Clients belong to a workspace. The workspace carries user ownership.
+			$table->unsignedBigInteger('workspace_id');
 			$table->string('name');
             $table->string('company')->nullable();
             $table->string('email')->nullable();
@@ -34,9 +35,9 @@ return new class extends Migration
             $table->timestamps();
 			$table->softDeletes();
 
-			$table->foreign('user_id')
+			$table->foreign('workspace_id')
 				->references('id')
-				->on('users')
+				->on('workspace')
 				->cascadeOnDelete();
         });
     }

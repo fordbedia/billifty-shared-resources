@@ -127,15 +127,30 @@ class User extends Authenticatable implements MustVerifyEmail
 		return $this->belongsTo(Plan::class);
 	}
 
-    // Example relationships
     public function businessProfiles()
     {
-        return $this->hasMany(BusinessProfiles::class);
+		// Business profiles are workspace-owned; count and access them through the user's workspaces.
+        return $this->hasManyThrough(
+			BusinessProfiles::class,
+			Workspace::class,
+			'user_id',
+			'workspace_id',
+			'id',
+			'id'
+		);
     }
 
 	public function clients()
 	{
-		return $this->hasMany(Clients::class, 'user_id', 'id');
+		// Clients are workspace-owned; count and access them through the user's workspaces.
+		return $this->hasManyThrough(
+			Clients::class,
+			Workspace::class,
+			'user_id',
+			'workspace_id',
+			'id',
+			'id'
+		);
 	}
 
 	public function subscription()

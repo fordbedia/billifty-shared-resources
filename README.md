@@ -1,5 +1,12 @@
 # Unit Test
 
+## Workspace-scoped invoicing records
+
+`business_profiles` and `clients` are owned by `workspace_id`, not `user_id`.
+User ownership should be resolved through `workspace.user_id`. This keeps future
+workspace switching possible while preserving current user-level plan counts via
+the user's workspace relationships.
+
 ## Invoice PDF totals
 
 Invoice PDF templates must use `invoices.total_cents` as the source of truth for

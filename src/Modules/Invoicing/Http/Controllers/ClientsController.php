@@ -31,7 +31,8 @@ class ClientsController extends Controller
     public function store(ClientRequest $request, ClientsContract $repo)
     {
 		try {
-			return $repo->save($request->all());
+			// Only form fields are accepted; workspace ownership is assigned by the repository.
+			return $repo->save($request->validated());
 		} catch(\Throwable $e) {
 			$errors = ['errors' => [$e->getCode() => $e->getMessage()]];
 			return response()->json($errors, Response::HTTP_INTERNAL_SERVER_ERROR);
@@ -54,7 +55,8 @@ class ClientsController extends Controller
 		string $id,
 		ClientsContract $repo
 	) {
-		return $repo->save($request->all(), $id);
+		// Only form fields are accepted; workspace ownership is assigned by the repository.
+		return $repo->save($request->validated(), (int) $id);
     }
 
     /**

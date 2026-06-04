@@ -144,18 +144,21 @@ class InvoiceRepository extends BaseRepository implements InvoiceContracts
 		}
 
 		if ($search) {
-			$query
-				->whereHas('client', function ($q1) use ($search) {
-					$q1
-						->where('name', 'like', "%{$search}%")
-						->orWhere('email', 'like', "%{$search}%");
-				})
-				->orWhere('invoice_number', 'like', "%{$search}%")
-				->orWhereHas('businessProfile', function ($q1) use ($search) {
-					$q1->where('name', 'like', "%{$search}%")
-						->orWhere('legal_name', 'like', "%{$search}%")
-						->orWhere('email', 'like', "%{$search}%");
-				});
+			// Keep all OR search predicates grouped so they cannot bypass the workspace scope above.
+			$query->where(function (Builder $searchQuery) use ($search): void {
+				$searchQuery
+					->whereHas('client', function ($q1) use ($search) {
+						$q1
+							->where('name', 'like', "%{$search}%")
+							->orWhere('email', 'like', "%{$search}%");
+					})
+					->orWhere('invoice_number', 'like', "%{$search}%")
+					->orWhereHas('businessProfile', function ($q1) use ($search) {
+						$q1->where('name', 'like', "%{$search}%")
+							->orWhere('legal_name', 'like', "%{$search}%")
+							->orWhere('email', 'like', "%{$search}%");
+					});
+			});
 		}
 
 		// You can chain more: ->where('type', 'admin')->orderBy('name')
