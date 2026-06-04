@@ -119,7 +119,11 @@ class InvoiceController extends Controller
 	 */
 	public function destroy(int $id, InvoiceContracts $repo)
 	{
-		return $repo->deleteInvoice($id);
+		$invoice = $repo->findById($id);
+		if ($repo->deleteInvoice($id)) {
+			return response()->json($invoice);
+		}
+		return response()->json(['message' => 'Invoice not found'], 404);
 	}
 
 	public function saveDraft(
