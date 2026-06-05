@@ -172,7 +172,6 @@
 							</div>
 						@endif
 					@endforeach
-					<div class="currency-pill">{{ is_object($currency) ? $currency->code : $currency }}</div>
 					@include('invoicing::templates.paid-stamp')
 				</div>
 			</aside>
@@ -749,21 +748,7 @@
 			overflow-wrap: anywhere;
 		}
 
-		.currency-pill {
-			position: relative;
-			z-index: 2;
-			align-self: flex-end;
-			margin-top: 7px;
-			padding: 4px 9px;
-			background: #ffffff;
-			color: {{ $accent }};
-			font-size: 9px;
-			line-height: 11px;
-			font-weight: 900;
-			text-transform: uppercase;
-		}
-
-		.neo-footer {
+			.neo-footer {
 			display: flex;
 			justify-content: space-between;
 			gap: 24px;

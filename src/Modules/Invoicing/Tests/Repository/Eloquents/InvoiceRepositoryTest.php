@@ -276,6 +276,7 @@ class InvoiceRepositoryTest extends BaseTest
 					'<span>Shipping</span>',
 					'<span>Shipping Tax</span>',
 					'<span>Tax</span>',
+					'<span>Currency</span>',
 					'<span>Total</span>',
 					'<span>Amount Paid</span>',
 					'<span>Balance Due</span>',
@@ -296,9 +297,10 @@ class InvoiceRepositoryTest extends BaseTest
 				$this->assertStringContainsString('<strong>$10.00</strong>', $html);
 				$this->assertStringContainsString('<strong>$0.83</strong>', $html);
 				$this->assertStringContainsString('<strong>$3.00</strong>', $html);
-				$this->assertStringContainsString('<strong>$68.83</strong>', $html);
+				$this->assertStringContainsString('<strong>USD</strong>', $html);
+				$this->assertStringContainsString('<strong>$68.83 USD</strong>', $html);
 				$this->assertStringContainsString('<strong>-$50.00</strong>', $html);
-				$this->assertStringContainsString('<strong>$18.83</strong>', $html);
+				$this->assertStringContainsString('<strong>$18.83 USD</strong>', $html);
 				$this->assertStringNotContainsString('includes shipping', $html);
 
 				return true;

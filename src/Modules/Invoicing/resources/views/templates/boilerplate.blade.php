@@ -52,6 +52,7 @@
   $cl = $invoice->client ?? null;
   $items = $invoice->items ?? collect();
   $currency = $invoice->currency ?? 'USD';
+  $currencyCode = strtoupper(trim((string) (is_string($currency) ? $currency : ($currency->code ?? ''))));
 
   if (!isset($invoiceTotalsRows)) {
     $toCents = static fn($value) => max(0, (int) (is_numeric($value) ? $value : 0));
@@ -86,6 +87,13 @@
       || !empty($invoice->paid_at)
       || ($amountDue > 0 && $amountDue < $invoiceTotal);
     $amountPaidCents = $paymentApplied ? max(0, $invoiceTotal - $amountDue) : 0;
+    $fmtFinalMoney = function($cents) use ($fmtMoney, $currency, $currencyCode) {
+      $formatted = $fmtMoney($cents, $currency);
+
+      return $currencyCode !== '' && !str_ends_with($formatted, ' '.$currencyCode)
+        ? $formatted.' '.$currencyCode
+        : $formatted;
+    };
 
     $invoiceTotalsRows = [
       ['type' => 'subtotal', 'label' => 'Subtotal', 'value' => $fmtMoney($invoice->subtotal_cents ?? 0, $currency)],
@@ -102,10 +110,13 @@
     if ($taxCents > 0) {
       $invoiceTotalsRows[] = ['type' => 'tax', 'label' => 'Tax', 'value' => $fmtMoney($taxCents, $currency)];
     }
-    $invoiceTotalsRows[] = ['type' => 'total', 'label' => 'Total', 'value' => $fmtMoney($invoiceTotal, $currency)];
+    if ($currencyCode !== '') {
+      $invoiceTotalsRows[] = ['type' => 'currency', 'label' => 'Currency', 'value' => $currencyCode];
+    }
+    $invoiceTotalsRows[] = ['type' => 'total', 'label' => 'Total', 'value' => $fmtFinalMoney($invoiceTotal)];
     if ($amountPaidCents > 0) {
       $invoiceTotalsRows[] = ['type' => 'amount_paid', 'label' => 'Amount Paid', 'value' => '-'.$fmtMoney($amountPaidCents, $currency)];
-      $invoiceTotalsRows[] = ['type' => 'balance_due', 'label' => 'Balance Due', 'value' => $fmtMoney($amountDue, $currency)];
+      $invoiceTotalsRows[] = ['type' => 'balance_due', 'label' => 'Balance Due', 'value' => $fmtFinalMoney($amountDue)];
     }
   }
 @endphp

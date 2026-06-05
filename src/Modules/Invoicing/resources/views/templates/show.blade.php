@@ -57,6 +57,14 @@
 	$itemCount = $items instanceof \Illuminate\Support\Collection ? $items->count() : (is_countable($items) ? count($items) : 0);
 	$firstItem = $items instanceof \Illuminate\Support\Collection ? $items->first() : (is_array($items) ? reset($items) : null);
 	$currency = $invoice->currency ?? 'USD';
+	$currencyCode = strtoupper(trim((string) (is_string($currency) ? $currency : ($currency->code ?? ''))));
+	$fmtFinalMoney = function($cents) use ($fmtMoney, $currency, $currencyCode) {
+		$formatted = $fmtMoney($cents, $currency);
+
+		return $currencyCode !== '' && !str_ends_with($formatted, ' '.$currencyCode)
+			? $formatted.' '.$currencyCode
+			: $formatted;
+	};
 	// Invoice templates use total_cents as the display source of truth for totals.
 	// amount_due_cents represents remaining balance after payments and may be 0 on paid invoices.
 	$toCents = static fn($value) => max(0, (int) (is_numeric($value) ? $value : 0));
@@ -260,10 +268,13 @@
 	if ($taxCents > 0) {
 		$invoiceTotalsRows[] = ['type' => 'tax', 'label' => 'Tax', 'value' => $fmtMoney($taxCents, $currency)];
 	}
-	$invoiceTotalsRows[] = ['type' => 'total', 'label' => 'Total', 'value' => $fmtMoney($totalDue, $currency)];
+	if ($currencyCode !== '') {
+		$invoiceTotalsRows[] = ['type' => 'currency', 'label' => 'Currency', 'value' => $currencyCode];
+	}
+	$invoiceTotalsRows[] = ['type' => 'total', 'label' => 'Total', 'value' => $fmtFinalMoney($totalDue)];
 	if ($showPaymentRows) {
 		$invoiceTotalsRows[] = ['type' => 'amount_paid', 'label' => 'Amount Paid', 'value' => '-'.$fmtMoney($amountPaidCents, $currency)];
-		$invoiceTotalsRows[] = ['type' => 'balance_due', 'label' => 'Balance Due', 'value' => $fmtMoney($amountDue, $currency)];
+		$invoiceTotalsRows[] = ['type' => 'balance_due', 'label' => 'Balance Due', 'value' => $fmtFinalMoney($amountDue)];
 	}
 	$fmtQuantity = function($item) {
 		$value = data_get($item, 'quantity', 0);

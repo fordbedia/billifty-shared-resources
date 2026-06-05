@@ -80,7 +80,7 @@
 				<div class="amount-due-cell">
 					<div class="amount-card">
 						<div class="amount-label">{{ $showPaymentRows ? 'Balance Due' : 'Amount Due' }}</div>
-						<div class="amount-value">{{ $fmtMoney($showPaymentRows ? $amountDue : $totalDue, $currency) }}</div>
+						<div class="amount-value">{{ $fmtFinalMoney($showPaymentRows ? $amountDue : $totalDue) }}</div>
 						@if($dueLabel)
 							<div class="amount-caption">{{ $dueLabel }}</div>
 						@endif
