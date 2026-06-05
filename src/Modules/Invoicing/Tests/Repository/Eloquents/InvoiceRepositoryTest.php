@@ -244,7 +244,21 @@ class InvoiceRepositoryTest extends BaseTest
 	public function test_generate_pdf_generates_and_stores_invoice_pdf_without_calling_playwright(): void
 	{
 		$invoice = $this->scenario['invoice'];
-		$invoice->forceFill(['issued_on' => '2026-01-15'])->save();
+		\Locale::setDefault('en_US');
+		$invoice->forceFill([
+			'issued_on' => '2026-01-15',
+			'status' => 'partially',
+			'discount_mode' => 'percent',
+			'discount_rate' => 10,
+			'subtotal_cents' => 6000,
+			'discount_cents' => 500,
+			'shipping_cents' => 1000,
+			'shipping_tax_rate' => 8.25,
+			'shipping_tax_cents' => 83,
+			'tax_cents' => 300,
+			'total_cents' => 6883,
+			'amount_due_cents' => 1883,
+		])->save();
 		PaymentLink::create([
 			'invoice_id' => $invoice->id,
 			'token' => 'test-payment-link-token',
@@ -255,7 +269,40 @@ class InvoiceRepositoryTest extends BaseTest
 		$renderer = Mockery::mock(PlaywrightPdfRenderer::class);
 		$renderer->shouldReceive('render')
 			->once()
-			->with(Mockery::type('string'), Mockery::on(function (array $options): bool {
+			->with(Mockery::on(function (string $html): bool {
+				$labels = [
+					'<span>Subtotal</span>',
+					'<span>Discount (10%)</span>',
+					'<span>Shipping</span>',
+					'<span>Shipping Tax</span>',
+					'<span>Tax</span>',
+					'<span>Total</span>',
+					'<span>Amount Paid</span>',
+					'<span>Balance Due</span>',
+				];
+				$lastPosition = -1;
+
+				foreach ($labels as $label) {
+					$position = strpos($html, $label);
+
+					$this->assertNotFalse($position, "Missing totals label {$label}");
+					$this->assertGreaterThan($lastPosition, $position, "Totals label {$label} is out of order");
+
+					$lastPosition = $position;
+				}
+
+				$this->assertStringContainsString('<strong>$60.00</strong>', $html);
+				$this->assertStringContainsString('<strong>-$5.00</strong>', $html);
+				$this->assertStringContainsString('<strong>$10.00</strong>', $html);
+				$this->assertStringContainsString('<strong>$0.83</strong>', $html);
+				$this->assertStringContainsString('<strong>$3.00</strong>', $html);
+				$this->assertStringContainsString('<strong>$68.83</strong>', $html);
+				$this->assertStringContainsString('<strong>-$50.00</strong>', $html);
+				$this->assertStringContainsString('<strong>$18.83</strong>', $html);
+				$this->assertStringNotContainsString('includes shipping', $html);
+
+				return true;
+			}), Mockery::on(function (array $options): bool {
 				return $options['format'] === 'A4'
 					&& $options['printBackground'] === true
 					&& $options['preferCSSPageSize'] === true;

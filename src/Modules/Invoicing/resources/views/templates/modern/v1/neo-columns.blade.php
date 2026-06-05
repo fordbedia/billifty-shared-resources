@@ -160,27 +160,18 @@
 
 			<aside class="total-panel-cell" aria-label="Invoice total">
 				<div class="total-panel">
-					<div class="summary-row">
-						<span>Subtotal</span>
-						<strong>{{ $fmtMoney($subtotalCents, $currency) }}</strong>
-					</div>
-					<div class="summary-row">
-						<span>{{ $taxLabel }}</span>
-						<strong>{{ $fmtMoney($taxCents, $currency) }}</strong>
-					</div>
-					<div class="summary-row">
-						<span>Discount</span>
-						<strong>-{{ $fmtMoney($discountCents, $currency) }}</strong>
-					</div>
-					@if($hasShipping)
-						<div class="summary-row">
-							<span>Shipping</span>
-							<strong>{{ $fmtMoney($shippingCents, $currency) }}</strong>
-						</div>
-					@endif
-					<div class="total-divider"></div>
-					<div class="total-label">Total Amount Due</div>
-					<div class="total-amount">{{ $fmtMoney($totalDue, $currency) }}</div>
+					@foreach($invoiceTotalsRows as $totalRow)
+						@if(in_array($totalRow['type'], ['total', 'balance_due'], true))
+							<div class="total-divider"></div>
+							<div class="total-label">{{ $totalRow['label'] }}</div>
+							<div class="total-amount">{{ $totalRow['value'] }}</div>
+						@else
+							<div class="summary-row">
+								<span>{{ $totalRow['label'] }}</span>
+								<strong>{{ $totalRow['value'] }}</strong>
+							</div>
+						@endif
+					@endforeach
 					<div class="currency-pill">{{ is_object($currency) ? $currency->code : $currency }}</div>
 					@include('invoicing::templates.paid-stamp')
 				</div>

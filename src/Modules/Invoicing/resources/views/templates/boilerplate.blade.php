@@ -26,6 +26,7 @@
   // Helpers
   $fmtMoney = function ($cents, $currency = 'USD') {
       $val = ($cents ?? 0) / 100;
+      $currency = is_string($currency) ? $currency : ($currency->code ?? 'USD');
       try {
           $fmt = new \NumberFormatter(\Locale::getDefault() ?: 'en_US', \NumberFormatter::CURRENCY);
           return $fmt->formatCurrency($val, $currency);
@@ -50,6 +51,63 @@
   $bp = $invoice->businessProfile ?? null;
   $cl = $invoice->client ?? null;
   $items = $invoice->items ?? collect();
+  $currency = $invoice->currency ?? 'USD';
+
+  if (!isset($invoiceTotalsRows)) {
+    $toCents = static fn($value) => max(0, (int) (is_numeric($value) ? $value : 0));
+    $fmtRate = function($value) {
+      $num = (float) ($value ?? 0);
+
+      if ($num > 0 && $num < 1) {
+        $num *= 100;
+      }
+
+      return rtrim(rtrim(number_format($num, 2), '0'), '.').'%';
+    };
+    $invoiceTotal = $toCents($invoice->total_cents ?? 0);
+    $amountDue = min($invoiceTotal, $toCents($invoice->amount_due_cents ?? $invoiceTotal));
+    $discountCents = $toCents($invoice->discount_cents ?? 0);
+    $shippingCents = $toCents($invoice->shipping_cents ?? 0);
+    $shippingTaxCents = $toCents($invoice->shipping_tax_cents ?? 0);
+    $taxCents = $toCents($invoice->tax_cents ?? 0);
+    $discountModeRaw = $invoice->discount_mode ?? 'none';
+    $discountMode = $discountModeRaw instanceof \BackedEnum ? $discountModeRaw->value : (string) $discountModeRaw;
+    $isInvoiceLevelDiscount = in_array($discountMode, ['amount', 'percent'], true)
+      || ($discountMode !== 'per-line' && $discountCents > 0);
+    $discountLabel = 'Discount';
+
+    if ($discountMode === 'percent' && (float)($invoice->discount_rate ?? 0) > 0) {
+      $discountLabel .= ' ('.$fmtRate($invoice->discount_rate).')';
+    }
+
+    $statusRawValue = $invoice->status ?? 'issued';
+    $statusRaw = $statusRawValue instanceof \BackedEnum ? $statusRawValue->value : $statusRawValue;
+    $paymentApplied = in_array($statusRaw, ['paid', 'partial', 'partially', 'partially_paid'], true)
+      || !empty($invoice->paid_at)
+      || ($amountDue > 0 && $amountDue < $invoiceTotal);
+    $amountPaidCents = $paymentApplied ? max(0, $invoiceTotal - $amountDue) : 0;
+
+    $invoiceTotalsRows = [
+      ['type' => 'subtotal', 'label' => 'Subtotal', 'value' => $fmtMoney($invoice->subtotal_cents ?? 0, $currency)],
+    ];
+    if ($isInvoiceLevelDiscount && $discountCents > 0) {
+      $invoiceTotalsRows[] = ['type' => 'discount', 'label' => $discountLabel, 'value' => '-'.$fmtMoney($discountCents, $currency)];
+    }
+    if ($shippingCents > 0) {
+      $invoiceTotalsRows[] = ['type' => 'shipping', 'label' => 'Shipping', 'value' => $fmtMoney($shippingCents, $currency)];
+    }
+    if ($shippingTaxCents > 0) {
+      $invoiceTotalsRows[] = ['type' => 'shipping_tax', 'label' => 'Shipping Tax', 'value' => $fmtMoney($shippingTaxCents, $currency)];
+    }
+    if ($taxCents > 0) {
+      $invoiceTotalsRows[] = ['type' => 'tax', 'label' => 'Tax', 'value' => $fmtMoney($taxCents, $currency)];
+    }
+    $invoiceTotalsRows[] = ['type' => 'total', 'label' => 'Total', 'value' => $fmtMoney($invoiceTotal, $currency)];
+    if ($amountPaidCents > 0) {
+      $invoiceTotalsRows[] = ['type' => 'amount_paid', 'label' => 'Amount Paid', 'value' => '-'.$fmtMoney($amountPaidCents, $currency)];
+      $invoiceTotalsRows[] = ['type' => 'balance_due', 'label' => 'Balance Due', 'value' => $fmtMoney($amountDue, $currency)];
+    }
+  }
 @endphp
 
 <div class="invoice-root scheme-{{ $scheme }} cat-{{ $category }}">
@@ -144,36 +202,12 @@
     <div class="totals">
       <div></div>
       <div class="panel">
-        <div class="rowline">
-          <span>Subtotal</span>
-          <span>{{ $fmtMoney($invoice->subtotal_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
-        </div>
-
-        @if((int)($invoice->discount_cents ?? 0) > 0)
-          <div class="rowline">
-            <span>Discount</span>
-            <span>-{{ $fmtMoney($invoice->discount_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
+        @foreach($invoiceTotalsRows as $totalRow)
+          <div class="rowline{{ in_array($totalRow['type'], ['total', 'balance_due'], true) ? ' grand' : '' }}">
+            <span>{{ $totalRow['label'] }}</span>
+            <span>{{ $totalRow['value'] }}</span>
           </div>
-        @endif
-
-        @if((int)($invoice->tax_cents ?? 0) > 0)
-          <div class="rowline">
-            <span>Tax</span>
-            <span>{{ $fmtMoney($invoice->tax_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
-          </div>
-        @endif
-
-        @if((int)($invoice->shipping_cents ?? 0) > 0)
-          <div class="rowline">
-            <span>Shipping</span>
-            <span>{{ $fmtMoney($invoice->shipping_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
-          </div>
-        @endif
-
-        <div class="rowline grand">
-          <span>Total</span>
-          <span>{{ $fmtMoney($invoice->total_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
-        </div>
+        @endforeach
       </div>
     </div>
 

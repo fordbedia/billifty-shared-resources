@@ -79,8 +79,8 @@
 
 				<div class="amount-due-cell">
 					<div class="amount-card">
-						<div class="amount-label">Amount Due</div>
-						<div class="amount-value">{{ $fmtMoney($totalDue, $currency) }}</div>
+						<div class="amount-label">{{ $showPaymentRows ? 'Balance Due' : 'Amount Due' }}</div>
+						<div class="amount-value">{{ $fmtMoney($showPaymentRows ? $amountDue : $totalDue, $currency) }}</div>
 						@if($dueLabel)
 							<div class="amount-caption">{{ $dueLabel }}</div>
 						@endif
@@ -159,28 +159,19 @@
 
 			<div class="summary-cell">
 				<div class="summary-box">
-					<div class="summary-row">
-						<span>Subtotal</span>
-						<strong>{{ $fmtMoney($subtotalCents, $currency) }}</strong>
-					</div>
-					<div class="summary-row">
-						<span>{{ $taxLabel }}</span>
-						<strong>{{ $fmtMoney($taxCents, $currency) }}</strong>
-					</div>
-					<div class="summary-row discount-row">
-						<span>Discount</span>
-						<strong>-{{ $fmtMoney($discountCents, $currency) }}</strong>
-					</div>
-					@if($hasShipping)
-						<div class="summary-row">
-							<span>Shipping</span>
-							<strong>{{ $fmtMoney($shippingCents, $currency) }}</strong>
-						</div>
-					@endif
-					<div class="summary-total">
-						<span>Total</span>
-						<strong>{{ $fmtMoney($totalDue, $currency) }}</strong>
-					</div>
+					@foreach($invoiceTotalsRows as $totalRow)
+						@if(in_array($totalRow['type'], ['total', 'balance_due'], true))
+							<div class="summary-total">
+								<span>{{ $totalRow['label'] }}</span>
+								<strong>{{ $totalRow['value'] }}</strong>
+							</div>
+						@else
+							<div class="summary-row{{ in_array($totalRow['type'], ['discount', 'amount_paid'], true) ? ' discount-row' : '' }}">
+								<span>{{ $totalRow['label'] }}</span>
+								<strong>{{ $totalRow['value'] }}</strong>
+							</div>
+						@endif
+					@endforeach
 					@include('invoicing::templates.paid-stamp')
 				</div>
 			</div>

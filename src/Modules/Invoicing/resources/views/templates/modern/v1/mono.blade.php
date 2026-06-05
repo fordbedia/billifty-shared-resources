@@ -182,30 +182,19 @@
 
 			<section class="mono-totals-wrap">
 				<div class="mono-totals">
-					<div class="mono-total-row">
-						<span>Subtotal:</span>
-						<strong>{{ $fmtMoney($subtotalCents, $currency) }}</strong>
-					</div>
-					@if($hasDiscount)
-						<div class="mono-total-row">
-							<span>Discount:</span>
-							<strong>-{{ $fmtMoney($discountCents, $currency) }}</strong>
-						</div>
-					@endif
-					<div class="mono-total-row">
-						<span>{{ $taxLabel }}:</span>
-						<strong>{{ $fmtMoney($taxCents, $currency) }}</strong>
-					</div>
-					@if($hasShipping)
-						<div class="mono-total-row">
-							<span>Shipping:</span>
-							<strong>{{ $fmtMoney($shippingCents, $currency) }}</strong>
-						</div>
-					@endif
-					<div class="mono-grand-total">
-						<span>Total:</span>
-						<strong>{{ $fmtMoney($totalDue, $currency) }}</strong>
-					</div>
+					@foreach($invoiceTotalsRows as $totalRow)
+						@if(in_array($totalRow['type'], ['total', 'balance_due'], true))
+							<div class="mono-grand-total">
+								<span>{{ $totalRow['label'] }}:</span>
+								<strong>{{ $totalRow['value'] }}</strong>
+							</div>
+						@else
+							<div class="mono-total-row">
+								<span>{{ $totalRow['label'] }}:</span>
+								<strong>{{ $totalRow['value'] }}</strong>
+							</div>
+						@endif
+					@endforeach
 					@include('invoicing::templates.paid-stamp')
 				</div>
 			</section>

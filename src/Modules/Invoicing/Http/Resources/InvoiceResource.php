@@ -85,6 +85,7 @@ class InvoiceResource extends JsonResource
 			'tax_cents' => $this->tax_cents,
 			'shipping_cents' => $this->shipping_cents,
 			'shipping_tax_rate' => $this->shipping_tax_rate,
+			'shipping_tax_cents' => $this->shipping_tax_cents,
 			'total_cents' => $this->total_cents,
 			'amount_due_cents' => $this->amount_due_cents,
 			'notes' => $this->notes,
