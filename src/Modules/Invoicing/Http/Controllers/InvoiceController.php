@@ -146,7 +146,7 @@ class InvoiceController extends Controller
 		$invoice = $invoices->findById($id); // user-scoped, with Auth
 
 		// Do not queue PDFs for invoices that are not allowed to be downloaded.
-		$this->validateInvoiceState($invoice);
+		$this->validateInvoiceIssuedOrPaid($invoice);
 
 		// ... mark as issued, save, etc.
 		$invoice->forceFill([
@@ -167,7 +167,7 @@ class InvoiceController extends Controller
 		$invoice = $invoices->findById($id); // user-scoped
 
 		// Check if invoice is valid for download.
-		$this->validateInvoiceState($invoice);
+		$this->validateInvoiceIssuedOrPaid($invoice);
 
 		if ($invoice->pdf_status !== 'ready' || !$invoice->pdf_path) {
 			abort(404, 'Invoice PDF not ready yet.');

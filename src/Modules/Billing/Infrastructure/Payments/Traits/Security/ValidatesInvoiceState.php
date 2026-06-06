@@ -19,4 +19,15 @@ trait ValidatesInvoiceState
 			abort(403, 'This invoice is already paid. You cannot create a new payment link for it.');
 		}
 	}
+
+	public function validateInvoiceIssuedOrPaid(Invoices $invoice)
+	{
+		$status = $invoice->status instanceof BackedEnum
+			? $invoice->status->value
+			: $invoice->status;
+
+		if ($status !== 'issued' && $status !== 'paid') {
+			abort(403, 'Something went wrong. Invoice needs to be issued first.');
+		}
+	}
 }
