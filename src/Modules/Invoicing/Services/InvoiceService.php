@@ -114,6 +114,10 @@ class InvoiceService
 				'pdf_error' => null,
 			]);
 
+			if ($action === InvoiceAction::Issue) {
+				InvoiceStateMachine::onIssue($invoice);
+			}
+
 			$invoice->save();
 
 			$this->repo->syncItems($invoice, $invoice->items);
@@ -125,11 +129,6 @@ class InvoiceService
 
 			if ($displayDiscountRow !== null) {
 				$invoice->setAttribute('display_discount_row', $displayDiscountRow);
-			}
-
-			if ($action === InvoiceAction::Issue) {
-				InvoiceStateMachine::onIssue($invoice);
-				$invoice->save();
 			}
 
 			DB::commit();
