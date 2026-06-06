@@ -37,17 +37,22 @@
 		return rtrim(rtrim(number_format($num, 2), '0'), '.').'%';
 	};
 	$fmtDate = fn($d) => $d ? \Carbon\Carbon::parse($d)->toFormattedDateString() : '—';
-	$addr = function ($x) {
-		$g = is_array($x) ? $x : (method_exists($x, 'toArray') ? $x->toArray() : []);
-		$parts = array_filter([
-		  $g['address_line1'] ?? null,
-		  $g['address_line2'] ?? null,
-		  $g['city'] ?? null,
-		  $g['state'] ?? null,
-		  $g['postal_code'] ?? null,
-		  $g['country'] ?? null,
-		]);
-		return implode(', ', $parts);
+	$addressLines = function ($x) {
+		$cityState = implode(', ', array_filter([
+		  data_get($x, 'city'),
+		  data_get($x, 'state'),
+		]));
+		$cityLine = trim(implode(' ', array_filter([
+		  $cityState ?: null,
+		  data_get($x, 'postal_code'),
+		])));
+
+		return array_values(array_filter([
+		  data_get($x, 'address_line1'),
+		  data_get($x, 'address_line2'),
+		  $cityLine ?: null,
+		  data_get($x, 'country'),
+		]));
 	};
 
 	$fontFamily = data_get($theme ?? null, 'fontFamily', 'DejaVu Sans, Arial, sans-serif');
@@ -76,10 +81,69 @@
 	$discountCents = $toCents($invoice->discount_cents ?? 0);
 	$shippingCents = $toCents($invoice->shipping_cents ?? 0);
 	$shippingTaxCents = $toCents($invoice->shipping_tax_cents ?? 0);
-	$bpAddress = $bp ? $addr($bp) : null;
-	$clAddress = $cl ? $addr($cl) : null;
-	$businessName = $bp?->name ?? 'Your Business';
-	$clientName = $cl?->company ?: ($cl?->name ?? 'Client');
+	$displayText = static function($value): string {
+		if ($value instanceof \BackedEnum) {
+			$value = $value->value;
+		}
+
+		return trim((string) ($value ?? ''));
+	};
+	$displayRow = static function(?string $label, $value) use ($displayText): ?array {
+		$value = $displayText($value);
+
+		return $value === ''
+			? null
+			: ['label' => $label, 'value' => $value];
+	};
+	$businessName = $displayText(data_get($bp, 'name')) ?: 'Your Business';
+	$businessLegalName = $displayText(data_get($bp, 'legal_name'));
+	$clientCompany = $displayText(data_get($cl, 'company'));
+	$clientPersonalName = $displayText(data_get($cl, 'name'));
+	$clientName = $clientCompany !== '' ? $clientCompany : ($clientPersonalName ?: 'Client');
+	$bpAddressLines = $bp ? $addressLines($bp) : [];
+	$clAddressLines = $cl ? $addressLines($cl) : [];
+	$bpAddress = implode(', ', $bpAddressLines);
+	$clAddress = implode(', ', $clAddressLines);
+	$businessInfoRowsWithoutAddress = array_values(array_filter([
+		$businessLegalName !== '' && strcasecmp($businessLegalName, $businessName) !== 0
+			? ['label' => 'Legal Name', 'value' => $businessLegalName]
+			: null,
+		$displayRow('Email', data_get($bp, 'email')),
+		$displayRow('Phone', data_get($bp, 'phone')),
+		$displayRow('Website', data_get($bp, 'website')),
+		$displayRow('Tax ID', data_get($bp, 'tax_id')),
+		$displayRow('License No', data_get($bp, 'license_no')),
+	]));
+	$businessInfoRows = array_values(array_filter([
+		$businessLegalName !== '' && strcasecmp($businessLegalName, $businessName) !== 0
+			? ['label' => 'Legal Name', 'value' => $businessLegalName]
+			: null,
+		$displayRow('Address', $bpAddress),
+		$displayRow('Email', data_get($bp, 'email')),
+		$displayRow('Phone', data_get($bp, 'phone')),
+		$displayRow('Website', data_get($bp, 'website')),
+		$displayRow('Tax ID', data_get($bp, 'tax_id')),
+		$displayRow('License No', data_get($bp, 'license_no')),
+	]));
+	$clientInfoRowsWithoutAddress = array_values(array_filter([
+		$clientCompany !== '' && $clientPersonalName !== '' && strcasecmp($clientCompany, $clientPersonalName) !== 0
+			? ['label' => 'Contact', 'value' => $clientPersonalName]
+			: null,
+		$displayRow('Email', data_get($cl, 'email')),
+		$displayRow('Phone', data_get($cl, 'phone')),
+		$displayRow('Tax ID', data_get($cl, 'tax_id')),
+		$displayRow('License No', data_get($cl, 'license_no')),
+	]));
+	$clientInfoRows = array_values(array_filter([
+		$clientCompany !== '' && $clientPersonalName !== '' && strcasecmp($clientCompany, $clientPersonalName) !== 0
+			? ['label' => 'Contact', 'value' => $clientPersonalName]
+			: null,
+		$displayRow('Address', $clAddress),
+		$displayRow('Email', data_get($cl, 'email')),
+		$displayRow('Phone', data_get($cl, 'phone')),
+		$displayRow('Tax ID', data_get($cl, 'tax_id')),
+		$displayRow('License No', data_get($cl, 'license_no')),
+	]));
 	$discountModeRaw = $invoice->discount_mode ?? 'none';
 	$discountMode = $discountModeRaw instanceof \BackedEnum
 		? $discountModeRaw->value

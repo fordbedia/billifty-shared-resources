@@ -18,24 +18,9 @@
 
 				<div class="business-name">{{ $businessName }}</div>
 				<div class="business-lines">
-					@if($bpAddress)
-						<div>{{ $bpAddress }}</div>
-					@endif
-					@if($bp?->email)
-						<div>{{ $bp->email }}</div>
-					@endif
-					@if($bp?->phone)
-						<div>{{ $bp->phone }}</div>
-					@endif
-					@if($bp?->website)
-						<div>{{ $bp->website }}</div>
-					@endif
-					@if($bp?->tax_id)
-						<div>Tax ID: {{ $bp->tax_id }}</div>
-					@endif
-					@if($bp?->license_no)
-						<div>License No: {{ $bp->license_no }}</div>
-					@endif
+					@foreach($businessInfoRows as $row)
+						<div>@if($row['label'])<span>{{ $row['label'] }}:</span> @endif{{ $row['value'] }}</div>
+					@endforeach
 				</div>
 			</section>
 
@@ -61,24 +46,9 @@
 		<section class="bill-to" aria-label="Bill to">
 			<div class="section-label">Bill To</div>
 			<div class="client-name">{{ $clientName }}</div>
-			@if($cl?->company && $cl?->name && $cl->company !== $cl->name)
-				<div>Attn: {{ $cl->name }}</div>
-			@endif
-			@if($clAddress)
-				<div>{{ $clAddress }}</div>
-			@endif
-			@if($cl?->email)
-				<div>{{ $cl->email }}</div>
-			@endif
-			@if($cl?->phone)
-				<div>{{ $cl->phone }}</div>
-			@endif
-			@if($cl?->tax_id)
-				<div>Tax ID: {{ $cl->tax_id }}</div>
-			@endif
-			@if($cl?->license_no)
-				<div>License No: {{ $cl->license_no }}</div>
-			@endif
+			@foreach($clientInfoRows as $row)
+				<div>@if($row['label'])<span>{{ $row['label'] }}:</span> @endif{{ $row['value'] }}</div>
+			@endforeach
 		</section>
 
 		<section class="items-list{{ $hasLineDiscount ? ' has-line-discount' : '' }}" aria-label="Invoice items">

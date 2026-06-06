@@ -14,23 +14,14 @@
 						</div>
 					@endif
 					<div class="brand-name-cell">
-						<div class="brand-name">{{ $bp?->name ?? 'Your Business' }}</div>
+						<div class="brand-name">{{ $businessName }}</div>
 					</div>
 				</div>
 
 				<div class="business-lines">
-					@if($bpAddress)
-						<div>{{ $bpAddress }}</div>
-					@endif
-					@if($bp?->email)
-						<div>{{ $bp->email }}</div>
-					@endif
-					@if($bp?->phone)
-						<div>{{ $bp->phone }}</div>
-					@endif
-					@if($bp?->website)
-						<div>{{ $bp->website }}</div>
-					@endif
+					@foreach($businessInfoRows as $row)
+						<div>@if($row['label'])<span>{{ $row['label'] }}:</span> @endif{{ $row['value'] }}</div>
+					@endforeach
 				</div>
 			</div>
 
@@ -56,30 +47,15 @@
 					<div class="section-label">Billed To</div>
 					<div class="client-card">
 						<div class="client-name">{{ $clientName }}</div>
-						@if($cl?->company && $cl?->name && $cl->company !== $cl->name)
-							<div>Attn: {{ $cl->name }}</div>
-						@endif
-						@if($clAddress)
-							<div>{{ $clAddress }}</div>
-						@endif
-						@if($cl?->email)
-							<div>{{ $cl->email }}</div>
-						@endif
-						@if($cl?->phone)
-							<div>{{ $cl->phone }}</div>
-						@endif
-						@if($cl?->tax_id)
-							<div>Tax ID: {{ $cl->tax_id }}</div>
-						@endif
-						@if($cl?->license_no)
-							<div>License No: {{ $cl->license_no }}</div>
-						@endif
+						@foreach($clientInfoRows as $row)
+							<div>@if($row['label'])<span>{{ $row['label'] }}:</span> @endif{{ $row['value'] }}</div>
+						@endforeach
 					</div>
 				</div>
 
 				<div class="amount-due-cell">
 					<div class="amount-card">
-						<div class="amount-label">{{ $showPaymentRows ? 'Balance Due' : 'Amount Due' }}</div>
+						<div class="amount-label">{{ $showPaymentRows ? 'Balance Due' : 'Total' }}</div>
 						<div class="amount-value">{{ $fmtFinalMoney($showPaymentRows ? $amountDue : $totalDue) }}</div>
 						@if($dueLabel)
 							<div class="amount-caption">{{ $dueLabel }}</div>

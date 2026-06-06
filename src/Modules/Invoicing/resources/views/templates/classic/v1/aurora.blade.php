@@ -22,25 +22,13 @@
 							<img src="{{ $logoSrc }}" alt="logo" class="logo"/>
 						</div>
 					@endif
-					<div class="brand-name">{{ $bp?->name ?? 'Your Business' }}</div>
+					<div class="brand-name">{{ $businessName }}</div>
 				</div>
 
 				<div class="business-details">
-					@if($bpAddress)
-						<div>{{ $bpAddress }}</div>
-					@endif
-					@if($bp?->email)
-						<div>{{ $bp->email }}</div>
-					@endif
-					@if($bp?->phone)
-						<div>{{ $bp->phone }}</div>
-					@endif
-					@if($bp?->tax_id)
-						<div>Tax ID: {{ $bp->tax_id }}</div>
-					@endif
-					@if($bp?->license_no)
-						<div>License No: {{ $bp->license_no }}</div>
-					@endif
+					@foreach($businessInfoRows as $row)
+						<div>@if($row['label'])<span>{{ $row['label'] }}:</span> @endif{{ $row['value'] }}</div>
+					@endforeach
 				</div>
 			</section>
 
@@ -66,25 +54,10 @@
 		<section class="info-grid">
 			<div class="info-cell bill-to">
 				<div class="section-label"><span class="label-mark"></span>Bill To</div>
-				<div class="party-name">{{ $cl?->company ?? $cl?->name ?? 'Client' }}</div>
-				@if($cl?->company && $cl?->name)
-					<div>{{ $cl->name }}</div>
-				@endif
-				@if($clAddress)
-					<div>{{ $clAddress }}</div>
-				@endif
-				@if($cl?->email)
-					<div>{{ $cl->email }}</div>
-				@endif
-				@if($cl?->phone)
-					<div>{{ $cl->phone }}</div>
-				@endif
-				@if($cl?->tax_id)
-					<div>Tax ID: {{ $cl->tax_id }}</div>
-				@endif
-				@if($cl?->license_no)
-					<div>License No: {{ $cl->license_no }}</div>
-				@endif
+				<div class="party-name">{{ $clientName }}</div>
+				@foreach($clientInfoRows as $row)
+					<div>@if($row['label'])<span>{{ $row['label'] }}:</span> @endif{{ $row['value'] }}</div>
+				@endforeach
 			</div>
 
 			<div class="info-cell payment-info">

@@ -36,14 +36,13 @@
   };
   $fmtDate = fn($d) => $d ? \Carbon\Carbon::parse($d)->toFormattedDateString() : '—';
   $addr = function ($x) {
-      $g = is_array($x) ? $x : (method_exists($x, 'toArray') ? $x->toArray() : []);
       $parts = array_filter([
-        $g['address_line1'] ?? null,
-        $g['address_line2'] ?? null,
-        $g['city'] ?? null,
-        $g['state'] ?? null,
-        $g['postal_code'] ?? null,
-        $g['country'] ?? null,
+        data_get($x, 'address_line1'),
+        data_get($x, 'address_line2'),
+        data_get($x, 'city'),
+        data_get($x, 'state'),
+        data_get($x, 'postal_code'),
+        data_get($x, 'country'),
       ]);
       return implode(', ', $parts);
   };
@@ -53,6 +52,55 @@
   $items = $invoice->items ?? collect();
   $currency = $invoice->currency ?? 'USD';
   $currencyCode = strtoupper(trim((string) (is_string($currency) ? $currency : ($currency->code ?? ''))));
+  $logoSrc = $logoSrc ?? (data_get($bp, 'logo_path') ?: null);
+  $displayText = static function($value): string {
+      if ($value instanceof \BackedEnum) {
+          $value = $value->value;
+      }
+
+      return trim((string) ($value ?? ''));
+  };
+  $displayRow = static function(?string $label, $value) use ($displayText): ?array {
+      $value = $displayText($value);
+
+      return $value === ''
+          ? null
+          : ['label' => $label, 'value' => $value];
+  };
+  $businessName = $businessName ?? ($displayText(data_get($bp, 'name')) ?: 'Your Business');
+  $businessLegalName = $businessLegalName ?? $displayText(data_get($bp, 'legal_name'));
+  $clientCompany = $clientCompany ?? $displayText(data_get($cl, 'company'));
+  $clientPersonalName = $clientPersonalName ?? $displayText(data_get($cl, 'name'));
+  $clientName = $clientName ?? ($clientCompany !== '' ? $clientCompany : ($clientPersonalName ?: 'Client'));
+  $bpAddress = $bpAddress ?? ($bp ? $addr($bp) : '');
+  $clAddress = $clAddress ?? ($cl ? $addr($cl) : '');
+
+  if (!isset($businessInfoRows)) {
+    $businessInfoRows = array_values(array_filter([
+      $businessLegalName !== '' && strcasecmp($businessLegalName, $businessName) !== 0
+        ? ['label' => 'Legal Name', 'value' => $businessLegalName]
+        : null,
+      $displayRow('Address', $bpAddress),
+      $displayRow('Email', data_get($bp, 'email')),
+      $displayRow('Phone', data_get($bp, 'phone')),
+      $displayRow('Website', data_get($bp, 'website')),
+      $displayRow('Tax ID', data_get($bp, 'tax_id')),
+      $displayRow('License No', data_get($bp, 'license_no')),
+    ]));
+  }
+
+  if (!isset($clientInfoRows)) {
+    $clientInfoRows = array_values(array_filter([
+      $clientCompany !== '' && $clientPersonalName !== '' && strcasecmp($clientCompany, $clientPersonalName) !== 0
+        ? ['label' => 'Contact', 'value' => $clientPersonalName]
+        : null,
+      $displayRow('Address', $clAddress),
+      $displayRow('Email', data_get($cl, 'email')),
+      $displayRow('Phone', data_get($cl, 'phone')),
+      $displayRow('Tax ID', data_get($cl, 'tax_id')),
+      $displayRow('License No', data_get($cl, 'license_no')),
+    ]));
+  }
 
   if (!isset($invoiceTotalsRows)) {
     $toCents = static fn($value) => max(0, (int) (is_numeric($value) ? $value : 0));
@@ -125,8 +173,8 @@
   <div class="page">
     {{-- HEADER --}}
     <div class="brand">
-      @if(($bp?->logo_path))
-        <img src="{{ $bp->logo_path }}" alt="logo" class="logo" />
+      @if($logoSrc)
+        <img src="{{ $logoSrc }}" alt="logo" class="logo" />
       @endif
       <div>
         <div class="kicker">BusinessProfile</div>
@@ -143,34 +191,18 @@
     <div class="row">
       <div class="card">
         <div class="kicker">From</div>
-        <div class="strong">{{ $bp?->name ?? 'Your Business' }}</div>
-        <div class="muted">
-          {{ $bp?->email }}@if($bp?->email && $bp?->phone) • @endif{{ $bp?->phone }}
-        </div>
-        <div class="muted">{{ $bp ? $addr($bp) : '' }}</div>
-        @if($bp?->tax_id)
-          <div class="muted">Tax ID: {{ $bp->tax_id }}</div>
-        @endif
-
-				@if($bp?->license_no)
-					<div class="muted">License No: {{ $bp->license_no }}</div>
-				@endif
+        <div class="strong">{{ $businessName }}</div>
+        @foreach($businessInfoRows as $row)
+          <div class="muted">@if($row['label']){{ $row['label'] }}: @endif{{ $row['value'] }}</div>
+        @endforeach
       </div>
 
       <div class="card">
         <div class="kicker">Bill To</div>
-        <div class="strong">{{ $cl?->name ?? $cl?->company ?? 'Client' }}</div>
-        <div class="muted">
-          {{ $cl?->email }}@if($cl?->email && $cl?->phone) • @endif{{ $cl?->phone }}
-        </div>
-        <div class="muted">{{ $cl ? $addr($cl) : '' }}</div>
-        @if($cl?->tax_id)
-          <div class="muted">Tax ID: {{ $cl->tax_id }}</div>
-        @endif
-
-				@if($cl?->license_no)
-					<div class="muted">License No: {{ $cl->license_no }}</div>
-				@endif
+        <div class="strong">{{ $clientName }}</div>
+        @foreach($clientInfoRows as $row)
+          <div class="muted">@if($row['label']){{ $row['label'] }}: @endif{{ $row['value'] }}</div>
+        @endforeach
       </div>
     </div>
 
