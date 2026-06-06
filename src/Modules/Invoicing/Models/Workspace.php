@@ -27,6 +27,16 @@ class Workspace extends Model
 		return $this->hasMany(Invoices::class, 'workspace_id', 'id');
 	}
 
+	public function businessProfiles()
+	{
+		return $this->hasMany(BusinessProfiles::class, 'workspace_id', 'id');
+	}
+
+	public function clients()
+	{
+		return $this->hasMany(Clients::class, 'workspace_id', 'id');
+	}
+
 	public function scopeForUser(Builder $query, int $userId): Builder
 	{
 		return $query->where('user_id', $userId);

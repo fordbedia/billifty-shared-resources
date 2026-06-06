@@ -26,6 +26,7 @@
   // Helpers
   $fmtMoney = function ($cents, $currency = 'USD') {
       $val = ($cents ?? 0) / 100;
+      $currency = is_string($currency) ? $currency : ($currency->code ?? 'USD');
       try {
           $fmt = new \NumberFormatter(\Locale::getDefault() ?: 'en_US', \NumberFormatter::CURRENCY);
           return $fmt->formatCurrency($val, $currency);
@@ -35,14 +36,13 @@
   };
   $fmtDate = fn($d) => $d ? \Carbon\Carbon::parse($d)->toFormattedDateString() : '—';
   $addr = function ($x) {
-      $g = is_array($x) ? $x : (method_exists($x, 'toArray') ? $x->toArray() : []);
       $parts = array_filter([
-        $g['address_line1'] ?? null,
-        $g['address_line2'] ?? null,
-        $g['city'] ?? null,
-        $g['state'] ?? null,
-        $g['postal_code'] ?? null,
-        $g['country'] ?? null,
+        data_get($x, 'address_line1'),
+        data_get($x, 'address_line2'),
+        data_get($x, 'city'),
+        data_get($x, 'state'),
+        data_get($x, 'postal_code'),
+        data_get($x, 'country'),
       ]);
       return implode(', ', $parts);
   };
@@ -50,14 +50,131 @@
   $bp = $invoice->businessProfile ?? null;
   $cl = $invoice->client ?? null;
   $items = $invoice->items ?? collect();
+  $currency = $invoice->currency ?? 'USD';
+  $currencyCode = strtoupper(trim((string) (is_string($currency) ? $currency : ($currency->code ?? ''))));
+  $logoSrc = $logoSrc ?? (data_get($bp, 'logo_path') ?: null);
+  $displayText = static function($value): string {
+      if ($value instanceof \BackedEnum) {
+          $value = $value->value;
+      }
+
+      return trim((string) ($value ?? ''));
+  };
+  $displayRow = static function(?string $label, $value) use ($displayText): ?array {
+      $value = $displayText($value);
+
+      return $value === ''
+          ? null
+          : ['label' => $label, 'value' => $value];
+  };
+  $businessName = $businessName ?? ($displayText(data_get($bp, 'name')) ?: 'Your Business');
+  $businessLegalName = $businessLegalName ?? $displayText(data_get($bp, 'legal_name'));
+  $clientCompany = $clientCompany ?? $displayText(data_get($cl, 'company'));
+  $clientPersonalName = $clientPersonalName ?? $displayText(data_get($cl, 'name'));
+  $clientName = $clientName ?? ($clientCompany !== '' ? $clientCompany : ($clientPersonalName ?: 'Client'));
+  $bpAddress = $bpAddress ?? ($bp ? $addr($bp) : '');
+  $clAddress = $clAddress ?? ($cl ? $addr($cl) : '');
+
+  if (!isset($businessInfoRows)) {
+    $businessInfoRows = array_values(array_filter([
+      $businessLegalName !== '' && strcasecmp($businessLegalName, $businessName) !== 0
+        ? ['label' => 'Legal Name', 'value' => $businessLegalName]
+        : null,
+      $displayRow('Address', $bpAddress),
+      $displayRow('Email', data_get($bp, 'email')),
+      $displayRow('Phone', data_get($bp, 'phone')),
+      $displayRow('Website', data_get($bp, 'website')),
+      $displayRow('Tax ID', data_get($bp, 'tax_id')),
+      $displayRow('License No', data_get($bp, 'license_no')),
+    ]));
+  }
+
+  if (!isset($clientInfoRows)) {
+    $clientInfoRows = array_values(array_filter([
+      $clientCompany !== '' && $clientPersonalName !== '' && strcasecmp($clientCompany, $clientPersonalName) !== 0
+        ? ['label' => 'Contact', 'value' => $clientPersonalName]
+        : null,
+      $displayRow('Address', $clAddress),
+      $displayRow('Email', data_get($cl, 'email')),
+      $displayRow('Phone', data_get($cl, 'phone')),
+      $displayRow('Tax ID', data_get($cl, 'tax_id')),
+      $displayRow('License No', data_get($cl, 'license_no')),
+    ]));
+  }
+
+  if (!isset($invoiceTotalsRows)) {
+    $toCents = static fn($value) => max(0, (int) (is_numeric($value) ? $value : 0));
+    $fmtRate = function($value) {
+      $num = (float) ($value ?? 0);
+
+      if ($num > 0 && $num < 1) {
+        $num *= 100;
+      }
+
+      return rtrim(rtrim(number_format($num, 2), '0'), '.').'%';
+    };
+    $invoiceTotal = $toCents($invoice->total_cents ?? 0);
+    $amountDue = min($invoiceTotal, $toCents($invoice->amount_due_cents ?? $invoiceTotal));
+    $discountCents = $toCents($invoice->discount_cents ?? 0);
+    $shippingCents = $toCents($invoice->shipping_cents ?? 0);
+    $shippingTaxCents = $toCents($invoice->shipping_tax_cents ?? 0);
+    $taxCents = $toCents($invoice->tax_cents ?? 0);
+    $discountModeRaw = $invoice->discount_mode ?? 'none';
+    $discountMode = $discountModeRaw instanceof \BackedEnum ? $discountModeRaw->value : (string) $discountModeRaw;
+    $isInvoiceLevelDiscount = in_array($discountMode, ['amount', 'percent'], true)
+      || ($discountMode !== 'per-line' && $discountCents > 0);
+    $discountLabel = 'Discount';
+
+    if ($discountMode === 'percent' && (float)($invoice->discount_rate ?? 0) > 0) {
+      $discountLabel .= ' ('.$fmtRate($invoice->discount_rate).')';
+    }
+
+    $statusRawValue = $invoice->status ?? 'issued';
+    $statusRaw = $statusRawValue instanceof \BackedEnum ? $statusRawValue->value : $statusRawValue;
+    $paymentApplied = in_array($statusRaw, ['paid', 'partial', 'partially', 'partially_paid'], true)
+      || !empty($invoice->paid_at)
+      || ($amountDue > 0 && $amountDue < $invoiceTotal);
+    $amountPaidCents = $paymentApplied ? max(0, $invoiceTotal - $amountDue) : 0;
+    $fmtFinalMoney = function($cents) use ($fmtMoney, $currency, $currencyCode) {
+      $formatted = $fmtMoney($cents, $currency);
+
+      return $currencyCode !== '' && !str_ends_with($formatted, ' '.$currencyCode)
+        ? $formatted.' '.$currencyCode
+        : $formatted;
+    };
+
+    $invoiceTotalsRows = [
+      ['type' => 'subtotal', 'label' => 'Subtotal', 'value' => $fmtMoney($invoice->subtotal_cents ?? 0, $currency)],
+    ];
+    if ($isInvoiceLevelDiscount && $discountCents > 0) {
+      $invoiceTotalsRows[] = ['type' => 'discount', 'label' => $discountLabel, 'value' => '-'.$fmtMoney($discountCents, $currency)];
+    }
+    if ($shippingCents > 0) {
+      $invoiceTotalsRows[] = ['type' => 'shipping', 'label' => 'Shipping', 'value' => $fmtMoney($shippingCents, $currency)];
+    }
+    if ($shippingTaxCents > 0) {
+      $invoiceTotalsRows[] = ['type' => 'shipping_tax', 'label' => 'Shipping Tax', 'value' => $fmtMoney($shippingTaxCents, $currency)];
+    }
+    if ($taxCents > 0) {
+      $invoiceTotalsRows[] = ['type' => 'tax', 'label' => 'Tax', 'value' => $fmtMoney($taxCents, $currency)];
+    }
+    if ($currencyCode !== '') {
+      $invoiceTotalsRows[] = ['type' => 'currency', 'label' => 'Currency', 'value' => $currencyCode];
+    }
+    $invoiceTotalsRows[] = ['type' => 'total', 'label' => 'Total', 'value' => $fmtFinalMoney($invoiceTotal)];
+    if ($amountPaidCents > 0) {
+      $invoiceTotalsRows[] = ['type' => 'amount_paid', 'label' => 'Amount Paid', 'value' => '-'.$fmtMoney($amountPaidCents, $currency)];
+      $invoiceTotalsRows[] = ['type' => 'balance_due', 'label' => 'Balance Due', 'value' => $fmtFinalMoney($amountDue)];
+    }
+  }
 @endphp
 
 <div class="invoice-root scheme-{{ $scheme }} cat-{{ $category }}">
   <div class="page">
     {{-- HEADER --}}
     <div class="brand">
-      @if(($bp?->logo_path))
-        <img src="{{ $bp->logo_path }}" alt="logo" class="logo" />
+      @if($logoSrc)
+        <img src="{{ $logoSrc }}" alt="logo" class="logo" />
       @endif
       <div>
         <div class="kicker">BusinessProfile</div>
@@ -74,34 +191,18 @@
     <div class="row">
       <div class="card">
         <div class="kicker">From</div>
-        <div class="strong">{{ $bp?->name ?? 'Your Business' }}</div>
-        <div class="muted">
-          {{ $bp?->email }}@if($bp?->email && $bp?->phone) • @endif{{ $bp?->phone }}
-        </div>
-        <div class="muted">{{ $bp ? $addr($bp) : '' }}</div>
-        @if($bp?->tax_id)
-          <div class="muted">Tax ID: {{ $bp->tax_id }}</div>
-        @endif
-
-				@if($bp?->license_no)
-					<div class="muted">License No: {{ $bp->license_no }}</div>
-				@endif
+        <div class="strong">{{ $businessName }}</div>
+        @foreach($businessInfoRows as $row)
+          <div class="muted">@if($row['label']){{ $row['label'] }}: @endif{{ $row['value'] }}</div>
+        @endforeach
       </div>
 
       <div class="card">
         <div class="kicker">Bill To</div>
-        <div class="strong">{{ $cl?->name ?? $cl?->company ?? 'Client' }}</div>
-        <div class="muted">
-          {{ $cl?->email }}@if($cl?->email && $cl?->phone) • @endif{{ $cl?->phone }}
-        </div>
-        <div class="muted">{{ $cl ? $addr($cl) : '' }}</div>
-        @if($cl?->tax_id)
-          <div class="muted">Tax ID: {{ $cl->tax_id }}</div>
-        @endif
-
-				@if($cl?->license_no)
-					<div class="muted">License No: {{ $cl->license_no }}</div>
-				@endif
+        <div class="strong">{{ $clientName }}</div>
+        @foreach($clientInfoRows as $row)
+          <div class="muted">@if($row['label']){{ $row['label'] }}: @endif{{ $row['value'] }}</div>
+        @endforeach
       </div>
     </div>
 
@@ -144,36 +245,12 @@
     <div class="totals">
       <div></div>
       <div class="panel">
-        <div class="rowline">
-          <span>Subtotal</span>
-          <span>{{ $fmtMoney($invoice->subtotal_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
-        </div>
-
-        @if((int)($invoice->discount_cents ?? 0) > 0)
-          <div class="rowline">
-            <span>Discount</span>
-            <span>-{{ $fmtMoney($invoice->discount_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
+        @foreach($invoiceTotalsRows as $totalRow)
+          <div class="rowline{{ in_array($totalRow['type'], ['total', 'balance_due'], true) ? ' grand' : '' }}">
+            <span>{{ $totalRow['label'] }}</span>
+            <span>{{ $totalRow['value'] }}</span>
           </div>
-        @endif
-
-        @if((int)($invoice->tax_cents ?? 0) > 0)
-          <div class="rowline">
-            <span>Tax</span>
-            <span>{{ $fmtMoney($invoice->tax_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
-          </div>
-        @endif
-
-        @if((int)($invoice->shipping_cents ?? 0) > 0)
-          <div class="rowline">
-            <span>Shipping</span>
-            <span>{{ $fmtMoney($invoice->shipping_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
-          </div>
-        @endif
-
-        <div class="rowline grand">
-          <span>Total</span>
-          <span>{{ $fmtMoney($invoice->total_cents ?? 0, $invoice->currency ?? 'USD') }}</span>
-        </div>
+        @endforeach
       </div>
     </div>
 

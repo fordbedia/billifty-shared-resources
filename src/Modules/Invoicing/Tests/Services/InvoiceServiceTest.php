@@ -151,6 +151,8 @@ class InvoiceServiceTest extends BaseTest
         $scenarioInvoice = $this->scenario['invoice'];
 
         return array_merge([
+			'business_profile_id' => $this->scenario['businessProfile']->id,
+			'client_id' => $this->scenario['client']->id,
             'invoice_number' => $scenarioInvoice->invoice_number,
             'discount_mode' => 'none',
             'discount_cents' => 0,

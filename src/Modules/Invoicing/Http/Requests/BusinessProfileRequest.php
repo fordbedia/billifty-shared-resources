@@ -16,7 +16,6 @@ class BusinessProfileRequest extends FormRequest
 	{
 		return [
 			'id' => ['nullable', 'integer'],
-			'user_id' => ['nullable', 'integer'],
 			'name' => ['required', 'string', 'max:255'],
 			'legal_name' => ['required', 'string', 'max:255'],
 			'email' => ['required', 'string', 'max:255'],

@@ -18,14 +18,14 @@
 						</div>
 					@endif
 					<div class="brand-copy">
-						<div class="brand-name">{{ $bp?->name ?? 'AgencyName' }}</div>
+						<div class="brand-name">{{ $businessName }}</div>
 						<div class="brand-tagline">
-							@if($bp?->legal_name && $bp->legal_name !== $bp?->name)
-								{{ $bp->legal_name }}
-							@elseif($bp?->website)
-								{{ $bp->website }}
-							@elseif($bp?->email)
-								{{ $bp->email }}
+							@if($businessLegalName !== '' && strcasecmp($businessLegalName, $businessName) !== 0)
+								{{ $businessLegalName }}
+							@elseif($displayText(data_get($bp, 'website')) !== '')
+								{{ $displayText(data_get($bp, 'website')) }}
+							@elseif($displayText(data_get($bp, 'email')) !== '')
+								{{ $displayText(data_get($bp, 'email')) }}
 							@else
 								Creative Solution Studio
 							@endif
@@ -47,46 +47,19 @@
 			<div class="party-cell bill-cell">
 				<div class="section-label">Billed To</div>
 				<div class="bill-card">
-					<div class="party-name">{{ $cl?->company ?? $cl?->name ?? 'Client' }}</div>
-					@if($cl?->company && $cl?->name && $cl->name !== $cl->company)
-						<div>{{ $cl->name }}</div>
-					@endif
-					@if($clAddress)
-						<div>{{ $clAddress }}</div>
-					@endif
-					@if($cl?->email)
-						<div class="contact-line">{{ $cl->email }}</div>
-					@endif
-					@if($cl?->phone)
-						<div>{{ $cl->phone }}</div>
-					@endif
-					@if($cl?->tax_id)
-						<div>Tax ID: {{ $cl->tax_id }}</div>
-					@endif
-					@if($cl?->license_no)
-						<div>License No: {{ $cl->license_no }}</div>
-					@endif
+					<div class="party-name">{{ $clientName }}</div>
+					@foreach($clientInfoRows as $row)
+						<div>@if($row['label'])<span>{{ $row['label'] }}:</span> @endif{{ $row['value'] }}</div>
+					@endforeach
 				</div>
 			</div>
 
 			<div class="party-cell from-cell">
 				<div class="section-label">From</div>
-				<div class="party-name">{{ $bp?->name ?? 'AgencyName LLC' }}</div>
-				@if($bpAddress)
-					<div>{{ $bpAddress }}</div>
-				@endif
-				@if($bp?->email)
-					<div>{{ $bp->email }}</div>
-				@endif
-				@if($bp?->phone)
-					<div>{{ $bp->phone }}</div>
-				@endif
-				@if($bp?->tax_id)
-					<div>Tax ID: {{ $bp->tax_id }}</div>
-				@endif
-				@if($bp?->license_no)
-					<div>License No: {{ $bp->license_no }}</div>
-				@endif
+				<div class="party-name">{{ $businessName }}</div>
+				@foreach($businessInfoRows as $row)
+					<div>@if($row['label'])<span>{{ $row['label'] }}:</span> @endif{{ $row['value'] }}</div>
+				@endforeach
 			</div>
 		</div>
 
@@ -142,28 +115,19 @@
 
 				<div class="totals-cell">
 					<div class="totals-card">
-						<div class="total-row">
-							<span class="total-label">Subtotal</span>
-							<span class="total-value">{{ $fmtMoney($subtotalCents, $currency) }}</span>
-						</div>
-						<div class="total-row">
-							<span class="total-label">{{ $taxLabel }}</span>
-							<span class="total-value">{{ $fmtMoney($taxCents, $currency) }}</span>
-						</div>
-						<div class="total-row discount">
-							<span class="total-label">Discount</span>
-							<span class="total-value">-{{ $fmtMoney($discountCents, $currency) }}</span>
-						</div>
-						@if($hasShipping)
-							<div class="total-row">
-								<span class="total-label">Shipping</span>
-								<span class="total-value">{{ $fmtMoney($shippingCents, $currency) }}</span>
-							</div>
-						@endif
-						<div class="total-due">
-							<span class="total-label">Total Due</span>
-							<span class="total-value">{{ $fmtMoney($totalDue, $currency) }}</span>
-						</div>
+						@foreach($invoiceTotalsRows as $totalRow)
+							@if(in_array($totalRow['type'], ['total', 'balance_due'], true))
+								<div class="total-due">
+									<span class="total-label">{{ $totalRow['label'] }}</span>
+									<span class="total-value">{{ $totalRow['value'] }}</span>
+								</div>
+							@else
+								<div class="total-row{{ in_array($totalRow['type'], ['discount', 'amount_paid'], true) ? ' discount' : '' }}">
+									<span class="total-label">{{ $totalRow['label'] }}</span>
+									<span class="total-value">{{ $totalRow['value'] }}</span>
+								</div>
+							@endif
+						@endforeach
 						@include('invoicing::templates.paid-stamp')
 					</div>
 				</div>

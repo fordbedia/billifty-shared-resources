@@ -3,29 +3,6 @@
 	$accentDark = data_get($scheme ?? null, 'dark.code', '#2847c7') ?: '#2847c7';
 	$accentSoft = data_get($scheme ?? null, 'extra_light.code', data_get($scheme ?? null, 'light.code', '#eef3ff')) ?: '#eef3ff';
 
-	$addressLines = function($entity) {
-	  if (!$entity) {
-		return [];
-	  }
-
-	  $g = is_array($entity) ? $entity : (method_exists($entity, 'toArray') ? $entity->toArray() : (array) $entity);
-	  $cityState = implode(', ', array_filter([
-		$g['city'] ?? null,
-		$g['state'] ?? null,
-	  ]));
-	  $cityLine = trim(implode(' ', array_filter([
-		$cityState,
-		$g['postal_code'] ?? null,
-	  ])));
-
-	  return array_values(array_filter([
-		$g['address_line1'] ?? null,
-		$g['address_line2'] ?? null,
-		$cityLine ?: null,
-		$g['country'] ?? null,
-	  ]));
-	};
-
 	$textLines = function($value) {
 	  $text = trim((string) ($value ?? ''));
 
@@ -46,8 +23,6 @@
 	  return $lines;
 	};
 
-	$bpAddressLines = $addressLines($bp);
-	$clAddressLines = $addressLines($cl);
 	$shippingAddress = data_get($invoice ?? null, 'shipping_address');
 	$shipAddressLines = $freeAddressLines($shippingAddress);
 
@@ -65,20 +40,14 @@
 						<img src="{{ $logoSrc }}" alt="Business Logo" class="logo"/>
 					</div>
 				@endif
-				<div class="mono-business-name">{{ $bp?->name ?? 'Your Business' }}</div>
+				<div class="mono-business-name">{{ $businessName }}</div>
 				<div class="mono-business-lines">
 					@foreach($bpAddressLines as $line)
 						<div>{{ $line }}</div>
 					@endforeach
-					@if($bp?->email)
-						<div>{{ $bp->email }}</div>
-					@endif
-					@if($bp?->phone)
-						<div>{{ $bp->phone }}</div>
-					@endif
-					@if($bp?->website)
-						<div>{{ $bp->website }}</div>
-					@endif
+					@foreach($businessInfoRowsWithoutAddress as $row)
+						<div>@if($row['label'])<span>{{ $row['label'] }}:</span> @endif{{ $row['value'] }}</div>
+					@endforeach
 				</div>
 			</div>
 
@@ -103,24 +72,12 @@
 				<div class="mono-party-box">
 					<div class="mono-section-heading mono-heading-bill">Bill To</div>
 					<div class="mono-party-name">{{ $clientName }}</div>
-					@if($cl?->company && $cl?->name && $cl->company !== $cl->name)
-						<div>Attn: {{ $cl->name }}</div>
-					@endif
 					@foreach($clAddressLines as $line)
 						<div>{{ $line }}</div>
 					@endforeach
-					@if($cl?->email)
-						<div>{{ $cl->email }}</div>
-					@endif
-					@if($cl?->phone)
-						<div>{{ $cl->phone }}</div>
-					@endif
-					@if($cl?->tax_id)
-						<div>Tax ID: {{ $cl->tax_id }}</div>
-					@endif
-					@if($cl?->license_no)
-						<div>License No: {{ $cl->license_no }}</div>
-					@endif
+					@foreach($clientInfoRowsWithoutAddress as $row)
+						<div>@if($row['label'])<span>{{ $row['label'] }}:</span> @endif{{ $row['value'] }}</div>
+					@endforeach
 				</div>
 
 				<div class="mono-party-box">
@@ -173,7 +130,7 @@
 						</tr>
 					@empty
 						<tr>
-							<td colspan="{{ $hasLineDiscount ? 5 : 4 }}" class="mono-empty">No items.</td>
+							<td colspan="{{ $hasLineDiscount ? 6 : 5 }}" class="mono-empty">No items.</td>
 						</tr>
 					@endforelse
 					</tbody>
@@ -182,30 +139,19 @@
 
 			<section class="mono-totals-wrap">
 				<div class="mono-totals">
-					<div class="mono-total-row">
-						<span>Subtotal:</span>
-						<strong>{{ $fmtMoney($subtotalCents, $currency) }}</strong>
-					</div>
-					@if($hasDiscount)
-						<div class="mono-total-row">
-							<span>Discount:</span>
-							<strong>-{{ $fmtMoney($discountCents, $currency) }}</strong>
-						</div>
-					@endif
-					<div class="mono-total-row">
-						<span>{{ $taxLabel }}:</span>
-						<strong>{{ $fmtMoney($taxCents, $currency) }}</strong>
-					</div>
-					@if($hasShipping)
-						<div class="mono-total-row">
-							<span>Shipping:</span>
-							<strong>{{ $fmtMoney($shippingCents, $currency) }}</strong>
-						</div>
-					@endif
-					<div class="mono-grand-total">
-						<span>Total:</span>
-						<strong>{{ $fmtMoney($totalDue, $currency) }}</strong>
-					</div>
+					@foreach($invoiceTotalsRows as $totalRow)
+						@if(in_array($totalRow['type'], ['total', 'balance_due'], true))
+							<div class="mono-grand-total">
+								<span>{{ $totalRow['label'] }}:</span>
+								<strong>{{ $totalRow['value'] }}</strong>
+							</div>
+						@else
+							<div class="mono-total-row">
+								<span>{{ $totalRow['label'] }}:</span>
+								<strong>{{ $totalRow['value'] }}</strong>
+							</div>
+						@endif
+					@endforeach
 					@include('invoicing::templates.paid-stamp')
 				</div>
 			</section>

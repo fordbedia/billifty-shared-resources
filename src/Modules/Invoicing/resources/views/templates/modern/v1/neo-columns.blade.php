@@ -19,23 +19,14 @@
 						</div>
 					@endif
 					<div class="brand-copy">
-						<div class="brand-name">{{ $bp?->name ?? 'Your Business' }}</div>
+						<div class="brand-name">{{ $businessName }}</div>
 					</div>
 				</div>
 
 				<div class="business-lines">
-					@if($bpAddress)
-						<div>{{ $bpAddress }}</div>
-					@endif
-					@if($bp?->email)
-						<div>{{ $bp->email }}</div>
-					@endif
-					@if($bp?->phone)
-						<div>{{ $bp->phone }}</div>
-					@endif
-					@if($bp?->website)
-						<div>{{ $bp->website }}</div>
-					@endif
+					@foreach($businessInfoRows as $row)
+						<div>@if($row['label'])<span>{{ $row['label'] }}:</span> @endif{{ $row['value'] }}</div>
+					@endforeach
 				</div>
 			</section>
 
@@ -64,25 +55,10 @@
 			<div class="party-grid">
 				<div class="bill-card">
 					<div class="section-kicker">+ Bill To</div>
-					<div class="client-name">{{ $cl?->company ?? $cl?->name ?? 'Client' }}</div>
-					@if($cl?->company && $cl?->name && $cl->company !== $cl->name)
-						<div>Attn: {{ $cl->name }}</div>
-					@endif
-					@if($clAddress)
-						<div>{{ $clAddress }}</div>
-					@endif
-					@if($cl?->email)
-						<div>{{ $cl->email }}</div>
-					@endif
-					@if($cl?->phone)
-						<div>{{ $cl->phone }}</div>
-					@endif
-					@if($cl?->tax_id)
-						<div>Tax ID: {{ $cl->tax_id }}</div>
-					@endif
-					@if($cl?->license_no)
-						<div>License No: {{ $cl->license_no }}</div>
-					@endif
+					<div class="client-name">{{ $clientName }}</div>
+					@foreach($clientInfoRows as $row)
+						<div>@if($row['label'])<span>{{ $row['label'] }}:</span> @endif{{ $row['value'] }}</div>
+					@endforeach
 				</div>
 
 				<div class="project-card">
@@ -160,28 +136,18 @@
 
 			<aside class="total-panel-cell" aria-label="Invoice total">
 				<div class="total-panel">
-					<div class="summary-row">
-						<span>Subtotal</span>
-						<strong>{{ $fmtMoney($subtotalCents, $currency) }}</strong>
-					</div>
-					<div class="summary-row">
-						<span>{{ $taxLabel }}</span>
-						<strong>{{ $fmtMoney($taxCents, $currency) }}</strong>
-					</div>
-					<div class="summary-row">
-						<span>Discount</span>
-						<strong>-{{ $fmtMoney($discountCents, $currency) }}</strong>
-					</div>
-					@if($hasShipping)
-						<div class="summary-row">
-							<span>Shipping</span>
-							<strong>{{ $fmtMoney($shippingCents, $currency) }}</strong>
-						</div>
-					@endif
-					<div class="total-divider"></div>
-					<div class="total-label">Total Amount Due</div>
-					<div class="total-amount">{{ $fmtMoney($totalDue, $currency) }}</div>
-					<div class="currency-pill">{{ is_object($currency) ? $currency->code : $currency }}</div>
+					@foreach($invoiceTotalsRows as $totalRow)
+						@if(in_array($totalRow['type'], ['total', 'balance_due'], true))
+							<div class="total-divider"></div>
+							<div class="total-label">{{ $totalRow['label'] }}</div>
+							<div class="total-amount">{{ $totalRow['value'] }}</div>
+						@else
+							<div class="summary-row">
+								<span>{{ $totalRow['label'] }}</span>
+								<strong>{{ $totalRow['value'] }}</strong>
+							</div>
+						@endif
+					@endforeach
 					@include('invoicing::templates.paid-stamp')
 				</div>
 			</aside>
@@ -758,21 +724,7 @@
 			overflow-wrap: anywhere;
 		}
 
-		.currency-pill {
-			position: relative;
-			z-index: 2;
-			align-self: flex-end;
-			margin-top: 7px;
-			padding: 4px 9px;
-			background: #ffffff;
-			color: {{ $accent }};
-			font-size: 9px;
-			line-height: 11px;
-			font-weight: 900;
-			text-transform: uppercase;
-		}
-
-		.neo-footer {
+			.neo-footer {
 			display: flex;
 			justify-content: space-between;
 			gap: 24px;

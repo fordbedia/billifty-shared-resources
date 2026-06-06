@@ -16,7 +16,8 @@ class PaymentInformationResource extends JsonResource
 		{
 			return [
 				'id' => $this->id	,
-				'user_id' => $this->whenLoaded('user'),
+				// Payment information inherits workspace ownership through its business profile.
+				'business_profile_id' => $this->business_profile_id,
 				'payment_method' => $this->payment_method?->label(),
 				'bank_name' => $this->bank_name,
 				'account_name' => $this->account_name,

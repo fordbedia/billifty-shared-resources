@@ -27,18 +27,32 @@
 
 		return number_format($num, $decimals) . '%';
 	};
+	$fmtRate = function($value) {
+		$num = (float) ($value ?? 0);
+
+		if ($num > 0 && $num < 1) {
+		  $num *= 100;
+		}
+
+		return rtrim(rtrim(number_format($num, 2), '0'), '.').'%';
+	};
 	$fmtDate = fn($d) => $d ? \Carbon\Carbon::parse($d)->toFormattedDateString() : '—';
-	$addr = function ($x) {
-		$g = is_array($x) ? $x : (method_exists($x, 'toArray') ? $x->toArray() : []);
-		$parts = array_filter([
-		  $g['address_line1'] ?? null,
-		  $g['address_line2'] ?? null,
-		  $g['city'] ?? null,
-		  $g['state'] ?? null,
-		  $g['postal_code'] ?? null,
-		  $g['country'] ?? null,
-		]);
-		return implode(', ', $parts);
+	$addressLines = function ($x) {
+		$cityState = implode(', ', array_filter([
+		  data_get($x, 'city'),
+		  data_get($x, 'state'),
+		]));
+		$cityLine = trim(implode(' ', array_filter([
+		  $cityState ?: null,
+		  data_get($x, 'postal_code'),
+		])));
+
+		return array_values(array_filter([
+		  data_get($x, 'address_line1'),
+		  data_get($x, 'address_line2'),
+		  $cityLine ?: null,
+		  data_get($x, 'country'),
+		]));
 	};
 
 	$fontFamily = data_get($theme ?? null, 'fontFamily', 'DejaVu Sans, Arial, sans-serif');
@@ -48,25 +62,100 @@
 	$itemCount = $items instanceof \Illuminate\Support\Collection ? $items->count() : (is_countable($items) ? count($items) : 0);
 	$firstItem = $items instanceof \Illuminate\Support\Collection ? $items->first() : (is_array($items) ? reset($items) : null);
 	$currency = $invoice->currency ?? 'USD';
+	$currencyCode = strtoupper(trim((string) (is_string($currency) ? $currency : ($currency->code ?? ''))));
+	$fmtFinalMoney = function($cents) use ($fmtMoney, $currency, $currencyCode) {
+		$formatted = $fmtMoney($cents, $currency);
+
+		return $currencyCode !== '' && !str_ends_with($formatted, ' '.$currencyCode)
+			? $formatted.' '.$currencyCode
+			: $formatted;
+	};
 	// Invoice templates use total_cents as the display source of truth for totals.
 	// amount_due_cents represents remaining balance after payments and may be 0 on paid invoices.
-	$invoiceTotal = $invoice->total_cents ?? 0;
-	$amountDue = $invoice->amount_due_cents ?? $invoiceTotal;
+	$toCents = static fn($value) => max(0, (int) (is_numeric($value) ? $value : 0));
+	$invoiceTotal = $toCents($invoice->total_cents ?? 0);
+	$amountDue = min($invoiceTotal, $toCents($invoice->amount_due_cents ?? $invoiceTotal));
 	$totalDue = $invoiceTotal;
-	$subtotalCents = $invoice->subtotal_cents ?? 0;
-	$taxCents = $invoice->tax_cents ?? 0;
-	$discountCents = $invoice->discount_cents ?? 0;
-	$shippingCents = $invoice->shipping_cents ?? 0;
-	$bpAddress = $bp ? $addr($bp) : null;
-	$clAddress = $cl ? $addr($cl) : null;
-	$businessName = $bp?->name ?? 'Your Business';
-	$clientName = $cl?->company ?: ($cl?->name ?? 'Client');
-	$isShippingTaxable = (int) $invoice->shipping_tax_rate > 0;
-	$taxLabel = $isShippingTaxable ? 'Tax (includes shipping)' : 'Tax';
-	$hasDiscount = (int) $discountCents > 0;
-	$hasShipping = (int) $shippingCents > 0;
-	$hasLineDiscount = ($invoice->discount_mode ?? null) === 'per-line';
-	$statusRaw = $invoice->status instanceof \BackedEnum ? $invoice->status->value : ($invoice->status ?? 'issued');
+	$subtotalCents = $toCents($invoice->subtotal_cents ?? 0);
+	$taxCents = $toCents($invoice->tax_cents ?? 0);
+	$discountCents = $toCents($invoice->discount_cents ?? 0);
+	$shippingCents = $toCents($invoice->shipping_cents ?? 0);
+	$shippingTaxCents = $toCents($invoice->shipping_tax_cents ?? 0);
+	$displayText = static function($value): string {
+		if ($value instanceof \BackedEnum) {
+			$value = $value->value;
+		}
+
+		return trim((string) ($value ?? ''));
+	};
+	$displayRow = static function(?string $label, $value) use ($displayText): ?array {
+		$value = $displayText($value);
+
+		return $value === ''
+			? null
+			: ['label' => $label, 'value' => $value];
+	};
+	$businessName = $displayText(data_get($bp, 'name')) ?: 'Your Business';
+	$businessLegalName = $displayText(data_get($bp, 'legal_name'));
+	$clientCompany = $displayText(data_get($cl, 'company'));
+	$clientPersonalName = $displayText(data_get($cl, 'name'));
+	$clientName = $clientCompany !== '' ? $clientCompany : ($clientPersonalName ?: 'Client');
+	$bpAddressLines = $bp ? $addressLines($bp) : [];
+	$clAddressLines = $cl ? $addressLines($cl) : [];
+	$bpAddress = implode(', ', $bpAddressLines);
+	$clAddress = implode(', ', $clAddressLines);
+	$businessInfoRowsWithoutAddress = array_values(array_filter([
+		$businessLegalName !== '' && strcasecmp($businessLegalName, $businessName) !== 0
+			? ['label' => 'Legal Name', 'value' => $businessLegalName]
+			: null,
+		$displayRow('Email', data_get($bp, 'email')),
+		$displayRow('Phone', data_get($bp, 'phone')),
+		$displayRow('Website', data_get($bp, 'website')),
+		$displayRow('Tax ID', data_get($bp, 'tax_id')),
+		$displayRow('License No', data_get($bp, 'license_no')),
+	]));
+	$businessInfoRows = array_values(array_filter([
+		$businessLegalName !== '' && strcasecmp($businessLegalName, $businessName) !== 0
+			? ['label' => 'Legal Name', 'value' => $businessLegalName]
+			: null,
+		$displayRow('Address', $bpAddress),
+		$displayRow('Email', data_get($bp, 'email')),
+		$displayRow('Phone', data_get($bp, 'phone')),
+		$displayRow('Website', data_get($bp, 'website')),
+		$displayRow('Tax ID', data_get($bp, 'tax_id')),
+		$displayRow('License No', data_get($bp, 'license_no')),
+	]));
+	$clientInfoRowsWithoutAddress = array_values(array_filter([
+		$clientCompany !== '' && $clientPersonalName !== '' && strcasecmp($clientCompany, $clientPersonalName) !== 0
+			? ['label' => 'Contact', 'value' => $clientPersonalName]
+			: null,
+		$displayRow('Email', data_get($cl, 'email')),
+		$displayRow('Phone', data_get($cl, 'phone')),
+		$displayRow('Tax ID', data_get($cl, 'tax_id')),
+		$displayRow('License No', data_get($cl, 'license_no')),
+	]));
+	$clientInfoRows = array_values(array_filter([
+		$clientCompany !== '' && $clientPersonalName !== '' && strcasecmp($clientCompany, $clientPersonalName) !== 0
+			? ['label' => 'Contact', 'value' => $clientPersonalName]
+			: null,
+		$displayRow('Address', $clAddress),
+		$displayRow('Email', data_get($cl, 'email')),
+		$displayRow('Phone', data_get($cl, 'phone')),
+		$displayRow('Tax ID', data_get($cl, 'tax_id')),
+		$displayRow('License No', data_get($cl, 'license_no')),
+	]));
+	$discountModeRaw = $invoice->discount_mode ?? 'none';
+	$discountMode = $discountModeRaw instanceof \BackedEnum
+		? $discountModeRaw->value
+		: (string) $discountModeRaw;
+	$isInvoiceLevelDiscount = in_array($discountMode, ['amount', 'percent'], true)
+		|| ($discountMode !== 'per-line' && $discountCents > 0);
+	$hasDiscount = $isInvoiceLevelDiscount && $discountCents > 0;
+	$hasShipping = $shippingCents > 0;
+	$hasShippingTax = $shippingTaxCents > 0;
+	$hasLineDiscount = $discountMode === 'per-line';
+	$statusRawValue = $invoice->status ?? 'issued';
+	$statusRaw = $statusRawValue instanceof \BackedEnum ? $statusRawValue->value : $statusRawValue;
 	$statusLabel = match ($statusRaw) {
 		'issued', 'sent' => 'Pending Payment',
 		'partially' => 'Partially Paid',
@@ -78,6 +167,11 @@
 		'draft' => 'is-draft',
 		default => 'is-pending',
 	};
+	$paymentApplied = in_array($statusRaw, ['paid', 'partial', 'partially', 'partially_paid'], true)
+		|| !empty($invoice->paid_at)
+		|| ($amountDue > 0 && $amountDue < $invoiceTotal);
+	$amountPaidCents = $paymentApplied ? max(0, $invoiceTotal - $amountDue) : 0;
+	$showPaymentRows = $amountPaidCents > 0;
 	$dueBaseDate = $invoice->issued_on ? \Carbon\Carbon::parse($invoice->issued_on)->startOfDay() : \Carbon\Carbon::today();
 	$dueDate = $invoice->due_on ? \Carbon\Carbon::parse($invoice->due_on)->startOfDay() : null;
 	$daysRemaining = $dueDate ? (int) round($dueBaseDate->diffInDays($dueDate, false)) : null;
@@ -219,16 +313,33 @@
 
 		return $html;
 	};
-	$fmtRate = function($value) {
-		$num = (float) ($value ?? 0);
-
-		if ($num > 0 && $num < 1) {
-		  $num *= 100;
-		}
-
-		return rtrim(rtrim(number_format($num, 2), '0'), '.').'%';
-	  };
-	$discountLabel = 'Discount'.((float)($invoice->discount_rate ?? 0) > 0 ? ' ('.$fmtRate($invoice->discount_rate).')' : '');
+	$discountLabel = 'Discount';
+	if ($discountMode === 'percent' && (float)($invoice->discount_rate ?? 0) > 0) {
+		$discountLabel .= ' ('.$fmtRate($invoice->discount_rate).')';
+	}
+	$invoiceTotalsRows = [
+		['type' => 'subtotal', 'label' => 'Subtotal', 'value' => $fmtMoney($subtotalCents, $currency)],
+	];
+	if ($hasDiscount) {
+		$invoiceTotalsRows[] = ['type' => 'discount', 'label' => $discountLabel, 'value' => '-'.$fmtMoney($discountCents, $currency)];
+	}
+	if ($hasShipping) {
+		$invoiceTotalsRows[] = ['type' => 'shipping', 'label' => 'Shipping', 'value' => $fmtMoney($shippingCents, $currency)];
+	}
+	if ($hasShippingTax) {
+		$invoiceTotalsRows[] = ['type' => 'shipping_tax', 'label' => 'Shipping Tax', 'value' => $fmtMoney($shippingTaxCents, $currency)];
+	}
+	if ($taxCents > 0) {
+		$invoiceTotalsRows[] = ['type' => 'tax', 'label' => 'Tax', 'value' => $fmtMoney($taxCents, $currency)];
+	}
+	if ($currencyCode !== '') {
+		$invoiceTotalsRows[] = ['type' => 'currency', 'label' => 'Currency', 'value' => $currencyCode];
+	}
+	$invoiceTotalsRows[] = ['type' => 'total', 'label' => 'Total', 'value' => $fmtFinalMoney($totalDue)];
+	if ($showPaymentRows) {
+		$invoiceTotalsRows[] = ['type' => 'amount_paid', 'label' => 'Amount Paid', 'value' => '-'.$fmtMoney($amountPaidCents, $currency)];
+		$invoiceTotalsRows[] = ['type' => 'balance_due', 'label' => 'Balance Due', 'value' => $fmtFinalMoney($amountDue)];
+	}
 	$fmtQuantity = function($item) {
 		$value = data_get($item, 'quantity', 0);
 

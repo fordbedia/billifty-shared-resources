@@ -20,7 +20,7 @@ class PaymentLink extends Model
 	public static function relationships()
 	{
 		return [
-			'invoice',
+			'invoice.items',
 			'invoice.client',
 			'invoice.businessProfile.paymentInformations',
 			'invoice.currency'

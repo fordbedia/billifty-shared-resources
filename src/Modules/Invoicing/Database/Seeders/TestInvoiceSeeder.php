@@ -87,9 +87,18 @@ class TestInvoiceSeeder extends MakeSeeder
 			$workspace = Workspace::ensureDefaultForUser($user);
 
 			foreach($this->clients as $client) {
-				Clients::updateOrCreate(array_merge($client, ['user_id' => $user->id]));
+				// Client ownership is workspace-scoped; keep seed data idempotent inside the default workspace.
+				Clients::updateOrCreate(
+					[
+						'workspace_id' => $workspace->id,
+						'email' => $client['email'],
+					],
+					array_merge($client, ['workspace_id' => $workspace->id])
+				);
 			}
-			$client = Clients::where('name', 'John Doe')->first();
+			$client = Clients::where('workspace_id', $workspace->id)
+				->where('name', 'John Doe')
+				->first();
 			$invoiceTemplate = InvoiceTemplates::where('slug', 'moderno')->first();
 			$colorScheme = ColorScheme::where('slug', 'ocean')->first();
 
@@ -105,9 +114,18 @@ class TestInvoiceSeeder extends MakeSeeder
 			]);
 
 			foreach($this->businessProfile as $businessProfile) {
-				BusinessProfiles::updateOrCreate(array_merge($businessProfile, ['user_id' => $user->id]));
+				// Business profile ownership is workspace-scoped; keep seed data idempotent inside the default workspace.
+				BusinessProfiles::updateOrCreate(
+					[
+						'workspace_id' => $workspace->id,
+						'email' => $businessProfile['email'],
+					],
+					array_merge($businessProfile, ['workspace_id' => $workspace->id])
+				);
 			}
-			$businessProfile = BusinessProfiles::where('email', 'test_company_llc@gmail.com')->first();
+			$businessProfile = BusinessProfiles::where('workspace_id', $workspace->id)
+				->where('email', 'test_company_llc@gmail.com')
+				->first();
 
 			$invoice = Invoices::updateOrCreate([
 				'business_profile_id' => $businessProfile->id,
