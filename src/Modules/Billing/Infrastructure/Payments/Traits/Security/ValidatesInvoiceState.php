@@ -20,14 +20,25 @@ trait ValidatesInvoiceState
 		}
 	}
 
-	public function validateInvoiceIssuedOrPaid(Invoices $invoice)
+	public function validateInvoiceDraftState(Invoices $invoice)
 	{
 		$status = $invoice->status instanceof BackedEnum
 			? $invoice->status->value
 			: $invoice->status;
 
-		if ($status !== 'issued' && $status !== 'paid') {
+		if ($status === 'draft') {
 			abort(403, 'Something went wrong. Invoice needs to be issued first.');
+		}
+	}
+
+	public function validateInvoicePaidState(Invoices $invoice, ?string $message = null)
+	{
+		$status = $invoice->status instanceof BackedEnum
+			? $invoice->status->value
+			: $invoice->status;
+
+		if ($status === 'paid') {
+			abort(403, $message ?? 'This invoice is already paid. You cannot create a new payment link for it.');
 		}
 	}
 }

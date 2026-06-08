@@ -135,7 +135,7 @@ class InvoicePaymentController extends Controller
 		$invoice->setRelation('paymentLink', $paymentLink);
 
 		// Check if invoice is valid for download.
-		$this->validateInvoiceIssuedOrPaid($invoice);
+		$this->validateInvoiceDraftState($invoice);
 
 		if ($paymentLink->public_token_revoked_at && Carbon::now()->isAfter(Carbon::parse($paymentLink->public_token_revoked_at))) {
 			return view('billing::error.error-invoice-not-found');

@@ -99,9 +99,16 @@ class InvoiceController extends Controller
 	public function update(
 		StoreInvoiceRequest $request,
 		InvoiceService      $svc,
+		InvoiceContracts 	$invoices,
 		string              $id
 	)
 	{
+		// ----------------------------------------------------------------------------
+		// Add a guard to prevent updating a paid invoice.
+		// ----------------------------------------------------------------------------
+		$invoice = $invoices->findById($id);
+		$this->validateInvoicePaidState($invoice, 'Error: You cannot update a paid invoice.');
+
 		$data = $request->validated();
 
 		try {
@@ -146,7 +153,7 @@ class InvoiceController extends Controller
 		$invoice = $invoices->findById($id); // user-scoped, with Auth
 
 		// Do not queue PDFs for invoices that are not allowed to be downloaded.
-		$this->validateInvoiceIssuedOrPaid($invoice);
+		$this->validateInvoiceDraftState($invoice);
 
 		// ... mark as issued, save, etc.
 		$invoice->forceFill([
@@ -167,7 +174,7 @@ class InvoiceController extends Controller
 		$invoice = $invoices->findById($id); // user-scoped
 
 		// Check if invoice is valid for download.
-		$this->validateInvoiceIssuedOrPaid($invoice);
+		$this->validateInvoiceDraftState($invoice);
 
 		if ($invoice->pdf_status !== 'ready' || !$invoice->pdf_path) {
 			abort(404, 'Invoice PDF not ready yet.');

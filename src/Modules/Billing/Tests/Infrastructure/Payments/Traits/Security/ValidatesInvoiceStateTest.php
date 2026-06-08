@@ -42,56 +42,103 @@ class ValidatesInvoiceStateTest extends BaseTest
 		}
 	}
 
-	public function test_it_allows_invoice_downloads_when_invoice_is_issued(): void
+	public function test_it_restricts_invoice_downloads_if_invoice_is_draft(): void
 	{
 		$validator = $this->validator();
 		$invoice = new Invoices([
-			'status' => InvoiceStatus::ISSUED->value,
-		]);
-
-		$validator->validateInvoiceIssuedOrPaid($invoice);
-
-		$this->assertTrue(true);
-	}
-
-	public function test_it_allows_invoice_downloads_when_invoice_is_paid(): void
-	{
-		$validator = $this->validator();
-		$invoice = new Invoices([
-			'status' => InvoiceStatus::PAID,
-		]);
-
-		$validator->validateInvoiceIssuedOrPaid($invoice);
-
-		$this->assertTrue(true);
-	}
-
-	/**
-	 * @dataProvider nonIssuedOrPaidInvoiceStatusProvider
-	 */
-	public function test_it_restricts_invoice_downloads_when_invoice_is_not_issued_or_paid(string $status): void
-	{
-		$validator = $this->validator();
-		$invoice = new Invoices([
-			'status' => $status,
+			'status' => InvoiceStatus::DRAFT->value,
 		]);
 
 		try {
-			$validator->validateInvoiceIssuedOrPaid($invoice);
-			$this->fail('Only issued or paid invoices can be downloaded.');
+			$validator->validateInvoiceDraftState($invoice);
+			$this->fail('Draft invoices must not be downloaded.');
 		} catch (HttpException $exception) {
 			$this->assertSame(403, $exception->getStatusCode());
 			$this->assertSame('Something went wrong. Invoice needs to be issued first.', $exception->getMessage());
 		}
 	}
 
-	public static function nonIssuedOrPaidInvoiceStatusProvider(): array
+	/**
+	 * @dataProvider nonDraftInvoiceStatusProvider
+	 */
+	public function test_it_allows_invoice_downloads_when_invoice_is_not_draft(InvoiceStatus $status): void
+	{
+		$validator = $this->validator();
+		$invoice = new Invoices([
+			'status' => $status,
+		]);
+
+		$validator->validateInvoiceDraftState($invoice);
+
+		$this->assertTrue(true);
+	}
+
+	public function test_it_restricts_paid_invoices_with_default_message(): void
+	{
+		$validator = $this->validator();
+		$invoice = new Invoices([
+			'status' => InvoiceStatus::PAID->value,
+		]);
+
+		try {
+			$validator->validateInvoicePaidState($invoice);
+			$this->fail('Paid invoices must be restricted.');
+		} catch (HttpException $exception) {
+			$this->assertSame(403, $exception->getStatusCode());
+			$this->assertSame('This invoice is already paid. You cannot create a new payment link for it.', $exception->getMessage());
+		}
+	}
+
+	public function test_it_restricts_paid_invoices_with_custom_message(): void
+	{
+		$validator = $this->validator();
+		$invoice = new Invoices([
+			'status' => InvoiceStatus::PAID,
+		]);
+
+		try {
+			$validator->validateInvoicePaidState($invoice, 'This invoice cannot be downloaded.');
+			$this->fail('Paid invoices must be restricted.');
+		} catch (HttpException $exception) {
+			$this->assertSame(403, $exception->getStatusCode());
+			$this->assertSame('This invoice cannot be downloaded.', $exception->getMessage());
+		}
+	}
+
+	/**
+	 * @dataProvider nonPaidInvoiceStatusProvider
+	 */
+	public function test_it_allows_non_paid_invoices(InvoiceStatus $status): void
+	{
+		$validator = $this->validator();
+		$invoice = new Invoices([
+			'status' => $status,
+		]);
+
+		$validator->validateInvoicePaidState($invoice);
+
+		$this->assertTrue(true);
+	}
+
+	public static function nonDraftInvoiceStatusProvider(): array
 	{
 		return [
-			'draft' => [InvoiceStatus::DRAFT->value],
-			'partially' => [InvoiceStatus::PARTIALLY->value],
-			'sent' => [InvoiceStatus::SENT->value],
-			'void' => [InvoiceStatus::VOID->value],
+			'issued' => [InvoiceStatus::ISSUED],
+			'paid' => [InvoiceStatus::PAID],
+			'partially' => [InvoiceStatus::PARTIALLY],
+			'sent' => [InvoiceStatus::SENT],
+			'void' => [InvoiceStatus::VOID],
+		];
+	}
+
+	public static function nonPaidInvoiceStatusProvider(): array
+	{
+		return [
+			'draft' => [InvoiceStatus::DRAFT],
+			'issued' => [InvoiceStatus::ISSUED],
+			'partially' => [InvoiceStatus::PARTIALLY],
+			'sent' => [InvoiceStatus::SENT],
+			'void' => [InvoiceStatus::VOID],
 		];
 	}
 
