@@ -109,6 +109,12 @@
 
 		<section class="totals">
 			<div class="totals-panel">
+				@if(!empty($invoiceShippingAddress))
+					<div class="totals-row">
+						<span>Ship To:</span>
+						<strong>{{ $invoiceShippingAddress }}</strong>
+					</div>
+				@endif
 				@foreach($invoiceTotalsRows as $totalRow)
 					@if(in_array($totalRow['type'], ['total', 'balance_due'], true))
 						<div class="totals-due">

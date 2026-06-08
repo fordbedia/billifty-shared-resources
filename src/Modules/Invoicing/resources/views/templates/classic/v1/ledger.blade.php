@@ -115,6 +115,12 @@
 
 				<div class="totals-cell">
 					<div class="totals-card">
+						@if(!empty($invoiceShippingAddress))
+							<div class="total-row">
+								<span class="total-label">Ship To:</span>
+								<span class="total-value">{{ $invoiceShippingAddress }}</span>
+							</div>
+						@endif
 						@foreach($invoiceTotalsRows as $totalRow)
 							@if(in_array($totalRow['type'], ['total', 'balance_due'], true))
 								<div class="total-due">

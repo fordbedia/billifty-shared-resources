@@ -103,6 +103,12 @@
 
 			<div class="summary-cell">
 				<div class="summary-box">
+					@if(!empty($invoiceShippingAddress))
+						<div class="summary-row">
+							<span>Ship To:</span>
+							<strong>{{ $invoiceShippingAddress }}</strong>
+						</div>
+					@endif
 					@foreach($invoiceTotalsRows as $totalRow)
 						@if(in_array($totalRow['type'], ['total', 'balance_due'], true))
 							<div class="summary-row total-row">

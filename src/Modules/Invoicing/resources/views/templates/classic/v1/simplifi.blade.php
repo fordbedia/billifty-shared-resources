@@ -88,6 +88,12 @@
 
 		<div class="totals-wrap">
 			<div class="totals-panel">
+				@if(!empty($invoiceShippingAddress))
+					<div class="total-row">
+						<span>Ship To:</span>
+						<strong>{{ $invoiceShippingAddress }}</strong>
+					</div>
+				@endif
 				@foreach($invoiceTotalsRows as $totalRow)
 					@if(in_array($totalRow['type'], ['total', 'balance_due'], true))
 						<div class="grand-total">

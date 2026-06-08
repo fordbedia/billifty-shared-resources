@@ -104,6 +104,16 @@
 	$clAddressLines = $cl ? $addressLines($cl) : [];
 	$bpAddress = implode(', ', $bpAddressLines);
 	$clAddress = implode(', ', $clAddressLines);
+	$formatInvoiceShippingAddress = static function($value): string {
+		$address = trim((string) ($value ?? ''));
+
+		if ($address === '') {
+			return '';
+		}
+
+		return trim(preg_replace('/\s+/', ' ', preg_replace('/\s*(\r\n|\r|\n)\s*/', ', ', $address)));
+	};
+	$invoiceShippingAddress = $formatInvoiceShippingAddress(data_get($invoice ?? null, 'shipping_address'));
 	$businessInfoRowsWithoutAddress = array_values(array_filter([
 		$businessLegalName !== '' && strcasecmp($businessLegalName, $businessName) !== 0
 			? ['label' => 'Legal Name', 'value' => $businessLegalName]

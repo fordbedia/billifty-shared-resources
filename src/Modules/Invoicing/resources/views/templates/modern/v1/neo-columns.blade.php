@@ -136,6 +136,12 @@
 
 			<aside class="total-panel-cell" aria-label="Invoice total">
 				<div class="total-panel">
+					@if(!empty($invoiceShippingAddress))
+						<div class="summary-row">
+							<span>Ship To:</span>
+							<strong>{{ $invoiceShippingAddress }}</strong>
+						</div>
+					@endif
 					@foreach($invoiceTotalsRows as $totalRow)
 						@if(in_array($totalRow['type'], ['total', 'balance_due'], true))
 							<div class="total-divider"></div>

@@ -245,6 +245,12 @@
     <div class="totals">
       <div></div>
       <div class="panel">
+        @if(!empty($invoiceShippingAddress))
+          <div class="rowline">
+            <span>Ship To:</span>
+            <span>{{ $invoiceShippingAddress }}</span>
+          </div>
+        @endif
         @foreach($invoiceTotalsRows as $totalRow)
           <div class="rowline{{ in_array($totalRow['type'], ['total', 'balance_due'], true) ? ' grand' : '' }}">
             <span>{{ $totalRow['label'] }}</span>

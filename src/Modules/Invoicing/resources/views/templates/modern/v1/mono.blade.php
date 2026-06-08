@@ -13,19 +13,6 @@
 	  return array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $text))));
 	};
 
-	$freeAddressLines = function($value) {
-	  $lines = array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', trim((string) ($value ?? ''))))));
-
-	  if (count($lines) <= 1 && !empty($lines[0]) && str_contains($lines[0], ',')) {
-		$lines = array_values(array_filter(array_map('trim', explode(',', $lines[0]))));
-	  }
-
-	  return $lines;
-	};
-
-	$shippingAddress = data_get($invoice ?? null, 'shipping_address');
-	$shipAddressLines = $freeAddressLines($shippingAddress);
-
 	$notesLines = $textLines($invoice->notes ?? null);
 	$termsLines = $textLines($invoice->terms ?? null);
 @endphp
@@ -80,20 +67,6 @@
 					@endforeach
 				</div>
 
-				<div class="mono-party-box">
-					<div class="mono-section-heading mono-heading-ship">Ship To</div>
-					<div class="mono-party-name">{{ $clientName }}</div>
-					@if(count($shipAddressLines) > 0)
-						@foreach($shipAddressLines as $line)
-							<div>{{ $line }}</div>
-						@endforeach
-					@else
-						@foreach($clAddressLines as $line)
-							<div>{{ $line }}</div>
-						@endforeach
-						<div>Same as billing address</div>
-					@endif
-				</div>
 			</section>
 
 			<section class="mono-items-section">
@@ -139,6 +112,12 @@
 
 			<section class="mono-totals-wrap">
 				<div class="mono-totals">
+					@if(!empty($invoiceShippingAddress))
+						<div class="mono-total-row">
+							<span>Ship To:</span>
+							<strong>{{ $invoiceShippingAddress }}</strong>
+						</div>
+					@endif
 					@foreach($invoiceTotalsRows as $totalRow)
 						@if(in_array($totalRow['type'], ['total', 'balance_due'], true))
 							<div class="mono-grand-total">
@@ -350,7 +329,7 @@
 
 		.mono-parties {
 			display: grid;
-			grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+			grid-template-columns: minmax(0, 1fr);
 			column-gap: 22px;
 			margin-bottom: 30px;
 		}
