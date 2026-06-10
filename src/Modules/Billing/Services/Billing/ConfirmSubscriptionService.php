@@ -78,9 +78,13 @@ final class ConfirmSubscriptionService
             $stripeItem  = $subscription->items->data[0] ?? null;
             $stripePrice = $stripeItem?->price ?? null;
 
-			// Compute period start/end safely
-			$subPeriodStart = $subscription->current_period_start ?? null;
-			$subPeriodEnd   = $subscription->current_period_end ?? null;
+			// Stripe flexible billing can expose period timestamps on subscription items.
+			$subPeriodStart = $subscription->current_period_start
+				?? $subscription->items->data[0]->current_period_start
+				?? null;
+			$subPeriodEnd = $subscription->current_period_end
+				?? $subscription->items->data[0]->current_period_end
+				?? null;
 
 			// Fallback: invoice line period (very reliable for first charge)
 			$invPeriodStart = null;
@@ -94,8 +98,8 @@ final class ConfirmSubscriptionService
 			$periodStart = $subPeriodStart ?? $invPeriodStart;
 			$periodEnd   = $subPeriodEnd ?? $invPeriodEnd;
 
-			$startsAt = $periodStart ? Carbon::createFromTimestamp((int) $periodStart) : null;
-			$renewsAt = $periodEnd   ? Carbon::createFromTimestamp((int) $periodEnd)   : null;
+			$startsAt = $periodStart ? Carbon::createFromTimestampUTC((int) $periodStart) : null;
+			$renewsAt = $periodEnd ? Carbon::createFromTimestampUTC((int) $periodEnd) : null;
 
 
             $subscriptionModel = UserSubscription::updateOrCreate(

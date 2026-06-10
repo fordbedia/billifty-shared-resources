@@ -4,6 +4,7 @@ namespace BilliftySDK\SharedResources\Modules\Billing\Http\Controllers;
 
 use BilliftySDK\SharedResources\Modules\Billing\Contracts\PaymentGateway;
 use BilliftySDK\SharedResources\Modules\Billing\Domain\PlanFlowRedirection;
+use BilliftySDK\SharedResources\Modules\Billing\Http\Controllers\Traits\StripeBillable;
 use BilliftySDK\SharedResources\Modules\Billing\Models\UserSubscription;
 use BilliftySDK\SharedResources\Modules\Billing\Services\Billing\SubscriptionService;
 use BilliftySDK\SharedResources\Modules\User\Models\Plan;
@@ -16,6 +17,8 @@ use Stripe\StripeClient;
 
 class BillingController extends Controller
 {
+	use StripeBillable;
+
     public function __construct()
     {
         $this->middleware('auth:api');
@@ -127,6 +130,10 @@ class BillingController extends Controller
 
 		$currentSub->update([
 			'status'      => $sub->status ?? 'canceled',
+			'cancels_at'  => null,
+			'canceled_at' => ! empty($sub->canceled_at)
+				? Carbon::createFromTimestampUTC((int) $sub->canceled_at)
+				: now(),
 			'raw_payload' => $sub->toArray(),
 		]);
 
@@ -184,14 +191,8 @@ class BillingController extends Controller
 		$planId = $planCode ? Plan::where('code', $planCode)->value('id') : null;
 		$freeId = Plan::where('code', 'free')->value('id');
 
-		// Use Carbon::createFromTimestampUTC to avoid TZ weirdness
-		$startsAt = isset($subscription->current_period_start)
-			? Carbon::createFromTimestampUTC((int) $subscription->current_period_start)
-			: null;
-
-		$renewsAt = isset($subscription->current_period_end)
-			? Carbon::createFromTimestampUTC((int) $subscription->current_period_end)
-			: null;
+		$startsAt = $this->resolveSubscriptionPeriodStart($subscription);
+		$renewsAt = $this->resolveSubscriptionPeriodEnd($subscription);
 
 		UserSubscription::updateOrCreate(
 			['user_id' => (int) $user->id],

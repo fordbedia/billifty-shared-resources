@@ -4,6 +4,7 @@ namespace BilliftySDK\SharedResources\Modules\Billing\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use BilliftySDK\SharedResources\Modules\Billing\Contracts\PaymentGateway;
+use BilliftySDK\SharedResources\Modules\Billing\Http\Controllers\Traits\StripeBillable;
 use BilliftySDK\SharedResources\Modules\Billing\Mail\PaymentSuccessNotificationForBusinessProfileMail;
 use BilliftySDK\SharedResources\Modules\Billing\Mail\PaymentSuccessNotificationForClientMail;
 use BilliftySDK\SharedResources\Modules\Billing\Models\PaymentRecord;
@@ -25,6 +26,8 @@ use Stripe\Webhook;
 
 class StripeWebhookController extends Controller
 {
+	use StripeBillable;
+
     public function __construct(private StripeClient $stripe) {}
 
     public function handle(Request $request, PaymentGateway $gateway)
@@ -155,6 +158,7 @@ class StripeWebhookController extends Controller
             'customer.subscription.created',
             'customer.subscription.updated',
             'customer.subscription.deleted',
+			'invoice.paid',
             'invoice.payment_succeeded',
             'invoice.payment_failed',
             'checkout.session.async_payment_succeeded',
@@ -235,7 +239,11 @@ class StripeWebhookController extends Controller
             $stripeCustomerId = $sub->customer ?? $stripeCustomerId;
         } elseif (str_starts_with($event->type, 'invoice.')) {
             $invoice = $event->data->object;
-            $subId = $invoice->subscription ?? null;
+
+            $subId = $invoice->subscription
+                ?? $invoice->parent?->subscription_details?->subscription
+                ?? null;
+
             $stripeCustomerId = $invoice->customer ?? $stripeCustomerId;
         }
 
@@ -269,13 +277,13 @@ class StripeWebhookController extends Controller
 
         $cancelAtPeriodEnd = (bool) ($subscription->cancel_at_period_end ?? false);
         $cancelAtTs = $subscription->cancel_at ?? null;
-        $currentPeriodEndTs = $subscription->current_period_end ?? null;
+        $currentPeriodEnd = $this->resolveSubscriptionPeriodEnd($subscription);
 
         // Stripe can schedule cancel either via cancel_at OR cancel_at_period_end+current_period_end
         if ($cancelAtTs) {
             $cancelsAt = Carbon::createFromTimestampUTC((int) $cancelAtTs);
-        } elseif ($cancelAtPeriodEnd && $currentPeriodEndTs) {
-            $cancelsAt = Carbon::createFromTimestampUTC((int) $currentPeriodEndTs);
+        } elseif ($cancelAtPeriodEnd && $currentPeriodEnd) {
+            $cancelsAt = $currentPeriodEnd;
         } else {
             // user might have "uncanceled" - clear cancels_at
             $cancelsAt = null;
@@ -316,12 +324,8 @@ class StripeWebhookController extends Controller
         $freeId = Plan::where('code', 'free')->value('id');
 
         // FIX: store these in UTC from Stripe timestamps
-        $startsAt = isset($subscription->current_period_start)
-            ? Carbon::createFromTimestampUTC((int) $subscription->current_period_start)
-            : null;
-        $renewsAt = isset($subscription->current_period_end)
-            ? Carbon::createFromTimestampUTC((int) $subscription->current_period_end)
-            : null;
+        $startsAt = $this->resolveSubscriptionPeriodStart($subscription);
+        $renewsAt = $this->resolveSubscriptionPeriodEnd($subscription);
 
         // Upsert subscription
         UserSubscription::updateOrCreate(
