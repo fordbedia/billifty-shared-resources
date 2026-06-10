@@ -273,7 +273,7 @@
 
 		.invoice-title {
 			color: #111827;
-			font-family: "DejaVu Serif", Georgia, serif;
+			font-family: {{ $fontFamily }};
 			font-size: 27px;
 			line-height: 31px;
 			font-weight: 800;
@@ -387,7 +387,7 @@
 
 		.amount-value {
 			color: var(--accent);
-			font-family: "DejaVu Serif", Georgia, serif;
+			font-family: {{ $fontFamily }};
 			font-size: 26px;
 			line-height: 31px;
 			font-weight: 900;
@@ -639,7 +639,7 @@
 
 		.summary-total strong {
 			color: var(--accent);
-			font-family: "DejaVu Serif", Georgia, serif;
+			font-family: {{ $fontFamily }};
 			font-size: 18px;
 			line-height: 20px;
 			font-weight: 900;
