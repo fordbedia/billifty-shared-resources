@@ -2,6 +2,7 @@
 
 use BilliftySDK\SharedResources\Modules\Invoicing\Http\Controllers\BusinessProfileController;
 use BilliftySDK\SharedResources\Modules\User\Http\Controllers\AuthController;
+use BilliftySDK\SharedResources\Modules\User\Http\Controllers\ContactMessageController;
 use BilliftySDK\SharedResources\Modules\User\Http\Controllers\GoogleController;
 use BilliftySDK\SharedResources\Modules\User\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -15,9 +16,10 @@ Route::prefix('v1')->group(function () {
 			->name('user.logout');
 		Route::get('user/me', [UserController::class, 'me']);
 		Route::post('user/change-password', [UserController::class, 'changePassword']);
-		Route::post('user/{id}', [UserController::class, 'update']);;
+		Route::post('user/{id}', [UserController::class, 'update'])->whereNumber('id');
 	});
-	Route::apiResource('user', UserController::class);
+	Route::apiResource('contact-message', ContactMessageController::class);
+	Route::apiResource('user', UserController::class)->whereNumber('user');
 
 	Route::post('/user/email/verification-notification', function (Request $request) {
 		if ($request->user()->hasVerifiedEmail()) {
