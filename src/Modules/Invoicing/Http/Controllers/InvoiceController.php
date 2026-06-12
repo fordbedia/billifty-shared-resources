@@ -35,7 +35,8 @@ class InvoiceController extends Controller
 
 	public function __construct()
 	{
-		$this->middleware(['plan.limit:max_invoices_per_month'])->only(['store', 'generate', 'sendToBusinessProfile', 'sendToClient']);;
+		$this->middleware(['userMustBeVerified'])->only(['store', 'update']);
+		$this->middleware(['plan.limit:max_invoices_per_month'])->only(['store', 'generate', 'sendToBusinessProfile', 'sendToClient']);
 	}
 
 	public function generateInvoiceNumber(InvoiceContracts $invoice)
