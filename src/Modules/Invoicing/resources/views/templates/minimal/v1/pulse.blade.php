@@ -550,7 +550,7 @@
 	}
 
 	.pulse-root .watermark {
-		margin: 18px 0 0;
+		margin: 18px 0 22px;
 		color: #8d9492;
 		font-size: 9px;
 		text-align: center;

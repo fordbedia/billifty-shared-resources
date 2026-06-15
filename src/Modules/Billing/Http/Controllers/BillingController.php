@@ -129,12 +129,18 @@ class BillingController extends Controller
 		}
 
 		$currentSub->update([
-			'status'      => $sub->status ?? 'canceled',
-			'cancels_at'  => null,
-			'canceled_at' => ! empty($sub->canceled_at)
+			'plan_id'                => $freeId,
+			'plan_code'              => 'free',
+			'billing_cycle'          => 'monthly',
+			'status'                 => $sub->status ?? 'canceled',
+			'unit_amount'            => 0,
+			'stripe_customer_id'     => null,
+			'stripe_subscription_id' => null,
+			'cancels_at'             => null,
+			'canceled_at'            => ! empty($sub->canceled_at)
 				? Carbon::createFromTimestampUTC((int) $sub->canceled_at)
 				: now(),
-			'raw_payload' => $sub->toArray(),
+			'raw_payload'            => $sub->toArray(),
 		]);
 
 		return response()->json([

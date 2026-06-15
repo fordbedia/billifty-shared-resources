@@ -331,7 +331,19 @@ class StripeWebhookController extends Controller
         $startsAt = $this->resolveSubscriptionPeriodStart($subscription);
         $renewsAt = $this->resolveSubscriptionPeriodEnd($subscription);
 
-        // Upsert subscription
+        $status = (string) ($subscription->status ?? 'incomplete');
+        $isPaid = in_array($status, ['active', 'trialing'], true);
+        $effectivePlanId = ($isPaid && $planId) ? $planId : $freeId;
+        $effectivePlanCode = ($isPaid && $planCode) ? $planCode : 'free';
+        $effectiveBillingCycle = ($isPaid && $billingCycle) ? $billingCycle : 'monthly';
+
+        $canceledAt = null;
+        if (! $isPaid && ! empty($subscription->canceled_at)) {
+            $canceledAt = Carbon::createFromTimestampUTC((int) $subscription->canceled_at);
+        }
+
+        // Upsert subscription. Access falls back to Free for failed/unpaid/expired
+        // Stripe states while preserving the Stripe IDs for future recovery webhooks.
         UserSubscription::updateOrCreate(
             [
                 // 'stripe_subscription_id' => $subscription->id
@@ -339,28 +351,25 @@ class StripeWebhookController extends Controller
             ],
             [
                 'stripe_subscription_id' => $subscription->id,
-                'plan_id' => $planId ?? $freeId,
-                'plan_code' => $planCode ?: 'free',
-                'billing_cycle' => $billingCycle ?: 'monthly',
+                'plan_id' => $effectivePlanId,
+                'plan_code' => $effectivePlanCode,
+                'billing_cycle' => $effectiveBillingCycle,
                 'stripe_customer_id' => (string) $stripeCustomerId,
                 'currency' => $stripePrice->currency ?? 'usd',
-                'unit_amount' => $stripePrice->unit_amount ?? 0,
-                'status' => $subscription->status ?? 'incomplete',
+                'unit_amount' => $isPaid ? ($stripePrice->unit_amount ?? 0) : 0,
+                'status' => $status,
                 'starts_at' => $startsAt,
                 'renews_at' => $renewsAt,
                 'raw_payload' => $subscription->toArray(),
                 'cancels_at' => $cancelsAt,
-                'canceled_at' => null,
+                'canceled_at' => $canceledAt,
             ]
         );
-
-        // Only grant paid access if active/trialing
-        $isPaid = in_array((string) ($subscription->status ?? ''), ['active', 'trialing'], true);
 
         $user = User::find($userId);
         if ($user) {
             $user->forceFill([
-                'plan_id' => ($isPaid && $planId) ? $planId : $freeId,
+                'plan_id' => $effectivePlanId,
             ])->save();
         }
 
