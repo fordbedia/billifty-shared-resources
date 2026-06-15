@@ -42,6 +42,22 @@ class ValidatesInvoiceStateTest extends BaseTest
 		}
 	}
 
+	public function test_it_restricts_payment_links_if_invoice_is_void(): void
+	{
+		$validator = $this->validator();
+		$invoice = new Invoices([
+			'status' => InvoiceStatus::VOID->value,
+		]);
+
+		try {
+			$validator->validateInvoiceState($invoice);
+			$this->fail('Void invoices must not create payment links.');
+		} catch (HttpException $exception) {
+			$this->assertSame(403, $exception->getStatusCode());
+			$this->assertSame('This invoice has been voided and can no longer be paid.', $exception->getMessage());
+		}
+	}
+
 	public function test_it_restricts_invoice_downloads_if_invoice_is_draft(): void
 	{
 		$validator = $this->validator();
@@ -105,6 +121,53 @@ class ValidatesInvoiceStateTest extends BaseTest
 		}
 	}
 
+	public function test_it_restricts_void_invoices_with_default_message(): void
+	{
+		$validator = $this->validator();
+		$invoice = new Invoices([
+			'status' => InvoiceStatus::VOID->value,
+		]);
+
+		try {
+			$validator->validateInvoiceVoidState($invoice);
+			$this->fail('Void invoices must be restricted.');
+		} catch (HttpException $exception) {
+			$this->assertSame(403, $exception->getStatusCode());
+			$this->assertSame('This invoice has been voided and can no longer be paid.', $exception->getMessage());
+		}
+	}
+
+	public function test_it_restricts_void_invoices_with_custom_message(): void
+	{
+		$validator = $this->validator();
+		$invoice = new Invoices([
+			'status' => InvoiceStatus::VOID,
+		]);
+
+		try {
+			$validator->validateInvoiceVoidState($invoice, 'This invoice cannot be paid.');
+			$this->fail('Void invoices must be restricted.');
+		} catch (HttpException $exception) {
+			$this->assertSame(403, $exception->getStatusCode());
+			$this->assertSame('This invoice cannot be paid.', $exception->getMessage());
+		}
+	}
+
+	/**
+	 * @dataProvider nonVoidInvoiceStatusProvider
+	 */
+	public function test_it_allows_non_void_invoices(InvoiceStatus $status): void
+	{
+		$validator = $this->validator();
+		$invoice = new Invoices([
+			'status' => $status,
+		]);
+
+		$validator->validateInvoiceVoidState($invoice);
+
+		$this->assertTrue(true);
+	}
+
 	/**
 	 * @dataProvider nonPaidInvoiceStatusProvider
 	 */
@@ -139,6 +202,17 @@ class ValidatesInvoiceStateTest extends BaseTest
 			'partially' => [InvoiceStatus::PARTIALLY],
 			'sent' => [InvoiceStatus::SENT],
 			'void' => [InvoiceStatus::VOID],
+		];
+	}
+
+	public static function nonVoidInvoiceStatusProvider(): array
+	{
+		return [
+			'draft' => [InvoiceStatus::DRAFT],
+			'issued' => [InvoiceStatus::ISSUED],
+			'paid' => [InvoiceStatus::PAID],
+			'partially' => [InvoiceStatus::PARTIALLY],
+			'sent' => [InvoiceStatus::SENT],
 		];
 	}
 

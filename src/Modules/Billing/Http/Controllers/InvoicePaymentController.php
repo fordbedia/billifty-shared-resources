@@ -36,6 +36,11 @@ class InvoicePaymentController extends Controller
 		]);
 
 		$provider = PaymentProvider::from($validated['provider']);
+		$paymentLink = PaymentLink::where('token', $token)->with('invoice')->first();
+
+		if ($paymentLink?->invoice) {
+			$this->validateInvoiceVoidState($paymentLink->invoice);
+		}
 
 		$result = $paymentLinkService->createForInvoice(
 			token: $token,

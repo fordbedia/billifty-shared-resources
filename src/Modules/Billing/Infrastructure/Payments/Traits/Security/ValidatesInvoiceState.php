@@ -17,6 +17,8 @@ trait ValidatesInvoiceState
 			abort(403, 'Something went wrong. Invoice needs to be issued first.');
 		} else if ($status === 'paid') {
 			abort(403, 'This invoice is already paid. You cannot create a new payment link for it.');
+		} else if ($status === 'void') {
+			abort(403, 'This invoice has been voided and can no longer be paid.');
 		}
 	}
 
@@ -39,6 +41,17 @@ trait ValidatesInvoiceState
 
 		if ($status === 'paid') {
 			abort(403, $message ?? 'This invoice is already paid. You cannot create a new payment link for it.');
+		}
+	}
+
+	public function validateInvoiceVoidState(Invoices $invoice, ?string $message = null)
+	{
+		$status = $invoice->status instanceof BackedEnum
+			? $invoice->status->value
+			: $invoice->status;
+
+		if ($status === 'void') {
+			abort(403, $message ?? 'This invoice has been voided and can no longer be paid.');
 		}
 	}
 }

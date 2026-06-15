@@ -22,8 +22,12 @@ the stored PDF snapshot (`pdf_path`, `pdf_status`, `pdf_generated_at`,
 
 ```shell
 docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T mysql \
-  sh -lc "MYSQL_PWD='root' mysqldump -u 'root' app_db --single-transaction --routines --triggers --events --no-tablespaces" \
+  sh -lc "MYSQL_PWD='root' mysqldump -u 'root' app_db --single-transaction --routines --triggers --events --no-tablespaces --set-gtid-purged=OFF" \
   > shared-resources/src/TestCase/sqldumps/billifty.mysql.sql
+```
+
+```shell
+
 ```
 
 ## and run the test on specific class

@@ -94,18 +94,20 @@ class PayPalGatewayTest extends BaseTest
 
 	private function assertDumpWasRestored(): void
 	{
-		$this->assertDatabaseHas('invoices', [
-			'id' => 2,
-			'invoice_number' => 'RPL-00001',
-		]);
+		$this->assertDatabaseHas('workspace', ['id' => 4]);
+		$this->assertDatabaseHas('business_profiles', ['id' => 1]);
+		$this->assertDatabaseHas('clients', ['id' => 1]);
+		$this->assertDatabaseHas('invoice_templates', ['id' => 1]);
+		$this->assertDatabaseHas('color_scheme', ['id' => 2]);
+		$this->assertDatabaseHas('currency', ['id' => 1]);
 	}
 
 	private function createInvoice(array $attributes): Invoices
 	{
 		return Invoices::create(array_merge([
-			'workspace_id' => 6,
-			'business_profile_id' => 4,
-			'client_id' => 3,
+			'workspace_id' => 4,
+			'business_profile_id' => 1,
+			'client_id' => 1,
 			'invoice_template_id' => 1,
 			'color_scheme_id' => 2,
 			'currency_id' => 1,

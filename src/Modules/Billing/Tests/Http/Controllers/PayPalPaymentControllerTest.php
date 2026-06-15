@@ -12,6 +12,7 @@ namespace BilliftySDK\SharedResources\Modules\Billing\Tests\Http\Controllers {
     use BilliftySDK\SharedResources\Modules\Billing\Infrastructure\Payments\PayPalGateway;
     use BilliftySDK\SharedResources\Modules\Billing\Models\PaymentLink;
     use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
+    use BilliftySDK\SharedResources\Modules\Invoicing\Services\Reminders\InvoicePaymentReminderService;
     use BilliftySDK\SharedResources\TestCase\BaseTest;
     use Illuminate\Http\JsonResponse;
     use Illuminate\Http\Request;
@@ -210,6 +211,11 @@ namespace BilliftySDK\SharedResources\Modules\Billing\Tests\Http\Controllers {
         public ?string $completedCaptureId = null;
 
         public ?PaymentLink $paymentLink = null;
+
+        public function __construct()
+        {
+            parent::__construct(\Mockery::mock(InvoicePaymentReminderService::class));
+        }
 
         protected function resolveInvoiceFromPayPalPayload(array $payload, ?array $captureResponse = null): ?Invoices
         {

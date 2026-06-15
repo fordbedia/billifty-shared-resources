@@ -107,6 +107,21 @@ class InvoiceStateMachineTest extends BaseTest
 		]);
 	}
 
+	/** @test */
+	public function it_rejects_mutating_void_invoices(): void
+	{
+		$invoice = new Invoices([
+			'status' => InvoiceStatus::VOID->value,
+		]);
+
+		$this->expectException(DomainException::class);
+		$this->expectExceptionMessage('Voided invoices cannot be modified.');
+
+		InvoiceStateMachine::assertMutableFields($invoice, [
+			'invoice_number' => 'INV-VOID-UPDATED',
+		]);
+	}
+
 	private function issuedInvoiceWithItems(array $items): Invoices
 	{
 		$invoice = new Invoices([

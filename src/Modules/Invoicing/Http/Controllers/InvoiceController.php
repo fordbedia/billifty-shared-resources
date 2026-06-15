@@ -246,6 +246,8 @@ class InvoiceController extends Controller
 		$userId = Auth::user()->id;
 		$invoice = $invoices->findById($id, $userId);
 
+		$this->validateInvoiceVoidState($invoice);
+
 		$userMessage = $request->input('message');
 		$remindersEnabled = $request->boolean('payment_reminders_enabled');
 

@@ -375,6 +375,7 @@
 
 @section('content')
 	<div class="invoice-page">
+		@include('invoicing::templates.void-stamp')
 		@include("invoicing::templates.$template")
 	</div>
 @endsection
@@ -471,6 +472,33 @@
 			/* Keep it slightly smaller to avoid edge issues */
 			width: 180mm;
 			margin: 0 auto;
+			position: relative;
+		}
+
+		.invoice-void-stamp {
+			position: absolute;
+			left: 50%;
+			top: 120mm;
+			width: 180mm;
+			margin-left: -90mm;
+			margin-top: -32mm;
+			color: #333333;
+			font-family: "DejaVu Sans", Arial, sans-serif;
+			font-size: 150px;
+			font-weight: 800;
+			line-height: 1;
+			opacity: 0.4;
+			text-align: center;
+			text-transform: uppercase;
+			transform: rotate(-30deg);
+			transform-origin: center;
+			z-index: 20;
+			pointer-events: none;
+		}
+
+		.invoice-void-stamp.is-pdf {
+			position: fixed;
+			top: 50%;
 		}
 
 		.row-cols {
