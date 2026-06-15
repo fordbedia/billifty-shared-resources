@@ -21,7 +21,7 @@ class InvoiceResource extends JsonResource
 			})->values()->all();
 		}
 
-		return method_exists($value, 'toArray') ? $value->toArray() : $value;
+		return $value ? (method_exists($value, 'toArray') ? $value->toArray() : $value) : null;
 	}
 
 	protected function businessProfileArray(Request $request): ?array
@@ -74,6 +74,11 @@ class InvoiceResource extends JsonResource
 			'is_issued' => $this->is_issued,
 			'due_on' => $this->due_on,
 			'paid_at' => $this->paid_at,
+			'payment_reminders_enabled' => $this->payment_reminders_enabled,
+			'invoice_reminder_schedule_id' => $this->invoice_reminder_schedule_id,
+			'payment_reminders_completed_at' => $this->payment_reminders_completed_at,
+			'reminderSchedule' => $this->relationArray('reminderSchedule'),
+			'paymentReminders' => $this->relationArray('paymentReminders'),
 			'status' =>  $this->status,
 			'template_slug' => $this->template_slug,
 			'template_version' => $this->template_version,

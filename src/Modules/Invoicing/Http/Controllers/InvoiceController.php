@@ -16,6 +16,7 @@ use BilliftySDK\SharedResources\Modules\Invoicing\Mail\InvoiceSendMailToBusiness
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\InvoiceContracts;
 use BilliftySDK\SharedResources\Modules\Invoicing\Services\InvoiceService;
+use BilliftySDK\SharedResources\Modules\Invoicing\Services\Reminders\InvoicePaymentReminderService;
 use BilliftySDK\SharedResources\SDK\Exception\ApiException;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -235,12 +236,25 @@ class InvoiceController extends Controller
 	 * @param InvoiceContracts $invoices
 	 * @return \Illuminate\Http\JsonResponse
 	 */
-	public function sendToClient(int $id, Request $request, InvoiceContracts $invoices)
+	public function sendToClient(
+		int $id,
+		Request $request,
+		InvoiceContracts $invoices,
+		InvoicePaymentReminderService $reminderService
+	)
 	{
 		$userId = Auth::user()->id;
 		$invoice = $invoices->findById($id, $userId);
 
 		$userMessage = $request->input('message');
+		$remindersEnabled = $request->boolean('payment_reminders_enabled');
+
+		if ($remindersEnabled) {
+			$invoice = $reminderService->enableReminders(
+				$invoice,
+				$request->integer('invoice_reminder_schedule_id') ?: null
+			);
+		}
 
 		Bus::chain([
 			new GenerateInvoicePdfJob($invoice->id, false, $userId),
@@ -316,5 +330,38 @@ class InvoiceController extends Controller
 		}
 
 		$paymentLinkRepository->renew($request->id);
+	}
+
+	public function setPaymentReminder(Request $request, InvoiceContracts $invoice)
+	{
+		$validated = $request->validate([
+			'isPaymentEnabled' => ['required', 'boolean'],
+		]);
+
+		$invoice = $invoice->findById($request->id);
+		$invoice->payment_reminders_enabled = (bool) $validated['isPaymentEnabled'];
+		$invoice->save();
+
+		return response()->json($invoice);
+	}
+
+	/**
+	 * @param Request $request
+	 * @param InvoiceContracts $invoice
+	 * @return void
+	 */
+	public function void(
+		int $invoiceId,
+		Request $request,
+		InvoiceService $invoiceService
+	) {
+		$data = $request->validate([
+			'action' => ['required', 'string'],
+		]);
+
+		$action = InvoiceAction::from($data['action']);
+		$invoice = $invoiceService->voidInvoice($invoiceId, $action);
+
+		return InvoiceResource::make($invoice);
 	}
 }

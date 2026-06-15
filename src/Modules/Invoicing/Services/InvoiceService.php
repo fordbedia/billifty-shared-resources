@@ -10,6 +10,7 @@ use BilliftySDK\SharedResources\Modules\Invoicing\Models\Clients;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Workspace;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\InvoiceContracts;
+use BilliftySDK\SharedResources\Modules\Invoicing\Services\Reminders\InvoicePaymentReminderService;
 use DomainException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -17,12 +18,16 @@ use Illuminate\Support\Facades\DB;
 
 class InvoiceService
 {
+	protected InvoicePaymentReminderService $paymentReminderService;
+
 	public function __construct(
 		protected InvoiceCalculator $calculator,
 		protected InvoiceContracts  $repo,
-		protected InvoicePaymentLinkServices $paymentLinkServices
+		protected InvoicePaymentLinkServices $paymentLinkServices,
+		?InvoicePaymentReminderService $paymentReminderService = null,
 	)
 	{
+		$this->paymentReminderService = $paymentReminderService ?? app(InvoicePaymentReminderService::class);
 	}
 
 	public function upsert(
@@ -127,6 +132,10 @@ class InvoiceService
 				'expires_at' => $this->paymentLinkServices->generateExpireAt(),
 			]);
 
+			if ($invoice->payment_reminders_enabled) {
+				$this->paymentReminderService->generateReminderRows($invoice);
+			}
+
 			if ($displayDiscountRow !== null) {
 				$invoice->setAttribute('display_discount_row', $displayDiscountRow);
 			}
@@ -170,5 +179,19 @@ class InvoiceService
 		if (!$clientBelongsToWorkspace) {
 			throw new DomainException('Selected client does not belong to this workspace.');
 		}
+	}
+
+	public function voidInvoice(int $invoiceId, InvoiceAction $action)
+	{
+		$invoice = $this->repo->findById($invoiceId);
+
+		if ($invoice->status !== 'issued') {
+			throw new DomainException('You can only void issued invoices. Please refresh the page and try again.');
+		}
+
+		InvoiceStateMachine::onvoid($invoice);
+		$invoice->save();
+
+		return $invoice;
 	}
 }

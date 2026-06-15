@@ -8,6 +8,8 @@ enum InvoiceAction: string
 	case SaveChanges = 'save_changes';
 	case Issue = 'issue';
 
+	case Void = 'void';
+
 	public static function actionStatus(string $action) : string
 	{
 		return match($action) {

@@ -11,6 +11,7 @@ use BilliftySDK\SharedResources\Modules\Billing\Models\PaymentLink;
 use BilliftySDK\SharedResources\Modules\Billing\Models\PaymentRecord;
 use BilliftySDK\SharedResources\Modules\Billing\Models\PayPalWebhookEvent;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
+use BilliftySDK\SharedResources\Modules\Invoicing\Services\Reminders\InvoicePaymentReminderService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -20,6 +21,10 @@ use Illuminate\Support\Facades\Mail;
 
 class PayPalPaymentController extends Controller
 {
+	public function __construct(
+		protected InvoicePaymentReminderService $paymentReminderService,
+	) {}
+
     public function create(
         Invoice $invoice,
         PayPalGateway $paypal
@@ -277,6 +282,8 @@ class PayPalPaymentController extends Controller
 			'pdf_generated_at' => null,
 			'pdf_error' => null,
 		]);
+
+		$this->paymentReminderService->skipPendingRemindersBecausePaid($invoice->fresh());
 
         $invoice->paymentLink?->update([
             'paypal_order_id' => $orderId,

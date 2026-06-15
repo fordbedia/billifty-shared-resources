@@ -12,6 +12,7 @@ use BilliftySDK\SharedResources\Modules\Billing\Models\StripeWebhookEvents;
 use BilliftySDK\SharedResources\Modules\Billing\Models\UserSubscription;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Currency;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
+use BilliftySDK\SharedResources\Modules\Invoicing\Services\Reminders\InvoicePaymentReminderService;
 use BilliftySDK\SharedResources\Modules\User\Models\Plan;
 use BilliftySDK\SharedResources\Modules\User\Models\User;
 use Carbon\Carbon;
@@ -28,7 +29,10 @@ class StripeWebhookController extends Controller
 {
 	use StripeBillable;
 
-    public function __construct(private StripeClient $stripe) {}
+    public function __construct(
+		private StripeClient $stripe,
+		private InvoicePaymentReminderService $paymentReminderService,
+	) {}
 
     public function handle(Request $request, PaymentGateway $gateway)
     {
@@ -478,6 +482,8 @@ class StripeWebhookController extends Controller
 			'pdf_generated_at' => null,
 			'pdf_error' => null,
 		]);
+
+		$this->paymentReminderService->skipPendingRemindersBecausePaid($invoice->fresh());
 	}
 
     private function markInvoicePaymentFailed(object $session): void

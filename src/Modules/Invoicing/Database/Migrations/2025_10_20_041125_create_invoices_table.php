@@ -76,6 +76,14 @@ return new class extends Migration
                 ->default(null); // 'queued', 'processing', 'ready', 'failed'
             $table->timestamp('pdf_generated_at')->nullable();
             $table->text('pdf_error')->nullable();
+			$table->boolean('payment_reminders_enabled')->default(false);
+
+			$table->foreignId('invoice_reminder_schedule_id')
+				->nullable()
+				->constrained('invoice_reminder_schedules')
+				->nullOnDelete();
+
+			$table->timestamp('payment_reminders_completed_at')->nullable();
 			$table->softDeletes();
             $table->timestamps();
 
@@ -87,6 +95,36 @@ return new class extends Migration
 			$table->foreign('currency_id')->references('id')->on('currency')->cascadeOnDelete();
 			$table->index(['workspace_id', 'invoice_number'], 'invoices_user_invoice_unique');
         });
+
+		Schema::create('invoice_payment_reminders', function (Blueprint $table) {
+			$table->id();
+			$table->foreignId('invoice_id')
+				->constrained('invoices')
+				->cascadeOnDelete();
+
+			$table->foreignId('invoice_reminder_schedule_id');
+
+			$table->foreign('invoice_reminder_schedule_id', 'ipr_rules_schedule_fk')
+				->references('id')
+				->on('invoice_reminder_schedules')
+				->cascadeOnDelete();
+
+			$table->integer('offset_days');
+			$table->string('label');
+
+			$table->timestamp('scheduled_at')->nullable();
+			$table->timestamp('sent_at')->nullable();
+
+			$table->string('status')->default('pending');
+			// pending, sent, skipped, failed, cancelled
+
+			$table->unsignedInteger('attempts')->default(0);
+			$table->text('last_error')->nullable();
+
+			$table->timestamps();
+
+			$table->unique(['invoice_id', 'offset_days']);
+		});
     }
 
     /**
@@ -95,5 +133,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('invoices');
+		Schema::dropIfExists('color_scheme');
+		Schema::dropIfExists('invoice_payment_reminders');
     }
 };

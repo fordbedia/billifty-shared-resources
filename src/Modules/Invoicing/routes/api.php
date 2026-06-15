@@ -34,6 +34,8 @@ Route::prefix('v1')->group(function () {
 			Route::get('/{id}/preview/public-invoice-link', [InvoiceController::class, 'publicInvoiceLink']);
 			Route::post('/{id}/preview/public-invoice-link/revoke', [InvoiceController::class, 'revokeInvoicePublicLink']);
 			Route::post('/{id}/preview/public-invoice-link/renew', [InvoiceController::class, 'renewInvoicePublicLink']);
+			Route::post('/{id}/set-payment-reminder', [InvoiceController::class, 'setPaymentReminder']);
+			Route::post('/{id}/void', [InvoiceController::class, 'void']);
 		});
 
 		Route::get('business-profile/get-all', [BusinessProfileController::class, 'getAll']);

@@ -77,6 +77,8 @@ class Invoices extends Model
 			'colorScheme.colors',
 			'template.category',
 			'currency',
+			'paymentReminders',
+			'reminderSchedule'
 		];
 	}
 
@@ -112,6 +114,16 @@ class Invoices extends Model
 	public function paymentRecord()
 	{
 		return $this->hasOne(PaymentRecord::class, 'invoice_id', 'id');
+	}
+
+	public function reminderSchedule()
+	{
+		return $this->belongsTo(InvoiceReminderSchedule::class, 'invoice_reminder_schedule_id');
+	}
+
+	public function paymentReminders()
+	{
+		return $this->hasMany(InvoicePaymentReminder::class, 'invoice_id', 'id');
 	}
 
 	public function getIsIssuedAttribute()

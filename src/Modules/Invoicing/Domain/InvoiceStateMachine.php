@@ -76,6 +76,11 @@ final class InvoiceStateMachine
 		$invoice->issued_at = now();
 	}
 
+	public static function onVoid(Invoices $invoice): void
+	{
+		$invoice->status = InvoiceStatus::VOID->value;
+	}
+
 	private static function assertMutableItemFields(Invoices $existing, array $incoming): void
 	{
 		if (!array_key_exists('invoice_items', $incoming)) {

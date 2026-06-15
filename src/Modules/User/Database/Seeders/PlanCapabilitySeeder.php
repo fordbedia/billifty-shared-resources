@@ -71,6 +71,7 @@ class PlanCapabilitySeeder extends MakeSeeder
         $add('free', 'features', 'email_branding', 'Email Branding', null, 'string', 'billifty_footer', null, null, true);
         $add('free', 'features', 'templates_tier', 'Templates', null, 'string', 'basic', null, null, true);
         $add('free', 'features', 'support_level', 'Support', null, 'string', 'email', null, null, true);
+		$add('free', 'features', 'multi_currency', 'Multi-Currency', 'Multi-currency support', 'bool', 'true', null, null, true);
 
         // Marketing (CTA)
         $add('free', 'marketing', 'cta_text1', null, null, 'string', 'Perfect for trying out Billifty.', null, null, true);
@@ -103,6 +104,7 @@ class PlanCapabilitySeeder extends MakeSeeder
         $add('pro', 'features', 'email_branding', 'Email Branding', null, 'string', 'small_footer', null, null, true);
         $add('pro', 'features', 'templates_tier', 'Templates', null, 'string', 'multiple', null, null, true);
         $add('pro', 'features', 'support_level', 'Support', null, 'string', 'email', null, null, true);
+		$add('pro', 'features', 'multi_currency', 'Multi-Currency', 'Multi-currency support', 'bool', 'true', null, null, true);
 
         $add('pro', 'marketing', 'cta_text1', null, null, 'string', 'Everything you need to invoice clients professionally.', null, null, true);
         $add('pro', 'marketing', 'cta_btn', null, null, 'string', 'Upgrade to Pro', null, null, true);
