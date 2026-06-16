@@ -37,6 +37,15 @@ return new class extends Migration
 
             $table->index(['user_id', 'status']);
         });
+
+		Schema::create('onboarding', function (Blueprint $table) {
+            $table->id();
+			$table->bigInteger('user_id')->unsigned();
+			$table->tinyInteger('is_completed')->default(0);
+
+			$table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
+            $table->timestamps();
+        });
     }
 
     /**
@@ -45,5 +54,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('user_subscriptions');
+		Schema::dropIfExists('onboarding');
     }
 };

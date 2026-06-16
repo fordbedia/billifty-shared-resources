@@ -11,6 +11,7 @@ use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Workspace;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\InvoiceContracts;
 use BilliftySDK\SharedResources\Modules\Invoicing\Services\Reminders\InvoicePaymentReminderService;
+use BilliftySDK\SharedResources\Modules\User\Models\Onboarding;
 use DomainException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -125,6 +126,8 @@ class InvoiceService
 
 			$invoice->save();
 
+			$this->performOnboardingCheck($invoice);
+
 			$this->repo->syncItems($invoice, $invoice->items);
 
 			// Save Payment Link
@@ -193,5 +196,29 @@ class InvoiceService
 		$invoice->save();
 
 		return $invoice;
+	}
+
+	protected function performOnboardingCheck(Invoices $invoice): bool
+	{
+		$userId = Auth::id();
+
+		if (!$userId || !$invoice->exists || !$invoice->client_id || !$invoice->business_profile_id) {
+			return false;
+		}
+
+		$isCompleted = Onboarding::query()
+			->where('user_id', $userId)
+			->value('is_completed');
+
+		if ((bool) $isCompleted) {
+			return true;
+		}
+
+		Onboarding::query()->updateOrCreate(
+			['user_id' => $userId],
+			['is_completed' => 1]
+		);
+
+		return true;
 	}
 }

@@ -84,6 +84,7 @@ return new class extends Migration
 				->nullOnDelete();
 
 			$table->timestamp('payment_reminders_completed_at')->nullable();
+			$table->timestamp('void_at')->nullable();
 			$table->softDeletes();
             $table->timestamps();
 
