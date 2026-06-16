@@ -25,7 +25,9 @@
 
 				<div class="business-lines">
 					@foreach($businessInfoRows as $row)
-						<div>@if($row['label'])<span>{{ $row['label'] }}:</span> @endif{{ $row['value'] }}</div>
+						<div>@if($row['label'])
+								<span>{{ $row['label'] }}:</span>
+							@endif{{ $row['value'] }}</div>
 					@endforeach
 				</div>
 			</section>
@@ -57,7 +59,9 @@
 					<div class="section-kicker">+ Bill To</div>
 					<div class="client-name">{{ $clientName }}</div>
 					@foreach($clientInfoRows as $row)
-						<div>@if($row['label'])<span>{{ $row['label'] }}:</span> @endif{{ $row['value'] }}</div>
+						<div>@if($row['label'])
+								<span>{{ $row['label'] }}:</span>
+							@endif{{ $row['value'] }}</div>
 					@endforeach
 				</div>
 
@@ -730,16 +734,15 @@
 			overflow-wrap: anywhere;
 		}
 
-			.neo-footer {
+		.neo-footer {
 			display: flex;
-			justify-content: space-between;
+			justify-content: center;
 			gap: 24px;
 			margin-top: 0;
-			padding: 14px 48px;
+			padding: 22px 48px 30px;
 			background: #111111;
 			color: #ffffff;
 			font-size: 9px;
-			line-height: 11px;
 			font-weight: 900;
 			text-transform: uppercase;
 			letter-spacing: .16em;
@@ -752,7 +755,6 @@
 		}
 
 		.watermark {
-			margin: 14px 48px 0 48px;
 			color: #777777;
 			font-size: 10px;
 			text-align: center;

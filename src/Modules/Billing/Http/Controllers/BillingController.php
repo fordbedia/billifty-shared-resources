@@ -230,7 +230,7 @@ class BillingController extends Controller
 			'billing_cycle' => $billingCycle,
 			'starts_at' => optional($startsAt)->toDateTimeString(),
 			'renews_at' => optional($renewsAt)->toDateTimeString(),
-			'user' => $user->refresh(),
+			'user' => $user->refresh()->loadMissing(['plan.capabilities', 'subscription', 'onboarding']),
 		]);
 	}
 

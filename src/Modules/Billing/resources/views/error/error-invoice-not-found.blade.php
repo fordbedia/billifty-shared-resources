@@ -1,3 +1,6 @@
+@php
+	$link = url()->current() ?? null;
+@endphp
 <!doctype html>
 <html lang="en">
 <head>
@@ -478,7 +481,7 @@
 		Invoice Not Found
 	</div>
 
-	<h1 class="hero-title">This invoice is no longer accessible</h1>
+	<h1 class="hero-title">This invoice is not accessible</h1>
 	<p class="hero-copy">Please contact the sender to get a valid invoice link.</p>
 
 	<section class="invoice-card" aria-label="Unavailable invoice preview">
@@ -580,7 +583,7 @@
 					<path d="M10 13a5 5 0 0 0 7.1 0l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
 					<path d="M14 11a5 5 0 0 0-7.1 0l-2 2A5 5 0 0 0 12 20.1l1.1-1.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
 				</svg>
-				<span>https://int.billifty.com/pay/preview/invoice/token/pay_10X_01KSXZKNJK4R911KD9P3T3KPJY</span>
+				<span>{{ $link }}</span>
 			</div>
 		</footer>
 	</section>

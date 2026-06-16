@@ -171,4 +171,9 @@ class User extends Authenticatable implements MustVerifyEmail
 			'clients' => $this->clients()->count(),
 		]);
 	}
+
+	public function onboarding()
+	{
+		return $this->hasOne(Onboarding::class);
+	}
 }

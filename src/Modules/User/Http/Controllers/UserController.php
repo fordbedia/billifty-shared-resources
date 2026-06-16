@@ -105,7 +105,7 @@ class UserController extends Controller
 			], 401);
 		}
 
-		$user->loadMissing('plan.capabilities', 'subscription');
+		$user->loadMissing(['plan.capabilities', 'subscription', 'onboarding']);
 
 		return new UserJsonResource($user);
 	}

@@ -547,7 +547,7 @@
 	}
 
 	.nexxus-root .watermark {
-		margin: 18px 0 0;
+		margin: 18px 0 18px;
 		color: #8a919b;
 		font-size: 9px;
 		text-align: center;
