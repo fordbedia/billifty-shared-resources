@@ -5,6 +5,7 @@ namespace BilliftySDK\SharedResources\Modules\Invoicing\Services;
 use BilliftySDK\SharedResources\Modules\Invoicing\Domain\InvoiceAction;
 use BilliftySDK\SharedResources\Modules\Invoicing\Domain\InvoiceStateMachine;
 use BilliftySDK\SharedResources\Modules\Invoicing\Domain\InvoiceStatus;
+use BilliftySDK\SharedResources\Modules\Invoicing\Http\Resources\PaymentInformationResource;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\BusinessProfiles;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Clients;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
@@ -122,6 +123,7 @@ class InvoiceService
 
 			if ($action === InvoiceAction::Issue) {
 				InvoiceStateMachine::onIssue($invoice);
+				$this->captureIssueSnapshots($invoice);
 			}
 
 			$invoice->save();
@@ -151,6 +153,31 @@ class InvoiceService
 
 			throw $e;
 		}
+	}
+
+	protected function captureIssueSnapshots(Invoices $invoice): void
+	{
+		$invoice->loadMissing(['client', 'businessProfile.paymentInformations']);
+
+		$paymentInformationSnapshot = $invoice->businessProfile?->paymentInformations
+			?->map(fn ($paymentInfo) => PaymentInformationResource::make($paymentInfo)->toArray(request()))
+			->values()
+			->all() ?? [];
+
+		$businessProfileSnapshot = $invoice->businessProfile
+			? $invoice->businessProfile->toArray()
+			: null;
+
+		if ($businessProfileSnapshot !== null) {
+			$businessProfileSnapshot['paymentInformations'] = $paymentInformationSnapshot;
+			$businessProfileSnapshot['payment_informations'] = $paymentInformationSnapshot;
+		}
+
+		$invoice->client_snapshot = $invoice->client
+			? $invoice->client->toArray()
+			: null;
+		$invoice->business_profile_snapshot = $businessProfileSnapshot;
+		$invoice->payment_information_snapshot = $paymentInformationSnapshot;
 	}
 
 	protected function assertInvoiceContactsBelongToWorkspace(Invoices $invoice, array $data): void

@@ -3,7 +3,9 @@
 namespace BilliftySDK\SharedResources\Modules\Invoicing\Tests\Services;
 
 use BilliftySDK\SharedResources\Modules\Invoicing\Domain\InvoiceAction;
+use BilliftySDK\SharedResources\Modules\Invoicing\Http\Resources\InvoiceResource;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
+use BilliftySDK\SharedResources\Modules\Invoicing\Models\PaymentInformation;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\InvoiceContracts;
 use BilliftySDK\SharedResources\Modules\Invoicing\Services\InvoiceCalculator;
 use BilliftySDK\SharedResources\Modules\Invoicing\Services\InvoicePaymentLinkServices;
@@ -125,6 +127,56 @@ class InvoiceServiceTest extends BaseTest
             $this->assertSame([], $repo->syncedItems);
         }
     }
+
+	/** @test */
+	public function it_stores_client_and_business_profile_snapshots_when_invoice_is_issued(): void
+	{
+		DB::shouldReceive('beginTransaction')->once();
+		DB::shouldReceive('commit')->once();
+		DB::shouldReceive('rollback')->never();
+
+		$invoice = $this->makePersistedInvoice();
+		$invoice->setRelation('client', $this->scenario['client']);
+
+		$bankTransfer = new PaymentInformation([
+			'id' => 10,
+			'business_profile_id' => $this->scenario['businessProfile']->id,
+			'payment_method' => 'bank_transfer',
+			'bank_name' => 'Bank Test',
+			'account_name' => 'Invoice Account',
+			'account_number' => '123456789',
+		]);
+		$stripe = new PaymentInformation([
+			'id' => 11,
+			'business_profile_id' => $this->scenario['businessProfile']->id,
+			'payment_method' => 'stripe',
+		]);
+		$businessProfile = $this->scenario['businessProfile'];
+		$businessProfile->setRelation('paymentInformations', collect([$bankTransfer, $stripe]));
+		$invoice->setRelation('businessProfile', $businessProfile);
+
+		$repo = new InMemoryInvoiceRepository($invoice);
+		$service = $this->makeService($repo);
+
+		$result = $service->upsert($this->basePayload([
+			'subtotal_cents' => 2000,
+			'total_cents' => 2000,
+			'action' => 'issue',
+		]), InvoiceAction::Issue, $invoice->id);
+
+		$this->assertSame('issued', $result->status);
+		$this->assertNotNull($result->issued_at);
+		$this->assertSame($this->scenario['client']->toArray(), $result->client_snapshot);
+		$this->assertSame('Bank Transfer', $result->payment_information_snapshot[0]['payment_method']);
+		$this->assertSame('Stripe', $result->payment_information_snapshot[1]['payment_method']);
+		$this->assertSame($result->payment_information_snapshot, $result->business_profile_snapshot['paymentInformations']);
+		$this->assertSame($result->payment_information_snapshot, $result->business_profile_snapshot['payment_informations']);
+
+		$resource = (new InvoiceResource($result))->toArray(request());
+		$this->assertSame($result->payment_information_snapshot, $resource['paymentInformations']);
+		$this->assertSame($result->payment_information_snapshot, $resource['businessProfile']['paymentInformations']);
+		$this->assertTrue($invoice->save_called);
+	}
 
     private function makePersistedInvoice(): FakePersistedInvoice
     {

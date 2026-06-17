@@ -182,8 +182,10 @@
 		|| ($amountDue > 0 && $amountDue < $invoiceTotal);
 	$amountPaidCents = $paymentApplied ? max(0, $invoiceTotal - $amountDue) : 0;
 	$showPaymentRows = $amountPaidCents > 0;
-	$dueBaseDate = $invoice->issued_on ? \Carbon\Carbon::parse($invoice->issued_on)->startOfDay() : \Carbon\Carbon::today();
-	$dueDate = $invoice->due_on ? \Carbon\Carbon::parse($invoice->due_on)->startOfDay() : null;
+	$issuedOn = data_get($invoice, 'issued_on');
+	$dueOn = data_get($invoice, 'due_on');
+	$dueBaseDate = $issuedOn ? \Carbon\Carbon::parse($issuedOn)->startOfDay() : \Carbon\Carbon::today();
+	$dueDate = $dueOn ? \Carbon\Carbon::parse($dueOn)->startOfDay() : null;
 	$daysRemaining = $dueDate ? (int) round($dueBaseDate->diffInDays($dueDate, false)) : null;
 	$dueLabel = match (true) {
 		$daysRemaining === null => null,

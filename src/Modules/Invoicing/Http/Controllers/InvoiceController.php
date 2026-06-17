@@ -58,7 +58,10 @@ class InvoiceController extends Controller
 		if ($request->search) {
 			$search = $request->search;
 		}
-		return $repo->paginate(dateRange: $dateRange, search: $search);
+
+		$invoice = $repo->paginate(dateRange: $dateRange, search: $search);
+
+		return InvoiceResource::collection($invoice);
 	}
 
 	/**
@@ -89,7 +92,8 @@ class InvoiceController extends Controller
 	public function show(string $id, InvoiceContracts $repo)
 	{
 		try {
-			return $repo->findById($id)?->loadMissing(Invoices::relationships());
+			$invoice = $repo->findById($id)?->loadMissing(Invoices::relationships());
+			return InvoiceResource::make($invoice);
 		} catch (\Throwable $exception) {
 			throw new ApiException($exception->getMessage(), 404);
 		}
@@ -190,10 +194,12 @@ class InvoiceController extends Controller
 
 		// Build nice filename: INV-0001_Client-Name.pdf
 		$number = $invoice->invoice_number ?? ('invoice-' . $invoice->getKey());
-		$client = $invoice->client->name ?? null;
 
-		$base = $client
-			? Str::slug("{$number}_{$client}", '_')
+		$clientData = $invoice->invoiceClientData();
+		$clientName = $clientData['name'] ?? null;
+
+		$base = $clientName
+			? Str::slug("{$number}_{$clientName}", '_')
 			: Str::slug($number, '_');
 
 		$filename = "{$base}.pdf";

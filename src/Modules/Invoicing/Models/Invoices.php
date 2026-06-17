@@ -32,6 +32,9 @@ class Invoices extends Model
 	protected $casts = [
 		'workspace_id' => 'integer',
 		'meta' => 'array',
+		'client_snapshot' => 'array',
+		'business_profile_snapshot' => 'array',
+		'payment_information_snapshot' => 'array',
 	];
 
 	public function businessProfile()
@@ -140,4 +143,67 @@ class Invoices extends Model
 	{
 		return $this->status === 'paid';
 	}
+
+	/**
+	 * @return bool
+	 */
+	public function usesSnapshot(): bool
+	{
+		return in_array($this->status, ['issued', 'paid', 'void'], true);
+	}
+
+	/**
+	 * @return array|null
+	 */
+	public function invoiceBusinessProfileData(): ?array
+	{
+		if ($this->usesSnapshot() && !empty($this->business_profile_snapshot)) {
+			$businessProfile = $this->business_profile_snapshot;
+			$paymentInformations = $this->invoicePaymentInformationsData();
+
+			$businessProfile['paymentInformations'] = $paymentInformations;
+			$businessProfile['payment_informations'] = $paymentInformations;
+
+			return $businessProfile;
+		}
+
+		return $this->businessProfile
+			? $this->businessProfile->toArray()
+			: null;
+	}
+
+	public function invoiceClientData(): ?array
+	{
+		if ($this->usesSnapshot() && !empty($this->client_snapshot)) {
+			return $this->client_snapshot;
+		}
+
+		return $this->client
+			? $this->client->toArray()
+			: null;
+	}
+
+	public function invoicePaymentInformationsData(): array
+	{
+		if ($this->usesSnapshot()) {
+			$snapshot = $this->payment_information_snapshot
+				?: data_get($this->business_profile_snapshot, 'paymentInformations')
+				?: data_get($this->business_profile_snapshot, 'payment_informations')
+				?: [];
+
+			if (!empty($snapshot)) {
+				return collect($snapshot)->values()->all();
+			}
+		}
+
+		if (!$this->relationLoaded('businessProfile') || !$this->businessProfile?->relationLoaded('paymentInformations')) {
+			return [];
+		}
+
+		return $this->businessProfile->paymentInformations
+			->map(fn ($paymentInfo) => $paymentInfo->toArray())
+			->values()
+			->all();
+	}
+
 }

@@ -59,12 +59,24 @@ trait RefreshDatabase
 			),
 		];
 
-		$process = new \Symfony\Component\Process\Process($cmd, base_path('../../'));
-		$process->setTimeout(180);
-		$process->run();
+		$lastOutput = '';
 
-		if (!$process->isSuccessful()) {
-			throw new \RuntimeException("mysql restore failed:\n" . $process->getErrorOutput() . $process->getOutput());
+		for ($attempt = 1; $attempt <= 3; $attempt++) {
+			$process = new \Symfony\Component\Process\Process($cmd, base_path('../../'));
+			$process->setTimeout(180);
+			$process->run();
+
+			if ($process->isSuccessful()) {
+				return;
+			}
+
+			$lastOutput = $process->getErrorOutput() . $process->getOutput();
+
+			if ($attempt < 3) {
+				usleep(250000 * $attempt);
+			}
 		}
+
+		throw new \RuntimeException("mysql restore failed:\n" . $lastOutput);
 	}
 }

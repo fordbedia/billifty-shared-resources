@@ -1,5 +1,9 @@
 # Unit Test
 
+## Documentation
+
+- [Scheduler](docs/scheduler.md): verify and manually test scheduled invoice payment reminders.
+
 ## Workspace-scoped invoicing records
 
 `business_profiles` and `clients` are owned by `workspace_id`, not `user_id`.
@@ -30,7 +34,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T mysql \
 
 ```
 
-## and run the test on specific class
+## Run tests
 
 Run every module test class one class at a time:
 

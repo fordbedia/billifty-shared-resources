@@ -33,13 +33,61 @@ class InvoiceResource extends JsonResource
 		$businessProfile = $this->businessProfile->toArray();
 
 		if ($this->businessProfile->relationLoaded('paymentInformations')) {
-			$businessProfile['paymentInformations'] = $this->businessProfile->paymentInformations
+			$paymentInformations = $this->businessProfile->paymentInformations
 				->map(fn ($paymentInfo) => PaymentInformationResource::make($paymentInfo)->toArray($request))
+				->values()
+				->all();
+
+			$businessProfile['paymentInformations'] = $paymentInformations;
+			$businessProfile['payment_informations'] = $paymentInformations;
+		}
+
+		return $businessProfile;
+	}
+
+	protected function paymentInformationsArray(Request $request): array
+	{
+		if ($this->resource->usesSnapshot()) {
+			return collect($this->resource->invoicePaymentInformationsData())
+				->map(fn ($paymentInfo) => $this->normalizePaymentInformationArray($paymentInfo))
 				->values()
 				->all();
 		}
 
-		return $businessProfile;
+		if (!$this->resource->relationLoaded('businessProfile') || !$this->businessProfile?->relationLoaded('paymentInformations')) {
+			return [];
+		}
+
+		return $this->businessProfile->paymentInformations
+			->map(fn ($paymentInfo) => PaymentInformationResource::make($paymentInfo)->toArray($request))
+			->values()
+			->all();
+	}
+
+	protected function normalizePaymentInformationArray(mixed $paymentInfo): array
+	{
+		$paymentInfo = is_array($paymentInfo)
+			? $paymentInfo
+			: (method_exists($paymentInfo, 'toArray') ? $paymentInfo->toArray() : (array) $paymentInfo);
+
+		$paymentMethod = $paymentInfo['payment_method'] ?? null;
+		$paymentMethod = $paymentMethod instanceof \BackedEnum
+			? $paymentMethod->value
+			: (string) $paymentMethod;
+		$paymentMethodKey = str_replace([' ', '-'], '_', strtolower(trim($paymentMethod)));
+
+		$paymentMethodLabels = [
+			'bank_transfer' => 'Bank Transfer',
+			'paypal' => 'PayPal',
+			'cash_app' => 'Cash App',
+			'stripe' => 'Stripe',
+		];
+
+		if (isset($paymentMethodLabels[$paymentMethodKey])) {
+			$paymentInfo['payment_method'] = $paymentMethodLabels[$paymentMethodKey];
+		}
+
+		return $paymentInfo;
 	}
 
     /**
@@ -49,57 +97,43 @@ class InvoiceResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return [
-            'id' => $this->id,
-			'user_id' => $this->user_id,
-			'workspace_id' => $this->workspace_id,
-           	'businessProfile' => $this->businessProfileArray($request),
-			'client' => $this->relationArray('client'),
+		$businessProfile = $this->resource->usesSnapshot()
+			? $this->resource->invoiceBusinessProfileData()
+			: $this->businessProfileArray($request);
+		$client = $this->resource->usesSnapshot()
+			? $this->resource->invoiceClientData()
+			: $this->relationArray('client');
+		$colorScheme = $this->relationArray('colorScheme');
+		$paymentInformations = $this->paymentInformationsArray($request);
+
+		if ($this->resource->usesSnapshot() && $businessProfile !== null) {
+			$businessProfile['paymentInformations'] = $paymentInformations;
+			$businessProfile['payment_informations'] = $paymentInformations;
+		}
+
+		$paymentLink = $this->relationArray('paymentLink');
+		$items = $this->relationArray('items');
+		$reminderSchedule = $this->relationArray('reminderSchedule');
+		$paymentReminders = $this->relationArray('paymentReminders');
+
+		return array_merge($this->resource->attributesToArray(), [
+			'business_profile' => $businessProfile,
+			'businessProfile' => $businessProfile,
+			'client' => $client,
 			'template' => $this->relationArray('template'),
-			'colorScheme' => $this->relationArray('colorScheme'),
-            'paymentInformations' => $this->resource->relationLoaded('businessProfile')
-				&& $this->businessProfile?->relationLoaded('paymentInformations')
-				? $this->businessProfile->paymentInformations
-					->map(fn ($paymentInfo) => PaymentInformationResource::make($paymentInfo)->toArray($request))
-					->values()
-					->all()
-				: [],
-			'paymentLink' => $this->relationArray('paymentLink'),
-			'items' => $this->relationArray('items'),
-			'invoice_number' => $this->invoice_number,
-			'reference' => $this->reference,
+			'color_scheme' => $colorScheme,
+			'colorScheme' => $colorScheme,
+			'payment_informations' => $paymentInformations,
+			'paymentInformations' => $paymentInformations,
+			'payment_link' => $paymentLink,
+			'paymentLink' => $paymentLink,
+			'items' => $items,
+			'invoice_items' => $items,
 			'currency' => $this->relationArray('currency'),
-			'issued_on' => $this->issued_on,
-			'is_paid' => $this->is_paid,
-			'is_issued' => $this->is_issued,
-			'due_on' => $this->due_on,
-			'paid_at' => $this->paid_at,
-			'payment_reminders_enabled' => $this->payment_reminders_enabled,
-			'invoice_reminder_schedule_id' => $this->invoice_reminder_schedule_id,
-			'payment_reminders_completed_at' => $this->payment_reminders_completed_at,
-			'reminderSchedule' => $this->relationArray('reminderSchedule'),
-			'paymentReminders' => $this->relationArray('paymentReminders'),
-			'status' =>  $this->status,
-			'template_slug' => $this->template_slug,
-			'template_version' => $this->template_version,
-			'theme_json' => $this->theme_json,
-			'discount_mode' => $this->discount_mode,
-			'subtotal_cents' => $this->subtotal_cents,
-			'discount_cents' => $this->discount_cents,
-			'discount_rate' => $this->discount_rate,
-			'tax_cents' => $this->tax_cents,
-			'shipping_cents' => $this->shipping_cents,
-			'shipping_tax_rate' => $this->shipping_tax_rate,
-			'shipping_tax_cents' => $this->shipping_tax_cents,
-			'shipping_address' => $this->shipping_address,
-			'total_cents' => $this->total_cents,
-			'amount_due_cents' => $this->amount_due_cents,
-			'notes' => $this->notes,
-			'terms' => $this->terms,
-			'pdf_url' => $this->pdf_url,
-			'render_snapshot_html' => $this->render_snapshot_html,
-			'meta' => $this->meta,
-			'is_test' => $this->is_test
-        ];
+			'reminder_schedule' => $reminderSchedule,
+			'reminderSchedule' => $reminderSchedule,
+			'payment_reminders' => $paymentReminders,
+			'paymentReminders' => $paymentReminders,
+		]);
     }
 }
