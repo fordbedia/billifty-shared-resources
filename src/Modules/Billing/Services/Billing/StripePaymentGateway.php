@@ -5,6 +5,7 @@ namespace BilliftySDK\SharedResources\Modules\Billing\Services\Billing;
 use BilliftySDK\SharedResources\Modules\Billing\Contracts\PaymentGateway;
 use BilliftySDK\SharedResources\Modules\Billing\Domain\FlowRedirectionEnum;
 use BilliftySDK\SharedResources\Modules\Billing\Models\UserSubscription;
+use BilliftySDK\SharedResources\Modules\Billing\Support\StripePriceResolver;
 use BilliftySDK\SharedResources\Modules\User\Models\Plan;
 use BilliftySDK\SharedResources\Modules\User\Models\User;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
@@ -15,7 +16,10 @@ use Stripe\StripeClient;
 
 class StripePaymentGateway implements PaymentGateway
 {
-    public function __construct(protected StripeClient $client) {}
+    public function __construct(
+        protected StripeClient $client,
+        private StripePriceResolver $priceResolver
+    ) {}
 
     public function ensureCustomer(AuthenticatableContract $user): string
     {
@@ -39,17 +43,7 @@ class StripePaymentGateway implements PaymentGateway
 
     public function resolvePriceId(string $planCode, string $billingCycle): string
     {
-		if ($planCode === 'free') {
-			return '0';
-		}
-
-        $priceId = config("services.stripe.prices.{$planCode}.{$billingCycle}");
-
-        if (! $priceId) {
-            throw new \RuntimeException("Stripe price not configured for {$planCode}.{$billingCycle}");
-        }
-
-        return $priceId;
+        return $this->priceResolver->resolve($planCode, $billingCycle);
     }
 
     public function createCheckoutSessionUrl(
@@ -90,10 +84,17 @@ class StripePaymentGateway implements PaymentGateway
 
     public function createBillingPortalSession(string $customerId, string $returnUrl): array
     {
-        $session = $this->client->billingPortal->sessions->create([
+        $payload = [
             'customer'   => $customerId,
             'return_url' => $returnUrl,
-        ]);
+        ];
+
+        $configurationId = config('services.stripe.billing_portal_configuration');
+        if (is_string($configurationId) && trim($configurationId) !== '') {
+            $payload['configuration'] = $configurationId;
+        }
+
+        $session = $this->client->billingPortal->sessions->create($payload);
 
         return [
 			'url' => $session->url,

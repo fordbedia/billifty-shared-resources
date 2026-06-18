@@ -10,6 +10,7 @@ use BilliftySDK\SharedResources\Modules\Billing\Mail\PaymentSuccessNotificationF
 use BilliftySDK\SharedResources\Modules\Billing\Models\PaymentRecord;
 use BilliftySDK\SharedResources\Modules\Billing\Models\StripeWebhookEvents;
 use BilliftySDK\SharedResources\Modules\Billing\Models\UserSubscription;
+use BilliftySDK\SharedResources\Modules\Billing\Support\StripePriceResolver;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Currency;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use BilliftySDK\SharedResources\Modules\Invoicing\Services\Reminders\InvoicePaymentReminderService;
@@ -275,6 +276,10 @@ class StripeWebhookController extends Controller
 
         if ($event->type === 'customer.subscription.deleted') {
             $gateway->markUserAsFree($userId, $stripeCustomerId, $subId, $payloadJson);
+            UserSubscription::query()
+                ->when($userId, fn ($query) => $query->where('user_id', (int) $userId))
+                ->when(! $userId, fn ($query) => $query->where('stripe_subscription_id', $subId))
+                ->update(['renews_at' => null]);
 
             return response('OK', 200);
         }
@@ -333,17 +338,31 @@ class StripeWebhookController extends Controller
 
         $status = (string) ($subscription->status ?? 'incomplete');
         $isPaid = in_array($status, ['active', 'trialing'], true);
-        $effectivePlanId = ($isPaid && $planId) ? $planId : $freeId;
-        $effectivePlanCode = ($isPaid && $planCode) ? $planCode : 'free';
-        $effectiveBillingCycle = ($isPaid && $billingCycle) ? $billingCycle : 'monthly';
+        $existingSubscription = UserSubscription::query()
+            ->where('user_id', (int) $userId)
+            ->first();
+
+        $preserveCurrentPlan = ! $isPaid && $existingSubscription;
+        $effectivePlanId = $preserveCurrentPlan
+            ? $existingSubscription->plan_id
+            : (($isPaid && $planId) ? $planId : $freeId);
+        $effectivePlanCode = $preserveCurrentPlan
+            ? $existingSubscription->plan_code
+            : (($isPaid && $planCode) ? $planCode : 'free');
+        $effectiveBillingCycle = $preserveCurrentPlan
+            ? $existingSubscription->billing_cycle
+            : (($isPaid && $billingCycle) ? $billingCycle : 'monthly');
+        $effectiveUnitAmount = $preserveCurrentPlan
+            ? $existingSubscription->unit_amount
+            : ($isPaid ? ($stripePrice->unit_amount ?? 0) : 0);
 
         $canceledAt = null;
         if (! $isPaid && ! empty($subscription->canceled_at)) {
             $canceledAt = Carbon::createFromTimestampUTC((int) $subscription->canceled_at);
         }
 
-        // Upsert subscription. Access falls back to Free for failed/unpaid/expired
-        // Stripe states while preserving the Stripe IDs for future recovery webhooks.
+        // Upsert subscription. Failed/unpaid updates preserve the existing local plan
+        // while keeping Stripe IDs for future recovery webhooks.
         UserSubscription::updateOrCreate(
             [
                 // 'stripe_subscription_id' => $subscription->id
@@ -356,10 +375,10 @@ class StripeWebhookController extends Controller
                 'billing_cycle' => $effectiveBillingCycle,
                 'stripe_customer_id' => (string) $stripeCustomerId,
                 'currency' => $stripePrice->currency ?? 'usd',
-                'unit_amount' => $isPaid ? ($stripePrice->unit_amount ?? 0) : 0,
+                'unit_amount' => $effectiveUnitAmount,
                 'status' => $status,
                 'starts_at' => $startsAt,
-                'renews_at' => $renewsAt,
+                'renews_at' => $cancelsAt ? null : $renewsAt,
                 'raw_payload' => $subscription->toArray(),
                 'cancels_at' => $cancelsAt,
                 'canceled_at' => $canceledAt,
@@ -410,20 +429,9 @@ class StripeWebhookController extends Controller
         throw new \UnexpectedValueException('No Stripe webhook signing secrets configured.');
     }
 
-    private function priceIdToPlanAndCycle(string $priceId): ?array
+	private function priceIdToPlanAndCycle(string $priceId): ?array
     {
-        $prices = config('services.stripe.prices', []);
-
-        foreach (['pro', 'premium'] as $plan) {
-            foreach (['monthly', 'yearly'] as $cycle) {
-                $cfg = $prices[$plan][$cycle] ?? null;
-                if ($cfg && $cfg === $priceId) {
-                    return ['plan_code' => $plan, 'billing_cycle' => $cycle];
-                }
-            }
-        }
-
-        return null;
+        return app(StripePriceResolver::class)->planAndCycleFromPriceId($priceId);
     }
 
     private function resolveUserIdFromEvent($event, ?string $stripeCustomerId, ?string $stripeSubscriptionId): ?int

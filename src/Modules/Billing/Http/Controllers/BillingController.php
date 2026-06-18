@@ -7,6 +7,7 @@ use BilliftySDK\SharedResources\Modules\Billing\Domain\PlanFlowRedirection;
 use BilliftySDK\SharedResources\Modules\Billing\Http\Controllers\Traits\StripeBillable;
 use BilliftySDK\SharedResources\Modules\Billing\Models\UserSubscription;
 use BilliftySDK\SharedResources\Modules\Billing\Services\Billing\SubscriptionService;
+use BilliftySDK\SharedResources\Modules\Billing\Support\StripePriceResolver;
 use BilliftySDK\SharedResources\Modules\User\Models\Plan;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -43,7 +44,9 @@ class BillingController extends Controller
         ]);
 
         $customerId = $gateway->ensureCustomer($user);
-        $priceId    = $gateway->resolvePriceId($data['plan_code'], $data['billing_cycle']);
+        $priceId = $data['plan_code'] === 'free'
+            ? null
+            : $gateway->resolvePriceId($data['plan_code'], $data['billing_cycle']);
 
         Log::info('BillingController.createCheckoutSession.start', [
             'user_id'       => $user->id,
@@ -67,7 +70,7 @@ class BillingController extends Controller
 		} else {
 			['url' => $nextUrl] = $gateway->createCheckoutSessionUrl(
 				$customerId,
-				$priceId,
+				(string) $priceId,
 				$data['success_url'],
 				$data['cancel_url'],
 				$metadata
@@ -119,32 +122,27 @@ class BillingController extends Controller
 			return response()->json(['message' => 'No subscription to cancel.']);
 		}
 
-		// Cancel immediately (not at period end)
-		$sub = $stripe->subscriptions->cancel($currentSub->stripe_subscription_id, []);
+		$sub = $stripe->subscriptions->update($currentSub->stripe_subscription_id, [
+			'cancel_at_period_end' => true,
+			'proration_behavior' => 'none',
+			'expand' => ['items.data.price'],
+		]);
 
-		// Set user to Free immediately (webhook will also sync)
-		$freeId = Plan::where('code', 'free')->value('id');
-		if ($freeId) {
-			$user->forceFill(['plan_id' => $freeId])->save();
-		}
+		$cancelsAt = ! empty($sub->cancel_at)
+			? Carbon::createFromTimestampUTC((int) $sub->cancel_at)
+			: $this->resolveSubscriptionPeriodEnd($sub);
 
 		$currentSub->update([
-			'plan_id'                => $freeId,
-			'plan_code'              => 'free',
-			'billing_cycle'          => 'monthly',
-			'status'                 => $sub->status ?? 'canceled',
-			'unit_amount'            => 0,
-			'stripe_customer_id'     => null,
-			'stripe_subscription_id' => null,
-			'cancels_at'             => null,
-			'canceled_at'            => ! empty($sub->canceled_at)
-				? Carbon::createFromTimestampUTC((int) $sub->canceled_at)
-				: now(),
+			'status'      => $sub->status ?? $currentSub->status,
+			'renews_at'   => null,
+			'cancels_at'  => $cancelsAt,
+			'canceled_at' => null,
 			'raw_payload'            => $sub->toArray(),
 		]);
 
 		return response()->json([
-			'message' => 'Subscription canceled.',
+			'message' => 'Subscription will cancel at the end of the current billing period.',
+			'cancels_at' => optional($cancelsAt)->toDateTimeString(),
 		]);
 	}
 
@@ -238,17 +236,7 @@ class BillingController extends Controller
 	// same helper as your webhook controller (you can DRY into a service later)
 	private function priceIdToPlanAndCycle(string $priceId): ?array
 	{
-		$prices = config('services.stripe.prices', []);
-
-		foreach (['pro', 'premium'] as $plan) {
-			foreach (['monthly', 'yearly'] as $cycle) {
-				$cfg = $prices[$plan][$cycle] ?? null;
-				if ($cfg && $cfg === $priceId) {
-					return ['plan_code' => $plan, 'billing_cycle' => $cycle];
-				}
-			}
-		}
-		return null;
+		return app(StripePriceResolver::class)->planAndCycleFromPriceId($priceId);
 	}
 
 	public function confirmSubscription(Request $request, SubscriptionService $subscriptionService)
