@@ -8,6 +8,7 @@ use BilliftySDK\SharedResources\Modules\Billing\Infrastructure\Payments\Traits\S
 use BilliftySDK\SharedResources\Modules\Billing\Models\PaymentLink;
 use BilliftySDK\SharedResources\Modules\Billing\Models\PaymentRecord;
 use BilliftySDK\SharedResources\Modules\Billing\Services\Billing\InvoicePaymentLinkService;
+use BilliftySDK\SharedResources\Modules\Billing\Support\PlanPermission;
 use BilliftySDK\SharedResources\Modules\Invoicing\Action\GenerateInvoicePdf;
 use BilliftySDK\SharedResources\Modules\Invoicing\Http\Controllers\InvoiceController;
 use BilliftySDK\SharedResources\Modules\Invoicing\Http\Resources\InvoiceResource;
@@ -112,6 +113,10 @@ class InvoicePaymentController extends Controller
 
 		$payload = (new InvoiceResource($invoice))->response()->getData();
 
+		$user = $invoice->refresh()->workspace?->user;
+
+		$capabilities = PlanPermission::attempt($user)->toArray();
+
 		return response()
 			->view('billing::invoice.preview', [
 				'invoiceModel' => $invoice,
@@ -119,6 +124,7 @@ class InvoicePaymentController extends Controller
 				'category' => data_get($payload, 'template.category'),
 				'colorScheme' => data_get($payload, 'colorScheme'),
 				'renderContext' => 'public-html',
+				'capabilities' => $capabilities,
 			])->header('X-Robots-Tag', 'noindex, nofollow');
 	}
 

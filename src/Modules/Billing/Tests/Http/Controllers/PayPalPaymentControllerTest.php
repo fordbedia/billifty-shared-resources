@@ -127,6 +127,27 @@ namespace BilliftySDK\SharedResources\Modules\Billing\Tests\Http\Controllers {
         }
 
         /** @test */
+        public function it_rejects_paypal_webhooks_without_an_event_id(): void
+        {
+            $gateway = new FakePayPalGateway([]);
+            $controller = new TestablePayPalPaymentController;
+
+            $response = $controller->handleWebhook(
+                $this->webhookRequest([
+                    'event_type' => 'CHECKOUT.ORDER.APPROVED',
+                    'resource' => [
+                        'id' => 'ORDER-MISSING-EVENT-ID',
+                    ],
+                ]),
+                $gateway
+            );
+
+            $this->assertSame(400, $response->getStatusCode());
+            $this->assertSame('missing_event_id', $response->getData(true)['status']);
+            $this->assertNull($gateway->capturedOrderId);
+        }
+
+        /** @test */
         public function it_captures_a_paypal_order_when_paypal_redirects_back_to_the_backend_return_url(): void
         {
             $gateway = new FakePayPalGateway([

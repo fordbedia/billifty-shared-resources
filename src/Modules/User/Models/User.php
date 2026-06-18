@@ -155,7 +155,10 @@ class User extends Authenticatable implements MustVerifyEmail
 
 	public function subscription()
 	{
-		return $this->hasOne(UserSubscription::class, 'user_id', 'id');
+		// Previous behavior for emergency rollback:
+		// return $this->hasOne(UserSubscription::class, 'user_id', 'id');
+
+		return $this->hasOne(UserSubscription::class, 'user_id', 'id')->latestOfMany();
 	}
 
 	public function getPlanCapabilitiesAttribute(): array

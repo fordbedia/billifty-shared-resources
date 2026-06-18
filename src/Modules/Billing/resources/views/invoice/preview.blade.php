@@ -311,6 +311,7 @@
 	</style>
 </head>
 <body>
+@if ($capabilities['plan']['code'] !== 'premium')
 <header class="site-header">
 	<nav class="nav" aria-label="Main navigation">
 		<a class="brand" href="/" aria-label="Billifty home">
@@ -322,6 +323,7 @@
 		</div>
 	</nav>
 </header>
+@endif
 
 <main class="page-shell">
 	<section class="preview-header" aria-labelledby="invoice-preview-title">

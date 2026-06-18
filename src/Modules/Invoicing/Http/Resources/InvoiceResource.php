@@ -17,11 +17,11 @@ class InvoiceResource extends JsonResource
 
 		if ($value instanceof \Illuminate\Support\Collection) {
 			return $value->map(function ($item) {
-				return method_exists($item, 'toArray') ? $item->toArray() : $item;
+				return is_object($item) && method_exists($item, 'toArray') ? $item->toArray() : $item;
 			})->values()->all();
 		}
 
-		return $value ? (method_exists($value, 'toArray') ? $value->toArray() : $value) : null;
+		return $value ? (is_object($value) && method_exists($value, 'toArray') ? $value->toArray() : $value) : null;
 	}
 
 	protected function businessProfileArray(Request $request): ?array

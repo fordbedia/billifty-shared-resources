@@ -276,6 +276,27 @@ class PlanPermission
     {
         $user = $this->requireUser();
 
+        // Previous source of truth for emergency rollback:
+        // if (! $user->relationLoaded('plan')) {
+        //     $user->load('plan.capabilities');
+        // } elseif ($user->plan && ! $user->plan->relationLoaded('capabilities')) {
+        //     $user->plan->load('capabilities');
+        // }
+        //
+        // return $user->plan;
+
+        if (! $user->relationLoaded('subscription')) {
+            $user->load('subscription.plan.capabilities');
+        } elseif ($user->subscription && ! $user->subscription->relationLoaded('plan')) {
+            $user->subscription->load('plan.capabilities');
+        } elseif ($user->subscription?->plan && ! $user->subscription->plan->relationLoaded('capabilities')) {
+            $user->subscription->plan->load('capabilities');
+        }
+
+        if ($user->subscription?->plan) {
+            return $user->subscription->plan;
+        }
+
         if (! $user->relationLoaded('plan')) {
             $user->load('plan.capabilities');
         } elseif ($user->plan && ! $user->plan->relationLoaded('capabilities')) {
