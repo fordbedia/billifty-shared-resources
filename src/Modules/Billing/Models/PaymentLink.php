@@ -5,12 +5,13 @@ namespace BilliftySDK\SharedResources\Modules\Billing\Models;
 
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class PaymentLink extends Model
 {
     protected $table = 'payment_link';
     protected $guarded = [];
-	public $appends = ['payment_methods'];
+	public $appends = ['payment_methods', 'user'];
 
 	public function invoice()
 	{
@@ -23,7 +24,8 @@ class PaymentLink extends Model
 			'invoice.items',
 			'invoice.client',
 			'invoice.businessProfile.paymentInformations',
-			'invoice.currency'
+			'invoice.currency',
+			'invoice.workspace.businessProfile'
 		];
 	}
 
@@ -32,6 +34,11 @@ class PaymentLink extends Model
 		return $this->invoice->businessProfile?->paymentInformations->map(function ($paymentInfo) {
 			return $paymentInfo->payment_method;
 		});
+	}
+
+	public function user(): Attribute
+	{
+		return Attribute::make(get: fn () => $this->invoice->workspace->user);
 	}
 
 }

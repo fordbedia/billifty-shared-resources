@@ -337,7 +337,15 @@ class InvoiceController extends Controller
 			abort(404, "Not Authorized to perform this action");
 		}
 
-		$paymentLinkRepository->renew($request->id);
+		if ($request->has('from') && $request->from === 'revoked') {
+			$paymentLinkRepository->reactivate($request->id);
+		} else {
+			$paymentLinkRepository->renew($request->id);
+		}
+
+		return response()->json([
+			'message' => 'Invoice link has been renewed.',
+		]);
 	}
 
 	public function setPaymentReminder(Request $request, InvoiceContracts $invoice)

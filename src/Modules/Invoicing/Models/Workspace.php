@@ -32,6 +32,11 @@ class Workspace extends Model
 		return $this->hasMany(BusinessProfiles::class, 'workspace_id', 'id');
 	}
 
+	public function businessProfile()
+	{
+		return $this->hasOne(BusinessProfiles::class, 'workspace_id', 'id')->latestOfMany();
+	}
+
 	public function clients()
 	{
 		return $this->hasMany(Clients::class, 'workspace_id', 'id');

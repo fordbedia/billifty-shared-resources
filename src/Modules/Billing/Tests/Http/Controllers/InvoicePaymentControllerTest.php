@@ -10,6 +10,7 @@ namespace BilliftySDK\SharedResources\Modules\Billing\Tests\Http\Controllers {
 
 	use BilliftySDK\SharedResources\Modules\Billing\Http\Controllers\InvoicePaymentController;
 	use BilliftySDK\SharedResources\Modules\Billing\Models\PaymentLink;
+	use BilliftySDK\SharedResources\Modules\Invoicing\Http\Resources\PaymentLinkResource;
 	use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\PaymentLinkRepository;
 	use BilliftySDK\SharedResources\TestCase\BaseTest;
 	use Illuminate\Http\Request;
@@ -32,7 +33,8 @@ namespace BilliftySDK\SharedResources\Modules\Billing\Tests\Http\Controllers {
 				$repository
 			);
 
-			$this->assertSame($paymentLink, $result);
+			$this->assertInstanceOf(PaymentLinkResource::class, $result);
+			$this->assertSame($paymentLink, $result->resource);
 		}
 
 		/** @test */

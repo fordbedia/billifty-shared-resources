@@ -12,6 +12,7 @@ use BilliftySDK\SharedResources\Modules\Billing\Support\PlanPermission;
 use BilliftySDK\SharedResources\Modules\Invoicing\Action\GenerateInvoicePdf;
 use BilliftySDK\SharedResources\Modules\Invoicing\Http\Controllers\InvoiceController;
 use BilliftySDK\SharedResources\Modules\Invoicing\Http\Resources\InvoiceResource;
+use BilliftySDK\SharedResources\Modules\Invoicing\Http\Resources\PaymentLinkResource;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\InvoiceContracts;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Contracts\PaymentLinkRepository;
@@ -67,7 +68,7 @@ class InvoicePaymentController extends Controller
 	public function paymentLinkData(
 		Request               $request,
 		PaymentLinkRepository $paymentLinkRepository
-	): PaymentLink
+	)
 	{
 		$paymentLink = $paymentLinkRepository->findByToken($request->token);
 
@@ -75,7 +76,9 @@ class InvoicePaymentController extends Controller
 			abort(404, 'Something went wrong. Payment link not found.');
 		}
 
-		return $paymentLink->loadMissing(PaymentLink::relationships());
+		$paymentLink->loadMissing(PaymentLink::relationships());
+
+		return PaymentLinkResource::make($paymentLink);
 	}
 
 	public function preview(

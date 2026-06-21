@@ -187,13 +187,14 @@
 	$dueBaseDate = $issuedOn ? \Carbon\Carbon::parse($issuedOn)->startOfDay() : \Carbon\Carbon::today();
 	$dueDate = $dueOn ? \Carbon\Carbon::parse($dueOn)->startOfDay() : null;
 	$daysRemaining = $dueDate ? (int) round($dueBaseDate->diffInDays($dueDate, false)) : null;
+	$dueLabelDaysRemaining = $dueDate ? \Carbon\Carbon::today()->startOfDay()->diffInDays($dueDate, false) : null;
 	$dueLabel = match (true) {
-		$daysRemaining === null => null,
-		$daysRemaining > 1 => "Due in {$daysRemaining} days",
-		$daysRemaining === 1 => 'Due tomorrow',
-		$daysRemaining === 0 => 'Due today',
-		$daysRemaining === -1 => 'Past due by 1 day',
-		default => 'Past due by '.abs($daysRemaining).' days',
+		$dueLabelDaysRemaining === null => null,
+		$dueLabelDaysRemaining > 1 => "Due in {$dueLabelDaysRemaining} days",
+		$dueLabelDaysRemaining === 1 => 'Due tomorrow',
+		$dueLabelDaysRemaining === 0 => 'Due today',
+		$dueLabelDaysRemaining === -1 => 'Past due by 1 day',
+		default => 'Past due by '.abs($dueLabelDaysRemaining).' days',
 	};
 	$paymentTerms = match (true) {
 		$daysRemaining === null => null,
