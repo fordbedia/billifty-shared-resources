@@ -18,4 +18,13 @@ enum PaymentMethod: string
 			self::STRIPE => 'Stripe',
 		};
 	}
+
+	public static function valueFromLabel(string $label): string
+	{
+		foreach(self::cases() as $case) {
+			if (strtolower($case->label()) === strtolower(trim($label))) {
+				return $case->value;
+			}
+		}
+	}
 }

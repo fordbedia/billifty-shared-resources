@@ -7,6 +7,7 @@ use BilliftySDK\SharedResources\Modules\Billing\Application\Ports\InvoicePayment
 use BilliftySDK\SharedResources\Modules\Billing\Application\Ports\StripeInvoicePaymentLink;
 use BilliftySDK\SharedResources\Modules\Billing\DTO\CreateInvoicePaymentLinkData;
 use BilliftySDK\SharedResources\Modules\Billing\DTO\PaymentLinkResult;
+use BilliftySDK\SharedResources\Modules\Billing\Infrastructure\Payments\Traits\Security\ValidatePaymentLink;
 use BilliftySDK\SharedResources\Modules\Billing\Infrastructure\Payments\Traits\Security\ValidatesInvoiceState;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use BilliftySDK\SharedResources\Modules\Invoicing\Repository\Eloquents\InvoiceRepository;
@@ -14,7 +15,7 @@ use Stripe\StripeClient;
 
 class StripePaymentLink implements InvoicePaymentLinkGateway
 {
-	use ValidatesInvoiceState;
+	use ValidatesInvoiceState, ValidatePaymentLink;
 
 	public function __construct(
 		protected InvoiceRepository $invoiceRepo,
@@ -40,8 +41,15 @@ class StripePaymentLink implements InvoicePaymentLinkGateway
 				$q->where('token', $data->token);
 			})
 			->first();
-
+		// ----------------------------------------------------------------------------
+		// Validate Invoice
+		// ----------------------------------------------------------------------------
+		// Validate Invoice State
 		$this->validateInvoiceState($invoice);
+		// Validate Revoked Payment Link
+		$this->validateRevokedPaymentLink($invoice);
+		// Validate Expired Payment Link
+		$this->validateExpiredPaymentLink($invoice);
 
 		$stripePaymentInfo = $invoice?->businessProfile?->paymentInformations?->first(function ($paymentInfo) {
 			$paymentMethod = $paymentInfo?->payment_method;

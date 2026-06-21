@@ -3,6 +3,7 @@
 namespace BilliftySDK\SharedResources\Modules\Billing\Models;
 
 
+use BilliftySDK\SharedResources\Modules\Invoicing\Enums\PaymentMethod;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -31,6 +32,13 @@ class PaymentLink extends Model
 
 	public function getPaymentMethodsAttribute()
 	{
+		if ($this->invoice->usesSnapshot()) {
+			$paymentInformation = collect($this->invoice->invoiceBusinessProfileData()['paymentInformations']);
+			return $paymentInformation->map(function ($paymentInfo) {
+				return PaymentMethod::valueFromLabel($paymentInfo['payment_method']);
+			});
+		}
+
 		return $this->invoice->businessProfile?->paymentInformations->map(function ($paymentInfo) {
 			return $paymentInfo->payment_method;
 		});

@@ -3,6 +3,7 @@
 namespace BilliftySDK\SharedResources\Modules\Billing\Infrastructure\Payments;
 
 use BilliftySDK\SharedResources\Modules\Billing\DTO\CreateInvoicePaymentLinkData;
+use BilliftySDK\SharedResources\Modules\Billing\Infrastructure\Payments\Traits\Security\ValidatePaymentLink;
 use BilliftySDK\SharedResources\Modules\Billing\Infrastructure\Payments\Traits\Security\ValidatesInvoiceState;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
 use Illuminate\Http\Request;
@@ -12,7 +13,7 @@ use Srmklive\PayPal\Services\PayPal as PayPalClient;
 
 class PayPalGateway
 {
-    use ValidatesInvoiceState;
+    use ValidatesInvoiceState, ValidatePaymentLink;
 
     public function createPaymentLink(
         Invoices $invoice,
@@ -20,7 +21,15 @@ class PayPalGateway
     ): string {
         $invoice->loadMissing(['items', 'paymentLink', 'businessProfile.paypalInformation']);
 
+		// ----------------------------------------------------------------------------
+		// Validate Invoice
+		// ----------------------------------------------------------------------------
+		// Validate Invoice State
         $this->validateInvoiceState($invoice);
+		// Validate Revoked Payment Link
+		$this->validateRevokedPaymentLink($invoice);
+		// Validate Expired Payment Link
+		$this->validateExpiredPaymentLink($invoice);
 
         $businessProfile = $invoice->businessProfile?->paypalInformation;
 
