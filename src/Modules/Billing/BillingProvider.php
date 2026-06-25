@@ -3,6 +3,7 @@
 namespace BilliftySDK\SharedResources\Modules\Billing;
 
 use BilliftySDK\SharedResources\Modules\Billing\Console\Commands\DowngradeExpiredCancellations;
+use BilliftySDK\SharedResources\Modules\Billing\Console\Commands\SyncPlanUsagePeriods;
 use BilliftySDK\SharedResources\Modules\Billing\Providers\ModelProviders;
 use BilliftySDK\SharedResources\Modules\Billing\Providers\StripeProvider;
 use Illuminate\Support\Facades\Gate;
@@ -31,6 +32,7 @@ class BillingProvider extends ServiceProvider
 		if ($this->app->runningInConsole()) {
 			$this->commands([
 				DowngradeExpiredCancellations::class,
+				SyncPlanUsagePeriods::class,
 			]);
 		}
     }

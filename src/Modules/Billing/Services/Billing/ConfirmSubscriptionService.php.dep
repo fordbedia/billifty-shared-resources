@@ -3,6 +3,7 @@
 namespace BilliftySDK\SharedResources\Modules\Billing\Services\Billing;
 
 use BilliftySDK\SharedResources\Modules\Billing\Models\UserSubscription;
+use BilliftySDK\SharedResources\Modules\Billing\Services\PlanUsageService;
 use BilliftySDK\SharedResources\Modules\User\Models\Plan;
 use BilliftySDK\SharedResources\Modules\User\Models\User;
 use Carbon\Carbon;
@@ -12,7 +13,8 @@ use Illuminate\Support\Facades\Log;
 final class ConfirmSubscriptionService
 {
     public function __construct(
-        private StripePaymentGateway $gateway
+        private StripePaymentGateway $gateway,
+		private PlanUsageService $planUsageService
     ) {}
 
     /**
@@ -125,6 +127,8 @@ final class ConfirmSubscriptionService
                 'user_id'              => $user->id,
                 'user_subscription_id' => $subscriptionModel->id,
             ]);
+
+			$this->planUsageService->ensureCurrentPeriodsForUser($user->refresh(), $subscriptionModel);
 
             return [
                 'status'        => 'ok',

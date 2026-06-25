@@ -2,6 +2,7 @@
 
 namespace BilliftySDK\SharedResources\Modules\Invoicing\Http\Controllers;
 
+use BilliftySDK\SharedResources\Modules\Billing\Exceptions\PlanLimitExceededException;
 use BilliftySDK\SharedResources\Modules\Billing\Infrastructure\Payments\Traits\Security\ValidatesInvoiceState;
 use BilliftySDK\SharedResources\Modules\Invoicing\Http\Resources\InvoiceResource;
 use BilliftySDK\SharedResources\Modules\Invoicing\Http\Resources\PaymentLinkResource;
@@ -36,8 +37,8 @@ class InvoiceController extends Controller
 
 	public function __construct()
 	{
-		$this->middleware(['userMustBeVerified'])->only(['store', 'update']);
-		$this->middleware(['plan.limit:max_invoices_per_month'])->only(['store', 'generate', 'sendToBusinessProfile', 'sendToClient']);
+		$this->middleware(['userMustBeVerified'])->only(['store', 'saveDraft', 'update']);
+		$this->middleware(['plan.limit:max_invoices_per_month'])->only(['store', 'saveDraft']);
 	}
 
 	public function generateInvoiceNumber(InvoiceContracts $invoice)
@@ -79,6 +80,13 @@ class InvoiceController extends Controller
 			$action = InvoiceAction::from($data['action']); // save_draft typical here
 			$invoice = $invoiceService->upsert($data, $action, id: null);
 			return response()->json($invoice, Response::HTTP_CREATED);
+		} catch (PlanLimitExceededException $e) {
+			return response()->json([
+				'message'       => $e->getMessage(),
+				'error_code'    => 'plan_limit_reached',
+				'limit_key'     => $e->limitKey,
+				'current_usage' => $e->currentUsage,
+			], 403);
 		} catch (\Throwable $e) {
 			$errors = ['errors' => [$e->getCode() => $e->getMessage()]];
 			return response()->json($errors, Response::HTTP_INTERNAL_SERVER_ERROR);
@@ -144,11 +152,7 @@ class InvoiceController extends Controller
 		InvoiceService      $invoiceService
 	)
 	{
-		$data = $storeInvoiceRequest->validated();
-
-		$invoiceService->create($data);
-
-		return response()->json($data, 201);
+		return $this->store($storeInvoiceRequest, $invoiceService);
 	}
 
 	public function generate(

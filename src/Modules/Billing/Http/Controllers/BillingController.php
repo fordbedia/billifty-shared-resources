@@ -7,6 +7,7 @@ use BilliftySDK\SharedResources\Modules\Billing\Domain\PlanFlowRedirection;
 use BilliftySDK\SharedResources\Modules\Billing\Http\Controllers\Traits\StripeBillable;
 use BilliftySDK\SharedResources\Modules\Billing\Models\UserSubscription;
 use BilliftySDK\SharedResources\Modules\Billing\Services\Billing\SubscriptionService;
+use BilliftySDK\SharedResources\Modules\Billing\Services\PlanUsageService;
 use BilliftySDK\SharedResources\Modules\Billing\Support\StripePriceResolver;
 use BilliftySDK\SharedResources\Modules\User\Models\Plan;
 use Carbon\Carbon;
@@ -29,10 +30,11 @@ class BillingController extends Controller
      * Create a Stripe Checkout session (subscription).
      * Frontend will redirect user to returned `url`.
      */
-    public function createCheckoutSession(
+	public function createCheckoutSession(
 		Request $request,
 		PaymentGateway $gateway,
-		SubscriptionService $subscriptionService
+		SubscriptionService $subscriptionService,
+		PlanUsageService $planUsageService
 	) {
         $user = $request->user();
 
@@ -67,6 +69,7 @@ class BillingController extends Controller
 			// Otherwise, subscribed to free plan
 			$url = config('urls.invoices_url');
 			['url' => $nextUrl] = $subscriptionService->handleFreeSubscription();
+			$planUsageService->ensureCurrentPeriodsForUser($user->refresh());
 		} else {
 			['url' => $nextUrl] = $gateway->createCheckoutSessionUrl(
 				$customerId,
@@ -198,7 +201,7 @@ class BillingController extends Controller
 		$startsAt = $this->resolveSubscriptionPeriodStart($subscription);
 		$renewsAt = $this->resolveSubscriptionPeriodEnd($subscription);
 
-		UserSubscription::updateOrCreate(
+		$subscriptionModel = UserSubscription::updateOrCreate(
 			['user_id' => (int) $user->id],
 			[
 				'user_id'            => (int) $user->id,
@@ -220,6 +223,8 @@ class BillingController extends Controller
 		$user->forceFill([
 			'plan_id' => ($isPaid && $planId) ? $planId : $freeId,
 		])->save();
+
+		app(PlanUsageService::class)->ensureCurrentPeriodsForUser($user->refresh(), $subscriptionModel);
 
 		return response()->json([
 			'message' => 'Subscription confirmed.',

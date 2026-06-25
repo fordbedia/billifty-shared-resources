@@ -52,6 +52,7 @@ Route::prefix('v1')->group(function () {
 		Route::apiResource('color-scheme', ColorSchemeController::class);
 	});
 	Route::apiResource('plan', PlansController::class);
+	Route::get('/plan/look-up/{plan}', [PlansController::class, 'lookUpPlan']);
 });
 
 Route::middleware(['auth:api'])->group(function () {

@@ -8,6 +8,7 @@ use BilliftySDK\SharedResources\Modules\User\Models\User;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class UserSubscription extends Model
 {
@@ -49,6 +50,11 @@ class UserSubscription extends Model
     {
         return $this->belongsTo(Plan::class);
     }
+
+	public function usagePeriods(): HasMany
+	{
+		return $this->hasMany(PlanUsagePeriod::class, 'user_subscription_id');
+	}
 
 	public function unitAmountDollars(): Attribute
 	{

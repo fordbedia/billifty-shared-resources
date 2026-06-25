@@ -38,18 +38,12 @@ class InvoicePolicy
 	 */
 	public function create(User $user): bool
 	{
-		$invoiceQuery = $user->invoices();
-		$createdAtColumn = $invoiceQuery->getRelated()->qualifyColumn('created_at');
+		$permission = $this->planPermission->forUser($user);
 
-		$invoicesThisMonth = $invoiceQuery
-			->whereBetween($createdAtColumn, [
-				now()->startOfMonth(),
-				now()->endOfMonth(),
-			])->count();
-
-		return $this->planPermission
-			->forUser($user)
-			->canWithinLimit('max_invoices_per_month', $invoicesThisMonth);
+		return $permission->canWithinLimit(
+			'max_invoices_per_month',
+			$permission->currentUsage('max_invoices_per_month')
+		);
 	}
 
 	/**

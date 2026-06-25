@@ -154,4 +154,18 @@ class PlansController extends Controller
     {
         //
     }
+
+	public function lookUpPlan(Request $request)
+	{
+		$plans = Plan::with('capabilities')
+			->orderBy('sort_order')
+			->orderBy('id')
+			->get()
+			->map(fn (Plan $plan) => $plan->code === trim($request->plan) ? $this->planToArray($plan) : null)
+			->filter()
+			->values()
+			->flatMap(fn ($p) => [...$p]);
+
+		return response()->json($plans);
+	}
 }

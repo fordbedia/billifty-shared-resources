@@ -10,6 +10,7 @@ use BilliftySDK\SharedResources\Modules\Billing\Mail\PaymentSuccessNotificationF
 use BilliftySDK\SharedResources\Modules\Billing\Models\PaymentRecord;
 use BilliftySDK\SharedResources\Modules\Billing\Models\StripeWebhookEvents;
 use BilliftySDK\SharedResources\Modules\Billing\Models\UserSubscription;
+use BilliftySDK\SharedResources\Modules\Billing\Services\PlanUsageService;
 use BilliftySDK\SharedResources\Modules\Billing\Support\StripePriceResolver;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Currency;
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
@@ -22,6 +23,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schema;
 use Stripe\Exception\SignatureVerificationException;
 use Stripe\StripeClient;
 use Stripe\Webhook;
@@ -33,6 +35,7 @@ class StripeWebhookController extends Controller
     public function __construct(
 		private StripeClient $stripe,
 		private InvoicePaymentReminderService $paymentReminderService,
+		private ?PlanUsageService $planUsageService = null,
 	) {}
 
     public function handle(Request $request, PaymentGateway $gateway)
@@ -363,7 +366,7 @@ class StripeWebhookController extends Controller
 
         // Upsert subscription. Failed/unpaid updates preserve the existing local plan
         // while keeping Stripe IDs for future recovery webhooks.
-        UserSubscription::updateOrCreate(
+        $subscriptionModel = UserSubscription::updateOrCreate(
             [
                 // 'stripe_subscription_id' => $subscription->id
                 'user_id' => (int) $userId,
@@ -390,6 +393,8 @@ class StripeWebhookController extends Controller
             $user->forceFill([
                 'plan_id' => $effectivePlanId,
             ])->save();
+
+			$this->syncPlanUsagePeriodsIfAvailable($user->refresh(), $subscriptionModel);
         }
 
         return response('OK', 200);
@@ -406,6 +411,28 @@ class StripeWebhookController extends Controller
             || (($sqlState === '23000' || $driverCode === '19')
                 && (str_contains($message, 'duplicate') || str_contains($message, 'unique')));
     }
+
+	private function planUsageService(): PlanUsageService
+	{
+		return $this->planUsageService ??= app(PlanUsageService::class);
+	}
+
+	private function syncPlanUsagePeriodsIfAvailable(User $user, UserSubscription $subscription): void
+	{
+		try {
+			if (! Schema::hasTable('plan_usage_periods')) {
+				return;
+			}
+
+			$this->planUsageService()->ensureCurrentPeriodsForUser($user, $subscription);
+		} catch (\Throwable $e) {
+			Log::warning('StripeWebhookController.plan_usage_period_sync_failed', [
+				'user_id' => $user->getKey(),
+				'subscription_id' => $subscription->getKey(),
+				'err' => $e->getMessage(),
+			]);
+		}
+	}
 
     private function constructEventWithConfiguredSecrets(
         string $payload,

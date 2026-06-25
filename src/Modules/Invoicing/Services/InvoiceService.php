@@ -2,6 +2,7 @@
 
 namespace BilliftySDK\SharedResources\Modules\Invoicing\Services;
 
+use BilliftySDK\SharedResources\Modules\Billing\Services\PlanUsageService;
 use BilliftySDK\SharedResources\Modules\Invoicing\Domain\InvoiceAction;
 use BilliftySDK\SharedResources\Modules\Invoicing\Domain\InvoiceStateMachine;
 use BilliftySDK\SharedResources\Modules\Invoicing\Domain\InvoiceStatus;
@@ -27,6 +28,7 @@ class InvoiceService
 		protected InvoiceContracts  $repo,
 		protected InvoicePaymentLinkServices $paymentLinkServices,
 		?InvoicePaymentReminderService $paymentReminderService = null,
+		protected ?PlanUsageService $planUsageService = null,
 	)
 	{
 		$this->paymentReminderService = $paymentReminderService ?? app(InvoicePaymentReminderService::class);
@@ -41,6 +43,15 @@ class InvoiceService
 		DB::beginTransaction();
 
 		try {
+			$isCreating = $id === null;
+			$user = Auth::user();
+			$invoiceUsagePeriod = null;
+
+			if ($isCreating && $user) {
+				$invoiceUsagePeriod = $this->planUsageService()
+					->assertCanConsumeForUpdate($user, 'max_invoices_per_month');
+			}
+
 			$invoice = $id
 				? $this->repo->findById($id)
 				: new Invoices(Collection::make($data)->filter(fn($inv, $key) => !in_array($key, ['invoice_items', 'business_profile', 'template'])
@@ -141,6 +152,10 @@ class InvoiceService
 				$this->paymentReminderService->generateReminderRows($invoice);
 			}
 
+			if ($invoiceUsagePeriod) {
+				$this->planUsageService()->incrementUsage($invoiceUsagePeriod);
+			}
+
 			if ($displayDiscountRow !== null) {
 				$invoice->setAttribute('display_discount_row', $displayDiscountRow);
 			}
@@ -153,6 +168,11 @@ class InvoiceService
 
 			throw $e;
 		}
+	}
+
+	protected function planUsageService(): PlanUsageService
+	{
+		return $this->planUsageService ??= app(PlanUsageService::class);
 	}
 
 	protected function captureIssueSnapshots(Invoices $invoice): void

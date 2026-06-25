@@ -12,10 +12,11 @@ class PlanCapability extends Model
         'plan_id',
         'key',
         'label',
-		'description',
+        'description',
         'type',
         'value',
         'meta',
+		'group',
 		'model_relationship',
 		'is_active'
     ];

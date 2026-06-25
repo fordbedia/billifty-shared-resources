@@ -5,7 +5,9 @@ namespace BilliftySDK\SharedResources\Modules\Billing\Support;
 use BilliftySDK\SharedResources\Modules\User\Models\Plan;
 use BilliftySDK\SharedResources\Modules\User\Models\PlanCapability;
 use BilliftySDK\SharedResources\Modules\User\Models\User;
+use BilliftySDK\SharedResources\Modules\Billing\Services\PlanUsageService;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class PlanPermission
@@ -123,6 +125,17 @@ class PlanPermission
         $key = $this->normalize($limitKey);
         $capability = $this->capability($key);
         $relationName = $this->relationship($key);
+
+		if ($capability && $user->getKey()) {
+			$planUsage = app(PlanUsageService::class);
+
+			if (
+				$planUsage->isPeriodBasedCapability($capability, $key)
+				&& $this->hasUsagePeriodsTable()
+			) {
+				return $planUsage->currentUsage($user, $key);
+			}
+		}
 
         if (! $relationName || ! method_exists($user, $relationName)) {
             return 0;
@@ -251,6 +264,15 @@ class PlanPermission
 
         return $capability->cast_value;
     }
+
+	protected function hasUsagePeriodsTable(): bool
+	{
+		try {
+			return Schema::hasTable('plan_usage_periods');
+		} catch (\Throwable) {
+			return false;
+		}
+	}
 
     protected function capability(string $key): ?PlanCapability
     {
