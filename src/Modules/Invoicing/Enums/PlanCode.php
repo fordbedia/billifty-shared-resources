@@ -10,6 +10,11 @@ enum PlanCode: string
     case PRO = 'pro';
     case PREMIUM = 'premium';
 
+	public static function fromPlan(Plan $plan): array
+	{
+		return self::from($plan->code)->toArray($plan);
+	}
+
 	public function planId(): ?int
 	{
 		return $this->planModel()?->id;
@@ -30,24 +35,31 @@ enum PlanCode: string
         return $cache[$code];
     }
 
-    public function label(): string
+    public function label(?Plan $plan = null): string
     {
-        return $this->planModel()?->name ?? ucfirst($this->value);
+        return $this->resolvePlan($plan)?->name ?? ucfirst($this->value);
     }
 
-    public function priceMonthly(): float
+    public function description(?Plan $plan = null): ?string
     {
-        return (float) ($this->planModel()?->price_monthly ?? 0.00);
+        return $this->resolvePlan($plan)?->description;
     }
 
-    public function priceYearly(): float
+    public function priceMonthly(?Plan $plan = null): float
     {
-        return (float) ($this->planModel()?->price_yearly ?? 0.00);
+        return (float) ($this->resolvePlan($plan)?->price_monthly ?? 0.00);
     }
 
-    public function limits(): array
+    public function priceYearly(?Plan $plan = null): ?float
     {
-        $plan = $this->planModel();
+        $yearly = $this->resolvePlan($plan)?->price_yearly;
+
+        return $yearly === null ? null : (float) $yearly;
+    }
+
+    public function limits(?Plan $plan = null): array
+    {
+        $plan = $this->resolvePlan($plan);
 
         if (! $plan) return [
             'business_profiles'  => null,
@@ -62,9 +74,9 @@ enum PlanCode: string
         ];
     }
 
-    public function features(): array
+    public function features(?Plan $plan = null): array
     {
-        $plan = $this->planModel();
+        $plan = $this->resolvePlan($plan);
         $caps = $plan?->capabilitiesArray() ?? [];
 
         // IMPORTANT:
@@ -104,9 +116,9 @@ enum PlanCode: string
         ];
     }
 
-    public function actions(): array
+    public function actions(?Plan $plan = null): array
     {
-        $plan = $this->planModel();
+        $plan = $this->resolvePlan($plan);
 
         if (! $plan || ! $plan->relationLoaded('capabilities')) {
             return [
@@ -133,9 +145,9 @@ enum PlanCode: string
      * Pricing bullets — from capabilities.description (features group only)
      * Only active rows appear due to global scope.
      */
-    public function featuresText(): array
+    public function featuresText(?Plan $plan = null): array
 	{
-		$plan = $this->planModel();
+		$plan = $this->resolvePlan($plan);
 
 		if (! $plan || ! $plan->relationLoaded('capabilities')) {
 			return [];
@@ -144,7 +156,12 @@ enum PlanCode: string
 		// Add a single "included from previous plan" line (once)
 		$additional = match ($plan->code) {
 			self::PRO->value     => ['All Free features'],
-			self::PREMIUM->value => ['All Pro features'],
+			self::PREMIUM->value => [
+				'All Pro features',
+				'Unlimited invoices',
+				'Unlimited clients',
+				'Unlimited Business Profiles'
+			],
 			default              => [],
 		};
 
@@ -160,10 +177,10 @@ enum PlanCode: string
 		return array_values(array_unique(array_merge($additional, $bullets)));
 	}
 
-    public function billingCycles(): array
+    public function billingCycles(?Plan $plan = null): array
     {
-        $monthly = $this->priceMonthly();
-        $yearly  = $this->priceYearly();
+        $monthly = $this->priceMonthly($plan);
+        $yearly  = $this->priceYearly($plan);
 
         return [
             'monthly' => [
@@ -171,28 +188,38 @@ enum PlanCode: string
                 'interval' => 'monthly',
             ],
             'yearly' => [
-                'price'             => $yearly,
+                'price'             => $yearly ?? 0,
                 'interval'          => 'yearly',
-                'discount_applied'  => $yearly > 0,
+                'discount_applied'  => $yearly !== null && $yearly > 0,
                 'discount_percent'  => 20,
             ],
         ];
     }
 
-    public function toArray(): array
+    public function toArray(?Plan $plan = null): array
     {
         return [
             'code'          => $this->value,
-            'actions'       => $this->actions(),
-            'name'          => $this->label(),
-            'monthly'       => $this->priceMonthly(),
-            'yearly'        => $this->priceYearly(),
-            'limits'        => $this->limits(),
-            'features'      => $this->features(),
-            'billing'       => $this->billingCycles(),
-            'features_text' => $this->featuresText(),
+            'actions'       => $this->actions($plan),
+            'name'          => $this->label($plan),
+            'description'   => $this->description($plan),
+            'monthly'       => $this->priceMonthly($plan),
+            'yearly'        => $this->priceYearly($plan),
+            'limits'        => $this->limits($plan),
+            'features'      => $this->features($plan),
+            'billing'       => $this->billingCycles($plan),
+            'features_text' => $this->featuresText($plan),
         ];
     }
+
+	protected function resolvePlan(?Plan $plan = null): ?Plan
+	{
+		if ($plan && ! $plan->relationLoaded('capabilities')) {
+			$plan->load('capabilities');
+		}
+
+		return $plan ?? $this->planModel();
+	}
 
     public static function all(): array
     {

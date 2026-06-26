@@ -79,7 +79,6 @@ return new class extends Migration
 			$table->json('client_snapshot')->nullable();
 			$table->json('business_profile_snapshot')->nullable();
 			$table->json('payment_information_snapshot')->nullable();
-			$table->json('payment_information_snapshot')->nullable();
 			$table->boolean('payment_reminders_enabled')->default(false);
 
 			$table->foreignId('invoice_reminder_schedule_id')
