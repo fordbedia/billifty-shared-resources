@@ -6,6 +6,7 @@ use BilliftySDK\SharedResources\Modules\Billing\BillingProvider;
 use BilliftySDK\SharedResources\Modules\Invoicing\InvoicingProvider;
 use BilliftySDK\SharedResources\Modules\User\UserProvider;
 use BilliftySDK\SharedResources\SDK\Application\Ports\Transactional;
+use BilliftySDK\SharedResources\SDK\Console\Config\CreateModule;
 use BilliftySDK\SharedResources\SDK\Console\Config\Make;
 use BilliftySDK\SharedResources\SDK\Console\Config\ResetTestData;
 use BilliftySDK\SharedResources\SDK\Infrastructure\Transactions\EloquentDBTransaction;
@@ -32,6 +33,7 @@ class SharedResourceServiceProvider extends ServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->commands([
+                CreateModule::class,
                 Make::class,
                 ResetTestData::class,
 				SnapshotTestDatabase::class
@@ -127,4 +129,3 @@ class SharedResourceServiceProvider extends ServiceProvider
 		$this->app->singleton(Transactional::class, EloquentDBTransaction::class);
     }
 }
-
