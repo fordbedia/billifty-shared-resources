@@ -1,6 +1,6 @@
 <?php
 
-namespace BilliftySDK\SharedResources\Modules\Invoicing\Database\Seeders;
+namespace BilliftySDK\SharedResources\Modules\AdvancedFilter\Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use BilliftySDK\SharedResources\SDK\Database\MakeSeeder;

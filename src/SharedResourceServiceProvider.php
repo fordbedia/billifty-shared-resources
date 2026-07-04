@@ -14,13 +14,15 @@ use BilliftySDK\SharedResources\TestCase\Command\SnapshotTestDatabase;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\File;
+use BilliftySDK\SharedResources\Modules\AdvancedFilter\AdvancedFilterProvider;
 
 class SharedResourceServiceProvider extends ServiceProvider
 {
     protected array $providers = [
 		InvoicingProvider::class,
 		UserProvider::class,
-		BillingProvider::class,
+		BillingProvider::class,		AdvancedFilterProvider::class,
+
     ];
 
     public function boot()
