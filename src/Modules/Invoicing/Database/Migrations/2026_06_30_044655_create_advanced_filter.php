@@ -1,6 +1,6 @@
 <?php
 
-use BilliftySDK\SharedResources\Modules\Invoicing\Database\Seeders\AdvancedFilterSeeder;
+use BilliftySDK\SharedResources\Modules\AdvancedFilter\Database\Seeders\AdvancedFilterSeeder;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;

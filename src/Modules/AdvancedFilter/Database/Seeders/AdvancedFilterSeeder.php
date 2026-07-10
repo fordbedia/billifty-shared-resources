@@ -2,12 +2,15 @@
 
 namespace BilliftySDK\SharedResources\Modules\AdvancedFilter\Database\Seeders;
 
+use BilliftySDK\SharedResources\Modules\AdvancedFilter\Models\AdvancedFilterField;
+use BilliftySDK\SharedResources\Modules\AdvancedFilter\Models\AdvancedFilterFieldOperator;
+use BilliftySDK\SharedResources\Modules\AdvancedFilter\Models\AdvancedFilterOperator;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use BilliftySDK\SharedResources\SDK\Database\MakeSeeder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
-class AdvancedFilterSeeder extends Seeder
+class AdvancedFilterSeeder extends MakeSeeder
 {
 	private const MODULE_INVOICES = 'invoices';
 
@@ -34,6 +37,8 @@ class AdvancedFilterSeeder extends Seeder
 
 	public function run(): void
 	{
+		$this->revert();
+
 		DB::transaction(function () {
 			$this->seedOperators();
 			$this->seedInvoiceModuleFields();
@@ -155,18 +160,18 @@ class AdvancedFilterSeeder extends Seeder
 			'sort_order' => 50,
 		]);
 
-		$this->seedSubFields(
-			parentId: $parentId,
-			groupLabel: self::GROUP_BUSINESS_PROFILE,
-			fields: [
-				$this->textSubField('name', 'Name', 'Enter business profile name', 10),
-				$this->textSubField('legal_name', 'Legal Name', 'Enter legal name', 20),
-				$this->textSubField('email', 'Email Address', 'Enter business profile email', 30),
-				$this->textSubField('phone', 'Phone', 'Enter business profile phone', 40),
-				$this->textSubField('website', 'Website', 'Enter website', 50),
-				$this->dateSubField('created_at', 'Date Created', 60),
-				$this->textSubField('ein', 'EIN', 'Enter EIN', 70),
-			]
+			$this->seedSubFields(
+				parentId: $parentId,
+				groupLabel: self::GROUP_BUSINESS_PROFILE,
+				fields: [
+					$this->textEqualitySubField('name', 'Name', 'Enter business profile name', 10),
+					$this->textEqualitySubField('legal_name', 'Legal Name', 'Enter legal name', 20),
+					$this->textEqualitySubField('email', 'Email Address', 'Enter business profile email', 30),
+					$this->textEqualitySubField('phone', 'Phone', 'Enter business profile phone', 40),
+					$this->textEqualitySubField('website', 'Website', 'Enter website', 50),
+					$this->dateSubField('created_at', 'Date Created', 60),
+					$this->textSubField('ein', 'EIN', 'Enter EIN', 70),
+				]
 		);
 	}
 
@@ -238,8 +243,9 @@ class AdvancedFilterSeeder extends Seeder
 		string $fieldKey,
 		string $label,
 		string $placeholder,
-		int $sortOrder
-	): array {
+		int    $sortOrder
+	): array
+	{
 		return [
 			'field_key' => $fieldKey,
 			'label' => $label,
@@ -250,11 +256,29 @@ class AdvancedFilterSeeder extends Seeder
 		];
 	}
 
+	private function textEqualitySubField(
+		string $fieldKey,
+		string $label,
+		string $placeholder,
+		int    $sortOrder
+	): array
+	{
+		return [
+			'field_key' => $fieldKey,
+			'label' => $label,
+			'data_type' => self::TYPE_STRING,
+			'default_operator_key' => self::OP_EQUALS,
+			'sort_order' => $sortOrder,
+			'operators' => $this->textEqualityOperators($placeholder),
+		];
+	}
+
 	private function dateSubField(
 		string $fieldKey,
 		string $label,
-		int $sortOrder
-	): array {
+		int    $sortOrder
+	): array
+	{
 		return [
 			'field_key' => $fieldKey,
 			'label' => $label,
@@ -273,6 +297,14 @@ class AdvancedFilterSeeder extends Seeder
 			$this->textOperator(self::OP_CONTAINS, $placeholder, true, 10),
 			$this->textOperator(self::OP_EQUALS, $placeholder, false, 20),
 			$this->textOperator(self::OP_NOT_EQUALS, $placeholder, false, 30),
+		];
+	}
+
+	private function textEqualityOperators(string $placeholder): array
+	{
+		return [
+			$this->textOperator(self::OP_EQUALS, $placeholder, true, 10),
+			$this->textOperator(self::OP_NOT_EQUALS, $placeholder, false, 20),
 		];
 	}
 
@@ -335,9 +367,10 @@ class AdvancedFilterSeeder extends Seeder
 	private function textOperator(
 		string $operatorKey,
 		string $placeholder,
-		bool $isDefault,
-		int $sortOrder
-	): array {
+		bool   $isDefault,
+		int    $sortOrder
+	): array
+	{
 		return [
 			'operator_key' => $operatorKey,
 			'is_default' => $isDefault,
@@ -351,9 +384,10 @@ class AdvancedFilterSeeder extends Seeder
 		string $operatorKey,
 		string $placeholder,
 		string $valueSource,
-		bool $isDefault,
-		int $sortOrder
-	): array {
+		bool   $isDefault,
+		int    $sortOrder
+	): array
+	{
 		return [
 			'operator_key' => $operatorKey,
 			'is_default' => $isDefault,
@@ -385,13 +419,13 @@ class AdvancedFilterSeeder extends Seeder
 			$this->withTimestamps($field)
 		);
 
-		return (int) DB::table('advanced_filter_fields')
+		return (int)DB::table('advanced_filter_fields')
 			->where('module', $field['module'])
 			->where('field_key', $field['field_key'])
 			->when(
 				is_null($field['parent_id']),
-				fn ($query) => $query->whereNull('parent_id'),
-				fn ($query) => $query->where('parent_id', $field['parent_id'])
+				fn($query) => $query->whereNull('parent_id'),
+				fn($query) => $query->where('parent_id', $field['parent_id'])
 			)
 			->value('id');
 	}
@@ -428,5 +462,16 @@ class AdvancedFilterSeeder extends Seeder
 			'created_at' => now(),
 			'updated_at' => now(),
 		]);
+	}
+
+	public function revert()
+	{
+		DB::statement('SET FOREIGN_KEY_CHECKS=0');
+
+		AdvancedFilterFieldOperator::truncate();
+		AdvancedFilterField::truncate();
+		AdvancedFilterOperator::truncate();
+
+		DB::statement('SET FOREIGN_KEY_CHECKS=1');
 	}
 }

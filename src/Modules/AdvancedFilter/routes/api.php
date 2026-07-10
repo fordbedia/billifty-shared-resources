@@ -8,6 +8,7 @@ Route::prefix('v1')->group(function () {
 		Route::prefix('advanced-filter')->group(function () {
 			Route::apiResource('invoice-module', InvoiceAdvancedFilterInputController::class);
 			Route::get('options', [InvoiceAdvancedFilterInputController::class, 'options']);
+			Route::get('on-search', [InvoiceAdvancedFilterInputController::class, 'onSearch']);
 		});
 	});
 });
