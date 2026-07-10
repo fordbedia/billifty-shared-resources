@@ -24,6 +24,7 @@ class AdvancedFilterSeeder extends MakeSeeder
 
 	private const OP_CONTAINS = 'contains';
 	private const OP_NOT_CONTAINS = 'not_contains';
+	private const OP_LIKE = 'like';
 	private const OP_EQUALS = '=';
 	private const OP_NOT_EQUALS = '!=';
 	private const OP_DATE_RANGE = 'date_range';
@@ -82,7 +83,8 @@ class AdvancedFilterSeeder extends MakeSeeder
 						sortOrder: 10
 					),
 					$this->textOperator(self::OP_EQUALS, 'Enter invoice number', false, 20),
-					$this->textOperator(self::OP_NOT_EQUALS, 'Enter invoice number', false, 30),
+					$this->textOperator(self::OP_LIKE, 'Enter invoice number', false, 30),
+					$this->textOperator(self::OP_NOT_EQUALS, 'Enter invoice number', false, 40),
 				],
 			],
 			[
@@ -160,18 +162,18 @@ class AdvancedFilterSeeder extends MakeSeeder
 			'sort_order' => 50,
 		]);
 
-			$this->seedSubFields(
-				parentId: $parentId,
-				groupLabel: self::GROUP_BUSINESS_PROFILE,
-				fields: [
-					$this->textEqualitySubField('name', 'Name', 'Enter business profile name', 10),
-					$this->textEqualitySubField('legal_name', 'Legal Name', 'Enter legal name', 20),
-					$this->textEqualitySubField('email', 'Email Address', 'Enter business profile email', 30),
-					$this->textEqualitySubField('phone', 'Phone', 'Enter business profile phone', 40),
-					$this->textEqualitySubField('website', 'Website', 'Enter website', 50),
-					$this->dateSubField('created_at', 'Date Created', 60),
-					$this->textSubField('ein', 'EIN', 'Enter EIN', 70),
-				]
+		$this->seedSubFields(
+			parentId: $parentId,
+			groupLabel: self::GROUP_BUSINESS_PROFILE,
+			fields: [
+				$this->textSubField('name', 'Name', 'Enter business profile name', 10),
+				$this->textSubField('legal_name', 'Legal Name', 'Enter legal name', 20),
+				$this->textSubField('email', 'Email Address', 'Enter business profile email', 30),
+				$this->textEqualitySubField('phone', 'Phone', 'Enter business profile phone', 40),
+				$this->textEqualitySubField('website', 'Website', 'Enter website', 50),
+				$this->dateSubField('created_at', 'Date Created', 60),
+				$this->textSubField('ein', 'EIN', 'Enter EIN', 70),
+			]
 		);
 	}
 
@@ -250,7 +252,7 @@ class AdvancedFilterSeeder extends MakeSeeder
 			'field_key' => $fieldKey,
 			'label' => $label,
 			'data_type' => self::TYPE_STRING,
-			'default_operator_key' => self::OP_CONTAINS,
+			'default_operator_key' => self::OP_LIKE,
 			'sort_order' => $sortOrder,
 			'operators' => $this->textComparisonOperators($placeholder),
 		];
@@ -294,7 +296,7 @@ class AdvancedFilterSeeder extends MakeSeeder
 	private function textComparisonOperators(string $placeholder): array
 	{
 		return [
-			$this->textOperator(self::OP_CONTAINS, $placeholder, true, 10),
+			$this->textOperator(self::OP_LIKE, $placeholder, true, 10),
 			$this->textOperator(self::OP_EQUALS, $placeholder, false, 20),
 			$this->textOperator(self::OP_NOT_EQUALS, $placeholder, false, 30),
 		];
@@ -340,6 +342,16 @@ class AdvancedFilterSeeder extends MakeSeeder
 				'requires_value' => true,
 				'is_enabled' => true,
 				'sort_order' => 30,
+			],
+			[
+				'operator_key' => self::OP_LIKE,
+				'label' => 'Includes text',
+				'value_component' => self::VALUE_TEXT,
+				'placeholder' => null,
+				'value_source' => null,
+				'requires_value' => true,
+				'is_enabled' => true,
+				'sort_order' => 35,
 			],
 			[
 				'operator_key' => self::OP_NOT_EQUALS,

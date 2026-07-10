@@ -62,43 +62,11 @@ final class AdvancedFilterQueryProcessor
 //				dump($item);
 				$field = $definition->fields($item)[$item['field']] ?? null;
 				$trackFields[] = $item['field'];
-				// Check if type if raw
-				if (isset($field?->type) && $field?->type?->name === SqlLogicalOperatorType::RAW->name) {
-					$function = $field?->sql;
-
-					if ($function instanceof \Closure) {
-						$where = $function($field->bindings);
-
-						$whereGroups[$i][] = RawSqlQuery::make(
-							sql: $where['sql'],
-							bindings: [$this->sqlBindings($where['bindings'])]
-						);
-					}
+				if ($field instanceof SqlLogicalFieldOperator && !$item['subField']) {
+					$whereGroups[$i][] = $this->compileField($field, $item);
 				}
-				// WhereIn
-				if (isset($field?->type) && $field?->type?->name === SqlLogicalOperatorType::WHEREIN->name) {
-					$whereGroups[$i][] = RawSqlQuery::make(
-						sql: " {$field->colKey} IN ?",
-						bindings: [$this->sqlBindings($field->bindings)],
-					);
-				}
-				if (isset($field?->type) && $field?->type?->name === SqlLogicalOperatorType::WHEREBETWEEN->name) {
-					if (!is_array($field->bindings)) {
-						throw InvalidAdvancedFilterInputException::invalidValueType(
-							field: $item['field'],
-							expectedType: 'array',
-							value: $field->bindings,
-						);
-					}
-					$whereGroups[$i][] = RawSqlQuery::make(
-						sql: " {$field->colKey} BETWEEN ? AND ?",
-						bindings: [
-							$field->bindings['from'] ?? null,
-							$field->bindings['to'] ?? null,
-						]);
-				}
-				// @TODO: Work on the relationship
-				dump($item);
+				// relationship
+//				dump($item);
 				if ($field instanceof SqlFilterRelation && $item['subField']) {
 					$subField = $field->fields[$item['subField']] ?? null;
 

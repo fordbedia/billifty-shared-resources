@@ -58,29 +58,32 @@ final readonly class SqlLogicalFieldOperator
 			dependentOn: $dependentOn,
 			bindings: $bindings,
 			sql: function (mixed $bindings) use ($colKey, $operator) {
-				if (is_array($bindings)) {
-					return [
-						'sql' => "{$colKey} IN ?",
-						'bindings' => $bindings,
-					];
-				}
+				$values = is_array($bindings) ? $bindings : [$bindings];
 
 				return match ($operator) {
 					'contains' => [
-						'sql' => "{$colKey} LIKE ?",
-						'bindings' => "%{$bindings}%",
+						'sql' => "{$colKey} IN ?",
+						'bindings' => $values,
 					],
 					'not_contains' => [
-						'sql' => "{$colKey} NOT LIKE ?",
+						'sql' => "{$colKey} NOT IN ?",
+						'bindings' => $values,
+					],
+					'like' => [
+						'sql' => "{$colKey} LIKE ?",
 						'bindings' => "%{$bindings}%",
 					],
 					'!=', 'not_equals' => [
 						'sql' => "{$colKey} != ?",
 						'bindings' => $bindings,
 					],
-					default => [
+					'=' => [
 						'sql' => "{$colKey} = ?",
 						'bindings' => $bindings,
+					],
+					default => [
+						'sql' => is_array($bindings) ? "{$colKey} IN ?" : "{$colKey} = ?",
+						'bindings' => is_array($bindings) ? $values : $bindings,
 					],
 				};
 			},

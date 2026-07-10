@@ -16,7 +16,9 @@ class InvoiceQueryEngine implements QueryEngine
 {
 	public function __construct(
 		private readonly AdvancedFilterQueryProcessor $processor,
-	) {}
+	)
+	{
+	}
 
 	public function joins(): array
 	{
@@ -47,17 +49,38 @@ class InvoiceQueryEngine implements QueryEngine
 				colKey: 'i.invoice_number',
 				type: SqlLogicalOperatorType::RAW,
 				bindings: $input['value'],
-				sql: function($bindings) {
+				sql: function ($bindings) use ($input) {
 					if (is_array($bindings)) {
-						return [
-							'sql' => 'i.invoice_number IN ?',
-							'bindings' => $bindings,
-						];
+						if ($input['operator'] === 'contains') {
+							return [
+								'sql' => 'i.invoice_number IN ?',
+								'bindings' => $bindings,
+							];
+						} else {
+							return [
+								'sql' => 'i.invoice_number NOT IN ?',
+								'bindings' => $bindings,
+							];
+						}
+					}
+
+					if (is_string($bindings)) {
+						if ($input['operator'] === '=') {
+							return [
+								'sql' => 'i.invoice_number = ?',
+								'bindings' => $bindings,
+							];
+						} else if ($input['operator'] === '!=') {
+							return [
+								'sql' => 'i.invoice_number != ?',
+								'bindings' => $bindings,
+							];
+						}
 					}
 
 					return [
 						'sql' => 'i.invoice_number = ?',
-						'bindings' => $bindings,
+						'bindings' => "%{$bindings}%",
 					];
 				}
 			),
@@ -96,7 +119,31 @@ class InvoiceQueryEngine implements QueryEngine
 					),
 				]
 			),
-//			'business_profile' => []
+			'business_profile' => [
+				'name' => SqlLogicalFieldOperator::operatorAwareWhere(
+					colKey: 'bp.name',
+					operator: $input['operator'],
+					dependentOn: ['bp'],
+					bindings: $input['value'],
+				),
+				'legal_name' => SqlLogicalFieldOperator::operatorAwareWhere(
+					colKey: 'bp.name',
+					operator: $input['operator'],
+					dependentOn: ['bp'],
+					bindings: $input['value'],
+				),
+				'email' => SqlLogicalFieldOperator::operatorAwareWhere(
+					colKey: 'c.email',
+					operator: $input['operator'],
+					dependentOn: ['bp'],
+					bindings: $input['value'],
+				),
+				'created_at' => SqlLogicalFieldOperator::whereBetween(
+					colKey: 'c.created_at',
+					dependentOn: ['bp'],
+					bindings: $input['value'],
+				),
+			]
 		];
 	}
 
