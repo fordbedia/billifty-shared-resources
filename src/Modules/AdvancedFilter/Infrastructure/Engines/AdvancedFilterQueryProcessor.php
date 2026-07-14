@@ -29,6 +29,22 @@ final class AdvancedFilterQueryProcessor
 		return '(' . implode(', ', $quotedBindings) . ')';
 	}
 
+	private function rawSqlBindings(mixed $bindings): array
+	{
+		if ($bindings === null || $bindings === []) {
+			return [];
+		}
+
+		if (!is_array($bindings)) {
+			return [$bindings];
+		}
+
+		return array_map(
+			fn($binding) => is_array($binding) ? $this->sqlBindings($binding) : $binding,
+			$bindings,
+		);
+	}
+
 	protected function mergeJoins(QueryEngine $definition): array
 	{
 		$main = [
@@ -45,39 +61,151 @@ final class AdvancedFilterQueryProcessor
 		return [...$main, ...$definition->joins()];
 	}
 
-	public function build(QueryEngine $definition, $input): void
+	public function build(QueryEngine $definition, $input): RawSqlQuery
 	{
 		if (empty($input->groups)) {
-			return;
+			return $definition->baseSql();
 		}
 
 		$joins = $this->mergeJoins($definition);
 		$whereGroups = [];
+		$requiredJoinAliases = [];
 		$bindings = [];
 		$trackFields = [];
-//		print_r($definition->fields()['invoice_number']['where']('sdsd'));
-//		dd($definition->fields()['invoice_number']);
+
 		foreach ($input->groups['groups'] as $i => $group) {
 			foreach ($group['conditions'] as $item) {
-//				dump($item);
+
 				$field = $definition->fields($item)[$item['field']] ?? null;
 				$trackFields[] = $item['field'];
-				if ($field instanceof SqlLogicalFieldOperator && !$item['subField']) {
+				if ($field instanceof SqlLogicalFieldOperator && !$item['subField'] && $this->canRegisterField($field)) {
+					$requiredJoinAliases = $this->appendRequiredJoinAliases($requiredJoinAliases, $field->dependentOn);
 					$whereGroups[$i][] = $this->compileField($field, $item);
 				}
-				// relationship
-//				dump($item);
+				// ----------------------------------------------------------------------------
+				// Relationship
+				// ----------------------------------------------------------------------------
 				if ($field instanceof SqlFilterRelation && $item['subField']) {
 					$subField = $field->fields[$item['subField']] ?? null;
-
-					if ($subField) {
+					if ($subField && $this->canRegisterField($subField)) {
+						$requiredJoinAliases = $this->appendRequiredJoinAliases($requiredJoinAliases, [$field->joinKey]);
+						$requiredJoinAliases = $this->appendRequiredJoinAliases($requiredJoinAliases, $subField->dependentOn);
 						$whereGroups[$i][] = $this->compileField($subField, $item);
 					}
 				}
 			}
 		}
 
-		dd($whereGroups);
+		$sql = $this->compileWhereGroups($definition, $joins, $whereGroups, $requiredJoinAliases);
+		dd($sql);
+	}
+
+	/**
+	 * @param array $whereGroups
+	 * @return RawSqlQuery
+	 */
+	private function compileWhereGroups(
+		QueryEngine $definition,
+		array $joins,
+		array $whereGroups,
+		array $requiredJoinAliases = [],
+	): RawSqlQuery {
+		$sql = $definition->baseSql()->sql;
+		$bindings = [];
+		$baseBindings = [...$definition->baseSql()->bindings];
+		$joinSql = [];
+		$joinBindings = [];
+
+		foreach ($requiredJoinAliases as $joinAlias) {
+			if (!isset($joins[$joinAlias])) {
+				continue;
+			}
+
+			$joinSql[] = $joins[$joinAlias]['sql'];
+			$joinBindings = array_merge($joinBindings, $joins[$joinAlias]['bindings'] ?? []);
+		}
+
+		if (!empty($joinSql)) {
+			$wherePosition = stripos($sql, ' where ');
+			$compiledJoinSql = implode(' ', $joinSql);
+
+			if ($wherePosition !== false) {
+				$sql = substr($sql, 0, $wherePosition) . ' ' . $compiledJoinSql . substr($sql, $wherePosition);
+				$bindings = array_merge($joinBindings, $baseBindings);
+			} else {
+				$sql .= ' ' . $compiledJoinSql;
+				$bindings = array_merge($baseBindings, $joinBindings);
+			}
+		} else {
+			$bindings = $baseBindings;
+		}
+
+		$compiledGroups = [];
+
+		foreach($whereGroups as $group) {
+			if (empty($group)) {
+				continue;
+			}
+
+			$compiledConditions = [];
+
+			foreach($group as $i => $innerGroup) {
+				$compiledConditions[] = trim($innerGroup->sql);
+				$bindings = array_merge($bindings, $innerGroup->bindings);
+			}
+
+			if (!empty($compiledConditions)) {
+				$compiledGroups[] = '(' . implode(' AND ', $compiledConditions) . ')';
+			}
+		}
+
+		if (!empty($compiledGroups)) {
+			$sql .= (stripos($sql, ' where ') === false ? ' WHERE ' : ' AND ')
+				. '(' . implode(' OR ', $compiledGroups) . ')';
+		}
+
+		return RawSqlQuery::make($sql, $bindings);
+	}
+
+	private function canRegisterField(SqlLogicalFieldOperator $field): bool
+	{
+		$columnAlias = $this->aliasFromColumn($field->colKey);
+
+		return $columnAlias !== null
+			&& is_array($field->dependentOn)
+			&& in_array($columnAlias, $field->dependentOn, true);
+	}
+
+	private function aliasFromColumn(string $column): ?string
+	{
+		if (!str_contains($column, '.')) {
+			return null;
+		}
+
+		return explode('.', $column, 2)[0] ?: null;
+	}
+
+	private function appendRequiredJoinAliases(array $joinAliases, ?array $dependentOn): array
+	{
+		foreach ($dependentOn ?? [] as $alias) {
+			if ($alias === 'i' || in_array($alias, $joinAliases, true)) {
+				continue;
+			}
+
+			$joinAliases[] = $alias;
+		}
+
+		return $joinAliases;
+	}
+
+	/**
+	 * @param QueryEngine $definition
+	 * @package RawSqlQuery $where
+	 * @return RawSqlQuery
+	 */
+	private function compileSqlQuery(QueryEngine $definition, RawSqlQuery $where): RawSqlQuery
+	{
+		//
 	}
 
 	private function compileWhereCondition(string $column, mixed $value): RawSqlQuery
@@ -104,10 +232,11 @@ final class AdvancedFilterQueryProcessor
 
 			if ($function instanceof \Closure) {
 				$where = $function($field->bindings);
+				$bindings = $where['bindings'] ?? [];
 
 				return RawSqlQuery::make(
 					sql: $where['sql'],
-					bindings: [$this->sqlBindings($where['bindings'])]
+					bindings: $this->rawSqlBindings($bindings)
 				);
 			}
 		}

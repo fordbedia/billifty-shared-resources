@@ -21,6 +21,22 @@ class AdvancedFilterSearchRequest extends FormRequest
 				'advanced_filters' => json_decode($this->advanced_filters, true),
 			]);
 		}
+
+		if (is_array($this->advanced_filters)) {
+			$advancedFilters = $this->advanced_filters;
+
+			foreach ($advancedFilters['groups'] ?? [] as $groupIndex => $group) {
+				foreach ($group['conditions'] ?? [] as $conditionIndex => $condition) {
+					if (($condition['operator'] ?? null) === '') {
+						$advancedFilters['groups'][$groupIndex]['conditions'][$conditionIndex]['operator'] = null;
+					}
+				}
+			}
+
+			$this->merge([
+				'advanced_filters' => $advancedFilters,
+			]);
+		}
 	}
 
 	/**
@@ -41,7 +57,7 @@ class AdvancedFilterSearchRequest extends FormRequest
 			'advanced_filters.groups.*.conditions.*.id' => ['required', 'integer'],
 			'advanced_filters.groups.*.conditions.*.field' => ['required', 'string'],
 			'advanced_filters.groups.*.conditions.*.subField' => ['nullable', 'string'],
-			'advanced_filters.groups.*.conditions.*.operator' => ['required', 'string'],
+			'advanced_filters.groups.*.conditions.*.operator' => ['nullable', 'string'],
 			'advanced_filters.groups.*.conditions.*.value' => ['nullable'],
 		];
 	}

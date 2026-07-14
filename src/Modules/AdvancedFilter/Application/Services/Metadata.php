@@ -11,6 +11,9 @@ use BilliftySDK\SharedResources\Modules\AdvancedFilter\Models\AdvancedFilterFiel
 
 class Metadata
 {
+	private const TYPE_ENUM = 'enum';
+	private const VALUE_SINGLE_SELECT = 'single_select';
+
 	public function __construct(protected string $module = 'invoices')
 	{}
 
@@ -45,6 +48,8 @@ class Metadata
 			label: $field->label,
 			dataType: $field->data_type,
 			defaultOperator: $field->default_operator_key,
+			valueComponent: $this->valueComponentFor($field),
+			valueSource: $field->value_source,
 			operators: $field->fieldOperators
 				->map(fn(AdvancedFilterFieldOperator $fieldOperator) => $this->toOperatorDTO($fieldOperator))
 				->values()
@@ -59,6 +64,8 @@ class Metadata
 			label: $field->label,
 			dataType: $field->data_type,
 			defaultOperator: $field->default_operator_key,
+			valueComponent: $this->valueComponentFor($field),
+			valueSource: $field->value_source,
 			operators: $field->fieldOperators
 				->map(fn(AdvancedFilterFieldOperator $fieldOperator) => $this->toOperatorDTO($fieldOperator))
 				->values()
@@ -77,5 +84,17 @@ class Metadata
 			placeholder: $fieldOperator->placeholder ?? $operator->placeholder,
 			valueSource: $fieldOperator->value_source ?? $operator->value_source,
 		);
+	}
+
+	private function valueComponentFor(AdvancedFilterField $field): ?string
+	{
+		if ($field->fieldOperators->isNotEmpty()) {
+			return null;
+		}
+
+		return match ($field->data_type) {
+			self::TYPE_ENUM => self::VALUE_SINGLE_SELECT,
+			default => null,
+		};
 	}
 }

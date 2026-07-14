@@ -63,27 +63,27 @@ final readonly class SqlLogicalFieldOperator
 				return match ($operator) {
 					'contains' => [
 						'sql' => "{$colKey} IN ?",
-						'bindings' => $values,
+						'bindings' => [$values],
 					],
 					'not_contains' => [
 						'sql' => "{$colKey} NOT IN ?",
-						'bindings' => $values,
+						'bindings' => [$values],
 					],
 					'like' => [
 						'sql' => "{$colKey} LIKE ?",
-						'bindings' => "%{$bindings}%",
+						'bindings' => ["%{$bindings}%"],
 					],
 					'!=', 'not_equals' => [
 						'sql' => "{$colKey} != ?",
-						'bindings' => $bindings,
+						'bindings' => [$bindings],
 					],
 					'=' => [
 						'sql' => "{$colKey} = ?",
-						'bindings' => $bindings,
+						'bindings' => [$bindings],
 					],
 					default => [
 						'sql' => is_array($bindings) ? "{$colKey} IN ?" : "{$colKey} = ?",
-						'bindings' => is_array($bindings) ? $values : $bindings,
+						'bindings' => is_array($bindings) ? [$values] : [$bindings],
 					],
 				};
 			},

@@ -8,6 +8,7 @@ class AdvancedFilterOptionService
 {
 	private const MODULE_INVOICES = 'invoices';
 	private const SOURCE_INVOICE_NUMBERS = 'invoice_numbers';
+	private const SOURCE_INVOICE_STATES = 'invoice_states';
 	private const SOURCE_STATUSES = 'statuses';
 	private const SOURCE_BUSINESS_PROFILES = 'business_profiles';
 	private const SOURCE_BUSINESS_PROFILE = 'business_profile';
@@ -36,6 +37,7 @@ class AdvancedFilterOptionService
 
 		return match ($valueSource) {
 			self::SOURCE_INVOICE_NUMBERS => $this->invoiceNumberOptions($userId, $search, $page, $perPage),
+			self::SOURCE_INVOICE_STATES => $this->invoiceStateOptions($search, $page, $perPage),
 			self::SOURCE_STATUSES => $this->statusOptions($search, $page, $perPage),
 			self::SOURCE_BUSINESS_PROFILES, self::SOURCE_BUSINESS_PROFILE => $this->businessProfileOptions($userId, $search, $page, $perPage),
 			self::SOURCE_CLIENTS, self::SOURCE_CLIENT => $this->clientOptions($userId, $search, $page, $perPage),
@@ -71,6 +73,27 @@ class AdvancedFilterOptionService
 			['value' => 'issued', 'label' => 'Issued'],
 			['value' => 'paid', 'label' => 'Paid'],
 			['value' => 'void', 'label' => 'Void'],
+		]);
+
+		if ($search !== '') {
+			$options = $options->filter(function (array $option) use ($search): bool {
+				$normalizedSearch = strtolower($search);
+
+				return str_contains(strtolower($option['value']), $normalizedSearch)
+					|| str_contains(strtolower($option['label']), $normalizedSearch);
+			});
+		}
+
+		return $this->response($options->values()->all(), $page, $perPage, false);
+	}
+
+	private function invoiceStateOptions(string $search, int $page, int $perPage): array
+	{
+		$options = collect([
+			['value' => 'created', 'label' => 'Created'],
+			['value' => 'draft', 'label' => 'Draft'],
+			['value' => 'issued', 'label' => 'Issued'],
+			['value' => 'void', 'label' => 'Voided'],
 		]);
 
 		if ($search !== '') {

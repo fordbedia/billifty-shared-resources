@@ -14,6 +14,8 @@ final readonly class MetadataField
 		public ?string $dataType = null,
 		public ?string $defaultOperator = null,
 		public ?string $defaultSubField = null,
+		public ?string $valueComponent = null,
+		public ?string $valueSource = null,
 		public array   $operators = [],
 		public array   $subFields = [],
 	) {}
@@ -35,6 +37,14 @@ final readonly class MetadataField
 
 		if ($this->defaultSubField !== null) {
 			$data['defaultSubField'] = $this->defaultSubField;
+		}
+
+		if ($this->valueComponent !== null) {
+			$data['valueComponent'] = $this->valueComponent;
+		}
+
+		if ($this->valueSource !== null) {
+			$data['valueSource'] = $this->valueSource;
 		}
 
 		if (!empty($this->operators)) {

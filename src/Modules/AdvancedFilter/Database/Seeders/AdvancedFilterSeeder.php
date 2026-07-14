@@ -34,6 +34,7 @@ class AdvancedFilterSeeder extends MakeSeeder
 	private const VALUE_DATE_RANGE = 'date_range';
 
 	private const SOURCE_INVOICE_NUMBERS = 'invoice_numbers';
+	private const SOURCE_INVOICE_STATES = 'invoice_states';
 	private const SOURCE_STATUSES = 'statuses';
 
 	public function run(): void
@@ -130,6 +131,15 @@ class AdvancedFilterSeeder extends MakeSeeder
 					),
 				],
 			],
+			[
+				'field_key' => 'invoice',
+				'label' => 'Invoice',
+				'data_type' => self::TYPE_ENUM,
+				'default_operator_key' => null,
+				'value_source' => self::SOURCE_INVOICE_STATES,
+				'sort_order' => 50,
+				'operators' => [],
+			],
 		];
 
 		foreach ($fields as $field) {
@@ -143,7 +153,7 @@ class AdvancedFilterSeeder extends MakeSeeder
 				'has_sub_fields' => false,
 				'default_sub_field_key' => null,
 				'default_operator_key' => $field['default_operator_key'],
-				'value_source' => null,
+				'value_source' => $field['value_source'] ?? null,
 				'is_enabled' => true,
 				'sort_order' => $field['sort_order'],
 			]);
@@ -197,6 +207,7 @@ class AdvancedFilterSeeder extends MakeSeeder
 				$this->textSubField('billing_address', 'Billing Address', 'Enter billing address', 40),
 				$this->textSubField('shipping_address', 'Shipping Address', 'Enter shipping address', 50),
 				$this->dateSubField('created_at', 'Date Created', 60),
+				$this->valueOnlySubField('invoice', 'Invoice', self::SOURCE_INVOICE_STATES, 70),
 			]
 		);
 	}
@@ -232,7 +243,7 @@ class AdvancedFilterSeeder extends MakeSeeder
 				'has_sub_fields' => false,
 				'default_sub_field_key' => null,
 				'default_operator_key' => $field['default_operator_key'],
-				'value_source' => null,
+				'value_source' => $field['value_source'] ?? null,
 				'is_enabled' => true,
 				'sort_order' => $field['sort_order'],
 			]);
@@ -290,6 +301,24 @@ class AdvancedFilterSeeder extends MakeSeeder
 			'operators' => [
 				$this->dateRangeOperator(isDefault: true),
 			],
+		];
+	}
+
+	private function valueOnlySubField(
+		string $fieldKey,
+		string $label,
+		string $valueSource,
+		int    $sortOrder
+	): array
+	{
+		return [
+			'field_key' => $fieldKey,
+			'label' => $label,
+			'data_type' => self::TYPE_ENUM,
+			'default_operator_key' => null,
+			'value_source' => $valueSource,
+			'sort_order' => $sortOrder,
+			'operators' => [],
 		];
 	}
 
