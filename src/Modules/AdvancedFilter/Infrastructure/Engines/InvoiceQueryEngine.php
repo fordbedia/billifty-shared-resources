@@ -146,18 +146,18 @@ class InvoiceQueryEngine implements QueryEngine
 						'invoice' => SqlLogicalFieldOperator::where(
 							colKey: 'i.status',
 							type: SqlLogicalOperatorType::RAW,
-							dependentOn: ['i'],
+							dependentOn: ['i', 'c'],
 							bindings: $input['value'],
 							sql: function ($value) {
 								if ($value === 'created') {
 									// Check using exist
 									return [
-										'sql' => 'exists (select 1 from ' . self::MODULE_TABLE . ' i2 where i2.client_id = c.id)',
+										'sql' => 'exists (select 1 from ' . self::MODULE_TABLE . ' i2 where i2.id = i.id AND i2.client_id = c.id)',
 										'bindings' => [],
 									];
 								}
 								return [
-									'sql' => 'i.status = ?',
+									'sql' => 'exists (select 1 from ' . self::MODULE_TABLE . ' i2 where i2.id = i.id AND i2.client_id = c.id AND i2.status = ?)',
 									'bindings' => [$value],
 								];
 							}

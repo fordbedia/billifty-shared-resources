@@ -2,6 +2,7 @@
 
 namespace BilliftySDK\SharedResources\Modules\Invoicing\Http\Controllers;
 
+use BilliftySDK\SharedResources\Modules\AdvancedFilter\Http\Controllers\InvoiceAdvancedFilterInputController;
 use BilliftySDK\SharedResources\Modules\Billing\Exceptions\PlanLimitExceededException;
 use BilliftySDK\SharedResources\Modules\Billing\Infrastructure\Payments\Traits\Security\ValidatesInvoiceState;
 use BilliftySDK\SharedResources\Modules\Invoicing\Http\Resources\InvoiceResource;
@@ -49,8 +50,16 @@ class InvoiceController extends Controller
 	/**
 	 * Display a listing of the resource.
 	 */
-	public function index(Request $request, InvoiceContracts $repo)
+	public function index(
+		Request $request,
+		InvoiceContracts $repo,
+		InvoiceAdvancedFilterInputController $advancedFilter
+	)
 	{
+		if ($request->filled('advanced_filters')) {
+			return $advancedFilter->searchFromRequest($request);
+		}
+
 		$dateRange = null;
 		if ($request->start_date && $request->end_date) {
 			$dateRange = ['start' => $request->start_date, 'end' => $request->end_date];
