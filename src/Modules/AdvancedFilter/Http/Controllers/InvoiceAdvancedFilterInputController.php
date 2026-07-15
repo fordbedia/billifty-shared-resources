@@ -10,6 +10,8 @@ use BilliftySDK\SharedResources\Modules\AdvancedFilter\Infrastructure\Engines\Qu
 use BilliftySDK\SharedResources\Modules\AdvancedFilter\Infrastructure\Services\AdvancedFilterOptionService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator as Paginator;
+use Illuminate\Support\Facades\DB;
 
 class InvoiceAdvancedFilterInputController extends Controller
 {
@@ -74,7 +76,28 @@ class InvoiceAdvancedFilterInputController extends Controller
 	public function onSearch(AdvancedFilterSearchRequest $request)
 	{
 		$filterInput = new AdvancedFilterInput($request->advanced_filters);
-
 		$query = $this->queryEngine->search($filterInput);
+
+		$rows = DB::select($query->sql, $query->bindings);
+
+		$page = 1;
+		$perPage = 15;
+
+		$paginator = new Paginator(
+			items: $rows,
+			total: count($rows),
+			perPage: $perPage,
+			currentPage: $page,
+		);
+
+		$response = $paginator->toArray();
+
+		if (app()->environment(['local', 'dev'])) {
+			$response['debug'] = [
+				'query' => AdvancedFilterQueryProcessor::compileSqlQeury($query)
+			];
+		}
+
+		return response()->json($response);
 	}
 }

@@ -8,8 +8,8 @@ use BilliftySDK\SharedResources\Modules\AdvancedFilter\Infrastructure\SQL\SqlFil
 use BilliftySDK\SharedResources\Modules\AdvancedFilter\Infrastructure\SQL\SqlLogicalFieldOperator;
 use BilliftySDK\SharedResources\Modules\AdvancedFilter\Infrastructure\DTOs\AdvancedFilterInput;
 use BilliftySDK\SharedResources\Modules\AdvancedFilter\Infrastructure\Engines\QueryEngine;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Pagination\LengthAwarePaginator as Paginator;
+use BilliftySDK\SharedResources\Modules\Invoicing\Models\Workspace;
+use Illuminate\Support\Facades\DB;
 use function Illuminate\Events\queueable;
 
 class InvoiceQueryEngine implements QueryEngine
@@ -39,8 +39,8 @@ class InvoiceQueryEngine implements QueryEngine
 	public function baseSql(): RawSqlQuery
 	{
 		return new RawSqlQuery(
-			sql: 'select i.* from ' . self::MODULE_TABLE . ' i where i.user_id = ?',
-			bindings: [auth()->id()],
+			sql: 'select i.* from ' . self::MODULE_TABLE . ' i where i.workspace_id = ?',
+			bindings: [Workspace::ensureDefaultForUser(auth()->id())->getKey()],
 		);
 	}
 
@@ -152,8 +152,8 @@ class InvoiceQueryEngine implements QueryEngine
 								if ($value === 'created') {
 									// Check using exist
 									return [
-										'sql' => 'exists (select 1 from ? i2 where i2.client_id = c.id)',
-										'bindings' => [self::MODULE_TABLE],
+										'sql' => 'exists (select 1 from ' . self::MODULE_TABLE . ' i2 where i2.client_id = c.id)',
+										'bindings' => [],
 									];
 								}
 								return [
@@ -221,17 +221,8 @@ class InvoiceQueryEngine implements QueryEngine
 		return is_string($operator) && $operator !== '' ? $operator : '=';
 	}
 
-	public function search(AdvancedFilterInput $input, int $perPage = 15): LengthAwarePaginator
+	public function search(AdvancedFilterInput $input, int $perPage = 15): RawSqlQuery
 	{
-		$query = $this->processor->build($this, $input);
-
-		$page = 1;
-
-		return new Paginator(
-			items: collect([]),
-			total: (int)0,
-			perPage: $perPage,
-			currentPage: $page,
-		);
+		return $this->processor->build($this, $input);
 	}
 }

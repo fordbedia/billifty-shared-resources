@@ -12,5 +12,5 @@ interface QueryEngine
 
 	public function joins(): array;
 
-	public function search(AdvancedFilterInput $input, int $perPage = 15): LengthAwarePaginator;
+	public function search(AdvancedFilterInput $input, int $perPage = 15): RawSqlQuery;
 }

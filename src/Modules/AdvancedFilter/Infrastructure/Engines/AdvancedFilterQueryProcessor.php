@@ -11,38 +11,33 @@ use BilliftySDK\SharedResources\Modules\AdvancedFilter\Infrastructure\SQL\SqlLog
 
 final class AdvancedFilterQueryProcessor
 {
+	private ?RawSqlQuery $compiledQuery = null;
+
 	public function __construct()
 	{
 	}
 
-	private function sqlBindings(mixed $bindings): mixed
-	{
-		if (!is_array($bindings)) {
-			return $bindings;
-		}
-
-		$quotedBindings = array_map(
-			fn($binding) => "'" . str_replace("'", "''", (string)$binding) . "'",
-			$bindings,
-		);
-
-		return '(' . implode(', ', $quotedBindings) . ')';
-	}
-
-	private function rawSqlBindings(mixed $bindings): array
+	private function compileRawSql(string $sql, mixed $bindings): RawSqlQuery
 	{
 		if ($bindings === null || $bindings === []) {
-			return [];
+			return RawSqlQuery::make($sql);
 		}
 
-		if (!is_array($bindings)) {
-			return [$bindings];
+		$bindings = is_array($bindings) ? $bindings : [$bindings];
+		$compiledBindings = [];
+
+		foreach ($bindings as $binding) {
+			if (is_array($binding)) {
+				$placeholders = implode(', ', array_fill(0, count($binding), '?'));
+				$sql = preg_replace('/\?/', "({$placeholders})", $sql, 1);
+				$compiledBindings = array_merge($compiledBindings, $binding);
+				continue;
+			}
+
+			$compiledBindings[] = $binding;
 		}
 
-		return array_map(
-			fn($binding) => is_array($binding) ? $this->sqlBindings($binding) : $binding,
-			$bindings,
-		);
+		return RawSqlQuery::make($sql, $compiledBindings);
 	}
 
 	protected function mergeJoins(QueryEngine $definition): array
@@ -64,7 +59,11 @@ final class AdvancedFilterQueryProcessor
 	public function build(QueryEngine $definition, $input): RawSqlQuery
 	{
 		if (empty($input->groups)) {
-			return $definition->baseSql();
+			$joins = $this->mergeJoins($definition);
+			$requiredJoinAliases = $this->joinAliasesFromSql($definition->baseSql()->sql);
+			$this->compiledQuery = $this->compileQuery($definition, $joins, [], $requiredJoinAliases);
+
+			return $this->compiledQuery;
 		}
 
 		$joins = $this->mergeJoins($definition);
@@ -96,15 +95,21 @@ final class AdvancedFilterQueryProcessor
 			}
 		}
 
-		$sql = $this->compileWhereGroups($definition, $joins, $whereGroups, $requiredJoinAliases);
-		dd($sql);
+		$requiredJoinAliases = $this->appendRequiredJoinAliases(
+			$requiredJoinAliases,
+			$this->joinAliasesFromSql($definition->baseSql()->sql)
+		);
+
+		$this->compiledQuery = $this->compileQuery($definition, $joins, $whereGroups, $requiredJoinAliases);
+
+		return $this->compiledQuery;
 	}
 
 	/**
 	 * @param array $whereGroups
 	 * @return RawSqlQuery
 	 */
-	private function compileWhereGroups(
+	private function compileQuery(
 		QueryEngine $definition,
 		array $joins,
 		array $whereGroups,
@@ -116,7 +121,7 @@ final class AdvancedFilterQueryProcessor
 		$joinSql = [];
 		$joinBindings = [];
 
-		foreach ($requiredJoinAliases as $joinAlias) {
+		foreach ($this->resolveJoinAliases($requiredJoinAliases, $joins) as $joinAlias) {
 			if (!isset($joins[$joinAlias])) {
 				continue;
 			}
@@ -198,14 +203,39 @@ final class AdvancedFilterQueryProcessor
 		return $joinAliases;
 	}
 
-	/**
-	 * @param QueryEngine $definition
-	 * @package RawSqlQuery $where
-	 * @return RawSqlQuery
-	 */
-	private function compileSqlQuery(QueryEngine $definition, RawSqlQuery $where): RawSqlQuery
+	private function resolveJoinAliases(array $requiredJoinAliases, array $joins): array
 	{
-		//
+		$resolved = [];
+
+		$visit = function (string $alias) use (&$visit, &$resolved, $joins): void {
+			if ($alias === 'i' || in_array($alias, $resolved, true) || !isset($joins[$alias])) {
+				return;
+			}
+
+			foreach ($this->joinAliasesFromSql($joins[$alias]['sql']) as $dependencyAlias) {
+				if ($dependencyAlias !== $alias) {
+					$visit($dependencyAlias);
+				}
+			}
+
+			$resolved[] = $alias;
+		};
+
+		foreach ($requiredJoinAliases as $alias) {
+			$visit($alias);
+		}
+
+		return $resolved;
+	}
+
+	private function joinAliasesFromSql(string $sql): array
+	{
+		preg_match_all('/\b([a-zA-Z_][a-zA-Z0-9_]*)\./', $sql, $matches);
+
+		return array_values(array_unique(array_filter(
+			$matches[1] ?? [],
+			fn(string $alias) => $alias !== 'i',
+		)));
 	}
 
 	private function compileWhereCondition(string $column, mixed $value): RawSqlQuery
@@ -234,17 +264,17 @@ final class AdvancedFilterQueryProcessor
 				$where = $function($field->bindings);
 				$bindings = $where['bindings'] ?? [];
 
-				return RawSqlQuery::make(
-					sql: $where['sql'],
-					bindings: $this->rawSqlBindings($bindings)
-				);
+				return $this->compileRawSql($where['sql'], $bindings);
 			}
 		}
 
 		if (isset($field?->type) && $field?->type?->name === SqlLogicalOperatorType::WHEREIN->name) {
+			$bindings = is_array($field->bindings) ? $field->bindings : [$field->bindings];
+			$placeholders = implode(', ', array_fill(0, count($bindings), '?'));
+
 			return RawSqlQuery::make(
-				sql: " {$field->colKey} IN ?",
-				bindings: [$this->sqlBindings($field->bindings)],
+				sql: " {$field->colKey} IN ({$placeholders})",
+				bindings: $bindings,
 			);
 		}
 
@@ -271,5 +301,53 @@ final class AdvancedFilterQueryProcessor
 	private function countMultipleFields(array $fields, string $field): int
 	{
 		return count(array_filter($fields, fn($f) => $f === $field));
+	}
+
+	public function getCompiledQuery(): ?RawSqlQuery
+	{
+		return $this->compiledQuery;
+	}
+
+	public static function compileSqlQeury(RawSqlQuery $query): string
+	{
+		$sql = $query->sql;
+
+		foreach ($query->bindings as $binding) {
+			$sql = preg_replace('/\?/', self::quoteSqlBinding($binding), $sql, 1);
+		}
+
+		return $sql;
+	}
+
+	private static function quoteSqlBinding(mixed $binding): string
+	{
+		if (is_array($binding)) {
+			return '(' . implode(', ', array_map(
+				fn($value) => self::quoteSqlBinding($value),
+				$binding,
+			)) . ')';
+		}
+
+		if ($binding === null) {
+			return 'NULL';
+		}
+
+		if (is_bool($binding)) {
+			return $binding ? '1' : '0';
+		}
+
+		if (is_int($binding) || is_float($binding)) {
+			return (string)$binding;
+		}
+
+		return "'" . str_replace("'", "''", (string)$binding) . "'";
+	}
+
+	public function toArray()
+	{
+		return [
+			'sql' => $this->compiledQuery->sql,
+			'bindings' => $this->compiledQuery->bindings,
+		];
 	}
 }
