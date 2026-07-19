@@ -8,6 +8,7 @@ final class DashboardMetricsQuery
 {
 	public function __construct(
 		private InvoiceMetricsQuery $invoiceMetrics,
+		private InvoiceRevenueChartQuery $invoiceRevenueChart,
 	) {
 	}
 
@@ -15,6 +16,7 @@ final class DashboardMetricsQuery
 	{
 		return [
 			'invoices' => $this->invoiceMetrics->for($request),
+			'revenue_overview' => $this->invoiceRevenueChart->for($request),
 		];
 	}
 }
