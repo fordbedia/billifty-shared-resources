@@ -3,12 +3,13 @@
 namespace BilliftySDK\SharedResources\Modules\Dashboard\Infrastructure\Persistence\Eloquent;
 
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
+use BilliftySDK\SharedResources\Modules\Invoicing\Models\Workspace;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
-final class InvoiceRevenueChartQuery
+final class InvoiceRevenueChartQuery implements MetricQuery
 {
 	public function for(Request $request): array
 	{
@@ -71,18 +72,21 @@ final class InvoiceRevenueChartQuery
 			: $this->fillMonthlyTimeline($request, $rows);
 	}
 
-	private function query(Request $request): Builder
+	public function query(Request $request): Builder
 	{
 		$userId = $request->user()?->getAuthIdentifier();
+		$workspaceId = $userId
+			? Workspace::query()
+				->where('user_id', $userId)
+				->where('is_default', 1)
+				->value('id')
+			: null;
 
 		return Invoices::query()
 			->whereNotNull('issued_on')
 			->when(
-				$userId,
-				fn (Builder $invoiceQuery) => $invoiceQuery->whereHas(
-					'workspace',
-					fn (Builder $workspaceQuery) => $workspaceQuery->where('user_id', $userId)
-				),
+				$workspaceId,
+				fn (Builder $invoiceQuery) => $invoiceQuery->where('workspace_id', $workspaceId),
 				fn (Builder $invoiceQuery) => $invoiceQuery->whereRaw('1 = 0')
 			)
 			->when(

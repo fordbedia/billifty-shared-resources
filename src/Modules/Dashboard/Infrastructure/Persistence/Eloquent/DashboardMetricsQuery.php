@@ -7,8 +7,9 @@ use Illuminate\Http\Request;
 final class DashboardMetricsQuery
 {
 	public function __construct(
-		private InvoiceMetricsQuery $invoiceMetrics,
-		private InvoiceRevenueChartQuery $invoiceRevenueChart,
+		private InvoiceMetricsQuery         $invoiceMetrics,
+		private InvoiceRevenueChartQuery    $invoiceRevenueChart,
+		private TrendingInvoiceMetricsQuery $recentInvoiceMetrics,
 	) {
 	}
 
@@ -17,6 +18,7 @@ final class DashboardMetricsQuery
 		return [
 			'invoices' => $this->invoiceMetrics->for($request),
 			'revenue_overview' => $this->invoiceRevenueChart->for($request),
+			'trending_invoices' => $this->recentInvoiceMetrics->for($request),
 		];
 	}
 }

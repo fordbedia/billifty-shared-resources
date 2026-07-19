@@ -3,11 +3,12 @@
 namespace BilliftySDK\SharedResources\Modules\Dashboard\Infrastructure\Persistence\Eloquent;
 
 use BilliftySDK\SharedResources\Modules\Invoicing\Models\Invoices;
+use BilliftySDK\SharedResources\Modules\Invoicing\Models\Workspace;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 
-final class InvoiceMetricsQuery
+final class InvoiceMetricsQuery implements MetricQuery
 {
 	public function for(Request $request): array
 	{
@@ -59,7 +60,7 @@ final class InvoiceMetricsQuery
 		];
 	}
 
-	private function query(Request $request): Builder
+	public function query(Request $request): Builder
 	{
 		$query = $this->baseQuery($request);
 
@@ -76,14 +77,17 @@ final class InvoiceMetricsQuery
 	private function baseQuery(Request $request): Builder
 	{
 		$userId = $request->user()?->getAuthIdentifier();
+		$workspaceId = $userId
+			? Workspace::query()
+				->where('user_id', $userId)
+				->where('is_default', 1)
+				->value('id')
+			: null;
 
 		return Invoices::query()
 			->when(
-				$userId,
-				fn (Builder $invoiceQuery) => $invoiceQuery->whereHas(
-					'workspace',
-					fn (Builder $workspaceQuery) => $workspaceQuery->where('user_id', $userId)
-				),
+				$workspaceId,
+				fn (Builder $invoiceQuery) => $invoiceQuery->where('workspace_id', $workspaceId),
 				fn (Builder $invoiceQuery) => $invoiceQuery->whereRaw('1 = 0')
 			);
 	}
