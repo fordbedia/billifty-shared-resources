@@ -94,6 +94,25 @@ class InvoiceQueryEngine implements QueryEngine
 				bindings: $input['value'],
 				dependentOn: ['i'],
 			),
+			'invoice' => SqlLogicalFieldOperator::where(
+				colKey: 'i.status',
+				type: SqlLogicalOperatorType::RAW,
+				bindings: $input['value'],
+				dependentOn: ['i'],
+				sql: function ($value) {
+					if ($value === 'created') {
+						return [
+							'sql' => 'i.id IS NOT NULL',
+							'bindings' => [],
+						];
+					}
+
+					return [
+						'sql' => 'i.status = ?',
+						'bindings' => [$value],
+					];
+				}
+			),
 			'issued_at' => SqlLogicalFieldOperator::whereBetween(
 				colKey: 'i.issued_at',
 				bindings: $input['value'],
