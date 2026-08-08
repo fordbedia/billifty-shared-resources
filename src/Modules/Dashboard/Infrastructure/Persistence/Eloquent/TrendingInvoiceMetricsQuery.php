@@ -96,7 +96,6 @@ class TrendingInvoiceMetricsQuery implements MetricQuery
 			->select('client_id')
 			->selectRaw('COUNT(*) as invoice_count')
 			->selectRaw('SUM(total_cents) as total_cents')
-			->whereNotNull('issued_at')
 			->where('status', 'paid')
 			->groupBy('client_id')
 			->orderByDesc('total_cents')
